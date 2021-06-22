@@ -150,76 +150,134 @@ json::value record_get_json(const string _uri)
 
 /**
  * @brief Load json file and assign to target resource
- * 
+ * @details ServiceRoot에서 init 되지 않고 기존에 존재하던 데이터들을 디스크에 존재하는 .json파일을 통해 load한다.
+ *          json 형식으로 저장되있는 모든 데이터를 우선 resource형식으로 읽어 type값과 odata.id를 얻어내고
+ *          이러한 값을 토대로 각각의 객체로 분기하여 생성한다.
  * @return true 
  * @return false 
  */
 bool record_load_json(void)
 {
-    for (auto it = g_record.begin(); it != g_record.end(); it++)
+    record_init_load("/redfish");
+    cout << "init load complete" << endl;
+
+    for (auto it = g_record.begin(); it != g_record.end(); it++){
+        json::value j;
+        
+        // Actions 예외처리
+        string uri = it->second->odata.id;
+        string resource_type1 = get_last_str(uri, "/");
+        string resource_type2 = get_last_str(uri.substr(0, uri.length() - (resource_type1.length() + 1)), "/");
+                    
+        if(resource_type2 == "Actions")
+            continue;
+
+        it->second->load_resource_json(j);
+        
         switch (it->second->type)
         {
-        case SERVICE_ROOT_TYPE:
-            ((ServiceRoot *)it->second)->load_json();
+        // case SERVICE_ROOT_TYPE:
+        //     if (!((ServiceRoot *)it->second)->load_json())
+        //         fprintf(stderr, "load ServiceRoot failed\n");
+        //     break;
+        // case COLLECTION_TYPE:
+        //     if (!((Collection *)it->second)->load_json())
+        //         fprintf(stderr, "load Collection failed\n");
+        //     break
+        // case LIST_TYPE:
+        //     if (!((List *)it->second)->load_json())
+        //         fprintf(stderr, "load List failed\n");
+        //     break;
+        // case SYSTEM_TYPE:
+        //     if (!((System *)it->second)->load_json())
+        //         fprintf(stderr, "load System failed\n");
+        //     break;
+        // case PROCESSOR_TYPE:
+        //     if (!((Processor *)it->second)->load_json())
+        //         fprintf(stderr, "load Processor failed\n");
+        //     break;
+        // case SIMPLE_STORAGE_TYPE:
+        //     if (!((SimpleStorage *)it->second)->load_json())
+        //         fprintf(stderr, "load SimpleStorage failed\n");
+        //     break;
+        // case CHASSIS_TYPE:
+        //     if (!((Chassis *)it->second)->load_json())
+        //         fprintf(stderr, "load Chassis failed\n");
+        //     break;
+        // case THERMAL_TYPE:
+        //     if (!((Thermal *)it->second)->load_json())
+        //         fprintf(stderr, "load Thermal failed\n");
+        //     break;
+        // case TEMPERATURE_TYPE:
+        //     if (!((Temperature *)it->second)->load_json())
+        //         fprintf(stderr, "load Temperature failed\n");
+        //     break;
+        // case FAN_TYPE:
+        //     if (!((Fan *)it->second)->load_json())
+        //         fprintf(stderr, "load Fan failed\n");
+        //     break;
+        // case POWER_TYPE:
+        //     if (!((Power *)it->second)->load_json())
+        //         fprintf(stderr, "load Power failed\n");
+        //     break;
+        // case MANAGER_TYPE:
+        //     if (!((Manager *)it->second)->load_json())
+        //         fprintf(stderr, "load Manager failed\n");
+        //     break;
+        // case ETHERNET_INTERFACE_TYPE:
+        //     if (!((EthernetInterface *)it->second)->load_json())
+        //         fprintf(stderr, "load Ethernet interface failed\n");
+        //     break;
+        // case LOG_SERVICE_TYPE:
+        //     if (!((LogService *)it->second)->load_json())
+        //         fprintf(stderr, "load Log Service failed\n");
+        //     break;
+        // case LOG_ENTRY_TYPE:
+        //     if (!((LogEntry *)it->second)->load_json())
+        //         fprintf(stderr, "load Log Entry failed\n");
+        //     break;
+        // case TASK_SERVICE_TYPE:
+        //     if (!((TaskService *)it->second)->load_json())
+        //         fprintf(stderr, "load Task Service failed\n");
+        //     break;
+        // case SESSION_SERVICE_TYPE:
+        //     if (!((SessionService *)it->second)->load_json())
+        //         fprintf(stderr, "load Session Service failed\n");
+        //     break;
+        // case SESSION_TYPE:
+        //     if (!((Session *)it->second)->load_json())
+        //         fprintf(stderr, "load Session failed\n");
+        //     break;
+        // case ACCOUNT_SERVICE_TYPE:
+        //     if (!((AccountService *)it->second)->load_json())
+        //         fprintf(stderr, "load Account Service failed\n");
+        //     break;
+        // case ACCOUNT_TYPE:
+        //     if (!((Account *)it->second)->load_json())
+        //         fprintf(stderr, "load Account failed\n");
+        //     break;
+        // case ROLE_TYPE:
+        //     if (!((Role *)it->second)->load_json())
+        //         fprintf(stderr, "load Role failed\n");
+        //     break;
+        // case EVENT_SERVICE_TYPE:
+        //     if (!((EventService *)it->second)->load_json())
+        //         fprintf(stderr, "load EventService failed\n");
+        //     break;
+        // case DESTINATION_TYPE:
+        //     if (!((Destination1 *)it->second)->load_json())
+        //         fprintf(stderr, "load Session failed\n");
+        //     break;
+        case CERTIFICATE_TYPE:{
+            Certificate *cert = new Certificate(it->second->odata.id);
+            if (!cert->load_json(j))
+                fprintf(stderr, "load Certificate failed\n");
             break;
-        case COLLECTION_TYPE:
-            ((Collection *)it->second)->load_json();
-            break;
-        case LIST_TYPE:
-            // ((List *)it->second)->load_json();
-            break;
-        case SYSTEM_TYPE:
-            break;
-        case PROCESSOR_TYPE:
-            break;
-        case SIMPLE_STORAGE_TYPE:
-            break;
-        case CHASSIS_TYPE:
-            // ((Chassis *)it->second)->load_json();
-            break;
-        case THERMAL_TYPE:
-            // ((Thermal *)it->second)->load_json();   
-            break;
-        case TEMPERATURE_TYPE:
-            // ((Temperature *)it->second)->load_json();   
-            break;
-        case FAN_TYPE:
-            // ((Fan *)it->second)->load_json();   
-            break;
-        case POWER_TYPE:
-            break;
-        case MANAGER_TYPE:
-            break;
-        case ETHERNET_INTERFACE_TYPE:
-            break;
-        case LOG_SERVICE_TYPE:
-            break;
-        case LOG_ENTRY_TYPE:
-            break;
-        case TASK_SERVICE_TYPE:
-            break;
-        case SESSION_SERVICE_TYPE:
-            // ((SessionService *)it->second)->load_json();
-            break;
-        case SESSION_TYPE:
-            // ((Session *)it->second)->load_json();
-            break;
-        case ACCOUNT_SERVICE_TYPE:
-            // ((AccountService *)it->second)->load_json();
-            break;
-        case ACCOUNT_TYPE:
-            // ((Account *)it->second)->load_json();
-            break;
-        case ROLE_TYPE:
-            // ((Role *)it->second)->load_json();
-            break;
-        case EVENT_SERVICE_TYPE:
-            break;
-        case DESTINATION_TYPE:
-            break;
+        } 
         default:
             break;
         }
+    }
     return true;
 }
 
@@ -249,7 +307,8 @@ void record_print(void)
 
 /**
  * @brief read existed json file & load record
- * @authors 강
+ * @details 존재하는 .json 파일중 현재 g_record에 존재하지 않는 객체를 얻어 type값과 odata.id를 얻어 Resource 생성. g_record에 저장. 
+ * @authors 강, 김
  */
 void record_init_load(string _path)
 {
@@ -271,8 +330,8 @@ void record_init_load(string _path)
         string str = _path;
         string name = namelist[i]->d_name;
         str = str + "/" + name;
-        // cout << namelist[i]->d_name << endl;
-        // cout << "namepath : " << str << endl;
+        
+        
         stat(str.c_str(), &statbuf);
         if(S_ISDIR(statbuf.st_mode))
         {
@@ -290,72 +349,18 @@ void record_init_load(string _path)
             }
             tmp = str.substr(str.length()-5);
             sub = str.substr(0, str.length()-5);
-            // cout << "sub : " << sub << endl;
             if(tmp == ".json") // .json으로 끝나는지를 확인해줘야함 만들어야할듯
             {
                 if(record_is_exist(sub))
                     continue;
                 else
-                {
-                    string uri = _path;
-                    // cout << "URI : " << uri << endl;
-                    if(uri == ODATA_ACCOUNT_ID)
-                    {
-                        Resource *res = new Resource(ACCOUNT_TYPE, sub, ODATA_ACCOUNT_ID);
-                        g_record[str] = res;
-                        cout << "Here is Account : " << name << endl;
-                        cout << record_get_json(ODATA_ACCOUNT_ID) << endl;
-                        record_print();
-                        // 레코드 만들어졋는지 보려고 출력해봄
-                    }
-                    else if(uri == ODATA_SESSION_ID)
-                    {
-                        Resource *res = new Resource(SESSION_TYPE, sub, ODATA_SESSION_ID);
-                        g_record[str] = res;
-                        cout << "Here is Session : " << name << endl;
-                    }
-                    else if(uri == ODATA_CHASSIS_ID)
-                    {
-                        Resource *res = new Resource(CHASSIS_TYPE, sub, ODATA_CHASSIS_ID);
-                        g_record[str] = res;
-                        cout << "Here is Chassis : " << name << endl;
-                    }
-                    else if(uri == ODATA_MANAGER_ID)
-                    {
-                        Resource *res = new Resource(MANAGER_TYPE, sub, ODATA_MANAGER_ID);
-                        g_record[str] = res;
-                        cout << "Here is Manager : " << name << endl;
-                    }
-                    else if(uri == ODATA_SYSTEM_ID)
-                    {
-                        Resource *res = new Resource(SYSTEM_TYPE, sub, ODATA_SYSTEM_ID);
-                        g_record[str] = res;
-                        cout << "Here is System : " << name << endl;
-                    }
-
-                    // 여기는 종류 늘어나면 추가될 수 있고..
+                { 
+                    cout << sub << endl;
                     
-                    // Resource형으로 odata.id odata.type만 넣어서 레코드 만들고 등록해놓은다음에
-                    // 나중에 load_json에서 레코드 돌면서 제이슨파일 읽어서 정보수정할때 리소스 지우고 실제 해당하는
-                    // 리소스로(account,session 등) 만들어서 연결시켜줄 예정
-
+                    Resource *res = new Resource(sub);
+                    g_record[sub] = res;   
                 }
-
-                /**
-                 * @details
-                 * /redfish 디렉토리를 돌면서 디렉토리면 하위로 들어가고 파일이면 .json파일인지를 검사함
-                 * 검사해서 json파일인데 현재 레코드에 없는녀석이라면 임시방편으로 Resource 형으로 레코드를 넣어줌
-                 * 이 때 uri나 타입은 해당 리소스에 맞게 넣어줌
-                 * @todo
-                 * 그래서 load_json 구현할 때 레코드 돌면서 이렇게 생성된 레코드들은 다시 해당 리소스 타입으로 만들어서 
-                 * 연결시키고 json읽어서 정보도 수정해줘야함
-                 */
             }
-
-            // 여기엔 이제 *.json 인지 파악해서 그거면 추출해서 정보 저장하고 그걸로 레코드생성
-            // 그 정보 추출할때 json::value받아서 뽑는함수 만들면 나중에 keti-edge에서 정보 받아올때도
-            // 사용가능할듯 
-            // 여기서 레코드를 이미 만들어주기때문에 실제 초기화할때 레코드 존재하는지를 검사해줘야 중복안됨
         }
     }
 
