@@ -1,22 +1,29 @@
 #include "KETIHA_Sync.hpp"
 #include "KETI_halmp.hpp"
 #include "handler.hpp"
-KETIHA_Sync::KETIHA_Sync() : m_Quit(true), m_SwitchTimeout(3), m_Heartbeat(chrono::seconds(50))
+KETIHA_Sync::KETIHA_Sync(string PeerPrimaryAddress, string PeerSecondaryAddress, int PeerPort, int SecondaryPort, KETIhaStatus *IsSwitch, bool *IsChanged) : m_Quit(true), m_SwitchTimeout(2), m_Heartbeat(chrono::seconds(50))
 {
     this->cur_count = 0;
+    this->OriginEnabled = true;
+    this->SubEnabled = false;
+    *this->IsSwitch=HA_STATUS_ACTIVE;
+    this->PeerPort = PeerPort;
+    this->SecondaryPort = SecondaryPort;
+    this->PeerSecondaryAddress = PeerSecondaryAddress;
+    this->PeerPrimaryAddress = PeerPrimaryAddress;
+    this->IsSwitch = IsSwitch;
+    this->IsChanged = IsChanged;
+
 }
 
 KETIHA_Sync::~KETIHA_Sync()
 {
 }
 
-KETIhaError KETIHA_Sync::Start(const std::string &PeerAddress, int port,
-                               std::chrono::milliseconds NetworkTimeout, std::chrono::seconds Heartbeat, bool IsActive,
+KETIhaError KETIHA_Sync::Start(std::chrono::milliseconds NetworkTimeout, std::chrono::seconds Heartbeat, bool IsActive,
                                KETIhaStatus *IsSwitch, bool *IsChanged, KETI_Switch *keti_switch)
 {
     m_Heartbeat = Heartbeat;
-    m_PeerAddress = PeerAddress;
-    m_PeerPort = port;
     m_NetworkTimeout = NetworkTimeout;
     this->IsSwitch = IsSwitch;
     max_count = m_SwitchTimeout.count();
@@ -24,9 +31,9 @@ KETIhaError KETIHA_Sync::Start(const std::string &PeerAddress, int port,
     IsOrigin = IsActive;
     this->IsChanged = IsChanged;
     this->keti_switch = keti_switch;
-    if (PeerAddress.empty())
+    if (this->PeerPrimaryAddress.empty())
     {
-        cout << "Peer address is not available:" << PeerAddress << endl;
+        cout << "Peer address is not available:" << this->PeerPrimaryAddress << endl;
         return KETIhaError::HA_ERROR_FAIL;
     }
 
@@ -34,10 +41,10 @@ KETIhaError KETIHA_Sync::Start(const std::string &PeerAddress, int port,
 
     if (!m_Quit.load())
     {
-        cout << "Heartbeat via {} is running." << PeerAddress << endl;
+        cout << "Heartbeat via {} is running." << this->PeerPrimaryAddress << endl;
         return KETIhaError::HA_ERROR_FAIL;
     }
-    cout << "Starting heartbeat via {}." << PeerAddress << endl;
+    cout << "Starting heartbeat via {}." << this->PeerPrimaryAddress << endl;
     m_Quit.store(false);
 
     //m_Network = make_shared<SinbohaNetClient>();
@@ -48,27 +55,27 @@ KETIhaError KETIHA_Sync::Start(const std::string &PeerAddress, int port,
     }
     catch (std::system_error e)
     {
-        log(info) << "Fail to start heartbeat via {} : {}.", PeerAddress, e.what();
+        log(info) << "Fail to start heartbeat via {} : {}.", this->PeerPrimaryAddress, e.what();
         m_Quit.store(true);
         return KETIhaError::HA_ERROR_FAIL;
     }
     catch (std::bad_alloc e)
     {
-        log(info) << ("Fail to start heartbeat via {} : {}.", PeerAddress, e.what());
+        log(info) << ("Fail to start heartbeat via {} : {}.", this->PeerPrimaryAddress, e.what());
         m_Quit.store(true);
         return KETIhaError::HA_ERROR_FAIL;
     }
     catch (...)
     {
-        log(info) << ("Fail to start heartbeat via {} : Unknown exception.", PeerAddress);
+        log(info) << ("Fail to start heartbeat via {} : Unknown exception.", this->PeerPrimaryAddress);
         m_Quit.store(true);
         return KETIhaError::HA_ERROR_FAIL;
     }
     Sync_Heartbit sy;
     sy.Heartbeat = m_Heartbeat;
     sy.NetworkTimeout = m_NetworkTimeout;
-    t_SyncHeartbeat = new std::thread([&]()
-                                      { SyncHeartbeat(&sy); });
+    t_SyncHeartbeat[0] = new std::thread([&]()
+                                         { SyncHeartbeat(&sy); });
     log(info) << "t_SyncHeartbeat 생성";
     return KETIhaError::HA_ERROR_OK;
 }
@@ -80,22 +87,22 @@ KETIhaError KETIHA_Sync::Stop()
 
         if (m_Quit.load())
         {
-            log(info) << ("Heartbeat via {} is stopped.", m_PeerAddress);
-            ;
+            log(info) << ("Heartbeat via {} is stopped.", this->PeerPrimaryAddress);
             return KETIhaError::HA_ERROR_FAIL;
         }
 
-        log(info) << ("Stopping heartbeat via {}.", m_PeerAddress);
+        log(info) << ("Stopping heartbeat via {}.", this->PeerPrimaryAddress);
 
         m_Quit.store(true);
         m_Cond.notify_one();
     }
-
-    t_SyncHeartbeat->detach();
+    t_SyncHeartbeat[1]->detach();
+    t_SyncHeartbeat[2]->detach();
+    t_SyncHeartbeat[0]->detach();
 
     //m_Network->Release();
 
-    log(info) << ("Stopped heartbeat via {}.", m_PeerAddress);
+    log(info) << ("Stopped heartbeat via {}.", this->PeerPrimaryAddress);
     return KETIhaError::HA_ERROR_OK;
 }
 
@@ -112,117 +119,102 @@ KETIhaError KETIHA_Sync::SyncData(const string &Data)
     return KETIhaError::HA_ERROR_FAIL;
 }
 
-void KETIHA_Sync::SyncHeartbeat(Sync_Heartbit *data)
+void KETIHA_Sync::Thread_Origin_Heart()
 {
+    string uri = "http://";
+    uri = uri + this->PeerPrimaryAddress + ":" + to_string(this->PeerPort);
+    json::value obj, returnobj;
+    int count=0;
+
     for (;;)
     {
-        // while(*IsChanged)
-        // {
-        //     cout<<"change 대기"<<endl;
-        //     this_thread::sleep_for(this->m_Heartbeat);
-
-        // }
-        string uri = "https://";
-        uri = uri + this->m_PeerAddress + ":" + to_string(this->m_PeerPort);
-        json::value obj, returnobj;
         this_thread::sleep_for(this->m_Heartbeat);
-        // log(info) <<"cur_count ="<<cur_count;
-        //max test 3
-        //Active->Standby 전환
-
-        if (cur_count > this->max_count || *this->IsSwitch == HA_STATUS_FORCE_ACTIVE || *this->IsSwitch == HA_STATUS_FORCE_STANDBY)
+        while (*IsChanged)
         {
-            if (this->IsOrigin == true)
-            {
-                if (*this->IsSwitch == KETIhaStatus::HA_STATUS_ACTIVE && this->IsActive == true)
-                {
-                    this->IsActive = false;
-                    cur_count = 0;
-                    json::value swap;
-                    swap["Switch"] = json::value::string("yes");
-                    try
-                    {
-                        returnobj = heart_request("/HAswitch", uri, obj);
-                        if (returnobj["IsSwitch"].as_string() == "yes")
-                            break;
-                    }
-                    catch (...)
-                    {
-                        log(info) << "SyncHeartbeat : Error  json 요청 옲수행할 수 없음" << endl;
-                    }
-                    log(info) << "Origin Act=Active->standby 변환완료" << endl;
-                    *IsChanged = true;
-                    *this->IsSwitch = KETIhaStatus::HA_STATUS_STANDBY;
-                }
-                else if (*this->IsSwitch == KETIhaStatus::HA_STATUS_STANDBY && this->IsActive == false || *this->IsSwitch == HA_STATUS_FORCE_ACTIVE)
-                {
-                    this->keti_switch->TryActiveStandbyMode(this->IsOrigin, true);
-                    this->IsActive = true;
-                    cur_count = 0;
-                    try
-                    {
-                        returnobj = heart_request("/HAswitch", uri, obj);
-                    }
-                    catch (...)
-                    {
-                        log(info) << "SyncHeartbeat : Error  json 요청 옲수행할 수 없음" << endl;
-                    }
-
-                    if (returnobj["IsSwitch"].as_string() == "yes")
-                        break;
-                    log(info) << "Origin Act=standby->active 변환완료" << endl;
-                    *IsChanged = true;
-                    *this->IsSwitch = KETIhaStatus::HA_STATUS_ACTIVE;
-                }
-            }
-            else
-            {
-                if (*this->IsSwitch == KETIhaStatus::HA_STATUS_STANDBY && this->IsActive == false || *this->IsSwitch == HA_STATUS_FORCE_STANDBY)
-                {
-                    this->keti_switch->TryActiveStandbyMode(this->IsOrigin, false);
-                    this->IsActive = true;
-                    cur_count = 0;
-                    log(info) << "sub Stan=standby->Active변환완료" << endl;
-                    *IsChanged = true;
-                    *this->IsSwitch = KETIhaStatus::HA_STATUS_STANDBY;
-                }
-                else if (*this->IsSwitch == KETIhaStatus::HA_STATUS_ACTIVE && this->IsActive == true)
-                {
-                    this->IsActive = false;
-                    cur_count = 0;
-                    log(info) << "sub Act=active->standby변환완료" << endl;
-                    *IsChanged = true;
-                    *this->IsSwitch = KETIhaStatus::HA_STATUS_ACTIVE;
-                }
-            }
+            cout << "change 대기" << endl;
+            this_thread::sleep_for(this->m_Heartbeat);
         }
+
         try
         {
-            obj[U("Cycle")] = json::value::string("asd");
-
+            obj[U("Cycle")] = json::value::number(this->max_count);
+            log(info) << "uri ==" << uri;
             returnobj = heart_request("/Heartbeat", uri, obj);
-            // log(info) << "Result="<<returnobj.serialize() << endl;
-            cout << "cur_count ==0" << endl;
-            cur_count = 0;
+            log(info) << "Status=" << returnobj.serialize() << endl;
+            count = 0;
+            this->OriginEnabled = true;
         }
         catch (...)
         {
-            cur_count += 1;
-            if (this->IsOrigin)
-            {
-                if (this->IsActive)
-                    log(info) << "orgin Active" << endl;
-                else
-                    log(info) << "origin Standby" << endl;
-            }
-            else
-            {
-                if (this->IsActive)
-                    log(info) << "sub Active" << endl;
-                else
-                    log(info) << "sub Standby" << endl;
-            }
+            count += 1;
+            log(info) << "orgin not working " << endl;
         }
-        //cout<<returnobj.serialize().c_str()<<"=cstr"<<endl;
+        log(info) <<"count = "<<count<<" max_count="<<max_count;
+        if (count > this->max_count)
+        {
+            this->OriginEnabled = false;
+        }
+        if (!this->OriginEnabled && this->SubEnabled)
+        {
+            log(info) << "origin switching " << endl;
+            this->keti_switch->TryActiveStandbyMode(true, false);
+        }
+        else if(!this->OriginEnabled && !this->SubEnabled)
+            *this->IsSwitch=HA_STATUS_PENDING;
     }
+}
+
+void KETIHA_Sync::Thread_Sub_Heart()
+{
+    string uri = "http://";
+    uri = uri + this->PeerSecondaryAddress + ":" + to_string(this->SecondaryPort);
+    json::value obj, returnobj;
+    int count =0;
+    for (;;)
+    {
+        if (*this->IsSwitch == HA_STATUS_ACTIVE)
+            log(info) << "Origin Activate";
+        else
+            log(info) << "sub Activate";
+        this_thread::sleep_for(this->m_Heartbeat);
+        while (*IsChanged)
+        {
+            cout << "change 대기" << endl;
+            this_thread::sleep_for(this->m_Heartbeat);
+        }
+
+        try
+        {
+            obj[U("Cycle")] = json::value::number(this->max_count);
+            log(info) << "uri ==" << uri;
+            returnobj = heart_request("/Heartbeat", uri, obj);
+            log(info) << "status=" << returnobj.serialize() << endl;
+            count = 0;
+            this->SubEnabled = true;
+        }
+        catch (...)
+        {
+            count += 1;
+            log(info) << "sub not working " << endl;
+        }
+        if (count > this->max_count)
+        {
+            this->SubEnabled = false;
+        }
+        if (this->OriginEnabled && !this->SubEnabled)
+        {
+            log(info) << "sub switching " << endl;
+            this->keti_switch->TryActiveStandbyMode(true, true);
+        }
+        else if(!this->OriginEnabled && !this->SubEnabled)
+            *this->IsSwitch=HA_STATUS_PENDING;
+        
+    }
+}
+void KETIHA_Sync::SyncHeartbeat(Sync_Heartbit *data)
+{
+    t_SyncHeartbeat[1] = new std::thread([&]()
+                                         { this->Thread_Origin_Heart(); });
+    t_SyncHeartbeat[2] = new std::thread([&]()
+                                         { this->Thread_Sub_Heart(); });
 }

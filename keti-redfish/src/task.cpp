@@ -38,12 +38,21 @@ void do_task_cmm_get(http_request _request)
 
 
     t_manager = category(uri_tokens);
+    if(!t_manager)
+    {
+        // t_manager에 연결안된거 없는거
+        json::value rp;
+        rp[U("Error")] = json::value::string(U("Wrong Task Category. Please Check the URI."));
+        _request.reply(status_codes::BadRequest, rp);
+        return ;
+    }
     // cout << "T_manager Type : " << t_manager->task_type << endl;
 
     // Make m_Request
     m_Request msg;
     msg.request_json = jv;
-    msg.host = "https://10.0.6.107:443";
+    // msg.host = "https://10.0.6.107:443";
+    msg.host = CMM_ADDRESS;
     msg.method = "GET";
     msg.uri = uri;
     msg.request_datetime = currentDateTime();
@@ -238,12 +247,36 @@ void do_task_bmc_get(http_request _request)
     Task_Manager *t_manager; // 작업 매니저
     Task_Manager *c_manager; // 컴플리트 매니저
 
-    t_manager = category(uri_tokens);
+    try
+    {
+        /* code */
+        t_manager = category(uri_tokens);
+        if(t_manager)
+        {
+            cout << "있으면 넘어가고 진행하고" << endl;
+        }
+        else
+        {
+            cout << "없으면 바로 리턴시켜야겠다" << endl;
+            json::value rp;
+            rp[U("Error")] = json::value::string(U("Wrong Task Category. Please Check the URI."));
+            _request.reply(status_codes::BadRequest, rp);
+            return ;
+        }
+        
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return ;
+    }
+    // 이거 왜 try-catch에는 안잡히지?
 
     // Make m_Request
     m_Request msg;
     msg.request_json = jv;
-    msg.host = "http://10.0.6.104:443";
+    // msg.host = "http://10.0.6.104:443";
+    msg.host = module_id_table[uri_tokens[3]];
     msg.method = "GET";
     msg.uri = new_uri;
     msg.request_datetime = currentDateTime();
@@ -251,7 +284,9 @@ void do_task_bmc_get(http_request _request)
 
     // connect to Task_manager
     t_manager->list_request.push_back(msg);
-
+    // 이거 할때 요청 uri잘못들어오면 /redfish/v1/Managers인데 /Manager로 들어오면 제대론된 포인터가 연결안되어있어서 터짐
+    
+    
     // Make Resource Task Json
     string task_odata = ODATA_TASK_ID;
     task_odata = task_odata + "/" + to_string(msg.task_number);
@@ -260,14 +295,17 @@ void do_task_bmc_get(http_request _request)
     task->start_time = msg.request_datetime;
     task->set_payload(_request.headers(), "GET", jv, uri);
     record_save_json();
-
     
     http_client client(msg.host);
     http_request req(methods::GET);
     req.set_request_uri(msg.uri);
     req.set_body(jv);
-    req.headers().add(_request.headers().find("X-Auth-Token")->first, _request.headers().find("X-Auth-Token")->second);
+    
+    // cout << "이거 때문이야?" << endl;
+    if(_request.headers().find("X-Auth-Token") != _request.headers().end())
+        req.headers().add(_request.headers().find("X-Auth-Token")->first, _request.headers().find("X-Auth-Token")->second);
     // req.headers().add(U("TEST_HEADER"), U("VALUE!!"));
+    // cout << "그럴거야 아마" << endl;
     http_response response;
     json::value response_json;
 
@@ -397,8 +435,8 @@ void do_task_bmc_get(http_request _request)
     record_save_json();
 
 
-    _request.reply(response);
-    // _request.reply(U(response.status_code()), response_json);
+    // _request.reply(response); // 예전엔 이렇게 해도 제이슨 나왓는데 왜 안나오지
+    _request.reply(U(response.status_code()), response_json);
 
 
 
@@ -461,7 +499,7 @@ void do_task_bmc_get(http_request _request)
 }
 
 /**
- * @todo 1.현재 엣지로 요청을 보낼때 헤더를 같이 못보내고 있어서 x-auth-token 같은거 뚫는 테스트를 못함
+ * @todo 1.현재 엣지로 요청을 보낼때 헤더를 같이 못보내고 있어서 x-auth-token 같은거 뚫는 테스트를 못함 -- 해결
  *  2.요청 보내고 응답받고나서 매니지task 가 컴플리트로 간 후에 언제 삭제될 지  그리고 그때 만들어 둔 리소스task 의 json파일
  *  삭제 처리 해줘야함
  *  3. 예외처리 try,catch 등..
@@ -480,11 +518,20 @@ void do_task_cmm_post(http_request _request)
     cout << "!@#$ CMM POST TASK ~~~~" << endl;
 
     t_manager = category(uri_tokens);
+    if(!t_manager)
+    {
+        // t_manager에 연결안된거 없는거
+        json::value rp;
+        rp[U("Error")] = json::value::string(U("Wrong Task Category. Please Check the URI."));
+        _request.reply(status_codes::BadRequest, rp);
+        return ;
+    }
 
     // Make m_Request
     m_Request msg;
     msg.request_json = jv;
-    msg.host = "https://10.0.6.107:443";
+    // msg.host = "https://10.0.6.107:443";
+    msg.host = CMM_ADDRESS;
     msg.method = "POST";
     msg.uri = uri;
     msg.request_datetime = currentDateTime();
@@ -674,8 +721,11 @@ void do_task_cmm_post(http_request _request)
     }
     else
     {
-        _request.reply(status_codes::BadRequest);
-        return ;
+        json::value j;
+        j[U("Error")] = json::value::string(U("No Action by POST"));
+        _request.reply(status_codes::BadRequest, j);
+        // return ;
+        // 리멤버@@@@ 여기 리턴하면 안되겠는데? 여기걸리면 taskmap 리소스task 다 수정안되고 끝나서
     }
 
 
@@ -736,11 +786,19 @@ void do_task_bmc_post(http_request _request)
     Task_Manager *c_manager; // 컴플리트 매니저
 
     t_manager = category(uri_tokens);
+    if(!t_manager)
+    {
+        json::value rp;
+        rp[U("Error")] = json::value::string(U("Wrong Task Category. Please Check the URI."));
+        _request.reply(status_codes::BadRequest, rp);
+        return ;
+    }
 
     // Make m_Request
     m_Request msg;
     msg.request_json = jv;
-    msg.host = "http://10.0.6.104:443";
+    // msg.host = "http://10.0.6.104:443";
+    msg.host = module_id_table[uri_tokens[3]];
     msg.method = "POST";
     msg.uri = new_uri;
     msg.request_datetime = currentDateTime();
@@ -955,6 +1013,8 @@ Task_Manager *category(vector<string> _token)
         else
             point = task_map.find(TASK_TYPE_UPDATESERVICE)->second;
     }
+    else
+        point = 0;
 
 
     return point;

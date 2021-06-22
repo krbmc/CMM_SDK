@@ -3,12 +3,13 @@
 #include "hwcontrol.hpp"
 #include "task.hpp"
 
-unique_ptr<Handler> g_listener;
+unique_ptr<Handler> g_listener, HA_listener;
 unordered_map<string, Resource *> g_record;
 src::severity_logger<severity_level> g_logger;
 ServiceRoot *g_service_root;
 Value_About_HA ha_value;
 int heart_beat_cycle;
+map<string, string> module_id_table;
 
 // unordered_map<string, unordered_map<string, Task *> > task_map;
 unordered_map<uint8_t, Task_Manager *> task_map;
@@ -99,9 +100,27 @@ int main(int _argc, char *_argv[])
     start_server(url, listen_config);
     
 
+
+    http_listener_config HAlisten_config;
+
+    // Set SSL certification
+    HAlisten_config.set_ssl_context_callback([](boost::asio::ssl::context &_ctx) {
+        _ctx.set_options(
+            boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 // Not use SSL2
+            | boost::asio::ssl::context::no_tlsv1                                                // NOT use TLS1
+            | boost::asio::ssl::context::no_tlsv1_1                                              // NOT use TLS1.1
+            | boost::asio::ssl::context::single_dh_use);});
+    HAlisten_config.set_timeout(utility::seconds(SERVER_REQUEST_TIMEOUT));
+    utility::string_t HAurl = U("http://0.0.0.0:80");
+
+    HA_listener = unique_ptr<Handler>(new Handler(HAurl, HAlisten_config));
+    HA_listener->open().wait();
+    log(info) << "HA Heartbeat server start";
+
     while (true) 
         pause();
 
     g_listener->close().wait();
+    HA_listener->close().wait();
     exit(0);
 }

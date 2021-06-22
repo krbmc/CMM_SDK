@@ -1,0 +1,5 @@
+/root/CMM_SDK/source/CMM-HA/CMakeFiles/rebuild_cache.dir
+/root/CMM_SDK/source/CMM-HA/CMakeFiles/edit_cache.dir
+/root/CMM_SDK/source/CMM-HA/src/CMakeFiles/rebuild_cache.dir
+/root/CMM_SDK/source/CMM-HA/src/CMakeFiles/edit_cache.dir
+/root/CMM_SDK/source/CMM-HA/src/CMakeFiles/CMM-HA.dir

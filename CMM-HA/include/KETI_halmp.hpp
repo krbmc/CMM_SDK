@@ -27,8 +27,7 @@ private:
     KETI_halmp& operator=(const KETI_halmp&) = delete;
     KETI_halmp& operator=(const KETI_halmp&&) = delete;
     KETIhaNetService m_RestService;
-    KETIHA_Sync m_PrimarySyncer;
-    KETIHA_Sync m_SecondarySyncer;
+    KETIHA_Sync *keti_syncer;
     KETI_Switch *keti_switch;
     bool IsChanged;
     

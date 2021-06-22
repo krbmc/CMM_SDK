@@ -16,6 +16,7 @@ set(
     hwcontrol.cpp
     task.cpp # @@@@ 추가
     chassis_controller.cpp # @@@@ 추가
+    TaskServer.cpp
 )
 
 # Directory setting

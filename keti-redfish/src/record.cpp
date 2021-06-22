@@ -34,9 +34,9 @@ json::value record_get_json(const string _uri)
     case LIST_TYPE:
         j = ((List *)g_record[_uri])->get_json();
         break;
-    case ACTIONS_TYPE:
-        j = ((Actions *)g_record[_uri])->get_json();
-        break;
+    // case ACTIONS_TYPE:
+    //     j = ((Actions *)g_record[_uri])->get_json();
+    //     break;
     case SYSTEM_TYPE:
         j = ((Systems *)g_record[_uri])->get_json();
         break;

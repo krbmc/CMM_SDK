@@ -124,15 +124,6 @@ void Handler::handle_post(http_request _request)
     
     log(info) << "Reqeust uri : " << filtered_uri;
     bool enabled = true;
-    try
-    {
-
-    }
-    catch (json::json_exception &e)
-    {
-        log(info) << "json_Exeception error ";
-        _request.reply(status_codes::BadRequest);
-    }
 
     _request.reply(status_codes::BadRequest);
 }

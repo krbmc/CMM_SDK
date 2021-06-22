@@ -146,6 +146,14 @@
 #define TASK_STATUS_OK "OK"
 #define TASK_STATUS_WARNING "Warning"
 
+const std::string currentDateTime();
+
+/**
+ * @brief CMM_ID / CMM_ADDRESS
+ * 
+ */
+#define CMM_ID "1"
+#define CMM_ADDRESS "https://10.0.6.107:443"
 /**
  * @brief Redfish Certificate Key Usage
  */
@@ -164,8 +172,6 @@
 #define KEY_USAGE_OCSP_SIGNING "OCSPSigning"
 #define KEY_USAGE_SERVER_AUTHENTICATION "ServerAuthentication"
 #define KEY_USAGE_TIMESTAMPING "Timestamping"
-
-const std::string currentDateTime();
 
 /**
  * @brief Resource class type
@@ -372,6 +378,7 @@ typedef struct _VLAN
 typedef struct _Device_Info
 {
     unsigned int capacity_KBytes;
+    string file_system;
     string manufacturer;
     string model;
     string name;
@@ -504,15 +511,129 @@ typedef struct _Value_About_HA
 } Value_About_HA;
 
 
-typedef struct _CertContent {
-    string city;
-    string commonName;
-    string country;
-    string email;
-    string organization;
-    string organizationUnit;
-    string state;
-} CertContent; // dy : in certificate
+/**
+ * @brief Redfish resource of Actions
+ * @authors 강
+ * @details Actions 클래스가 해당하는 건 /Actions가 아니라 뒤에 더 붙는 /Actions/~~~~.#### 에 해당함
+ * 앞에 Actions는 그냥 그걸 담고있는 리소스 안에 컬렉션으로 만들어놓을거임
+ */
+
+class Actions
+{
+    public:
+    string id;
+    string target; //uri
+    string act_type; // ---ActionInfo
+    string action_name; // action_by.action_what
+    string action_by; 
+    string action_what; // action_by.action_what 의 형태
+    vector<string> action_info;
+
+    // for parsing
+    string uri;
+    vector<string> uri_tokens;
+
+    Actions(const string _target)
+    {
+        // cout << "odata : " << _odata_id << endl;
+        this->uri = _target;
+        this->uri_tokens = string_split(this->uri, '/');
+        string last = uri_tokens[uri_tokens.size()-1];
+        this->action_name = last;
+        vector<string> v = string_split(last, '.');
+        this->action_by = v.at(0);
+        this->action_what = v.at(1);
+        this->target = _target;
+
+        // g_record[_odata_id] = this;
+
+    }
+    Actions(const string _target, const string _act_type) : Actions(_target)
+    {
+        this->act_type = _act_type;
+
+        if(act_type == "Reset")
+        {
+            this->action_info.push_back("On");
+            this->action_info.push_back("ForceOff");
+            this->action_info.push_back("ForceRestart");
+            this->action_info.push_back("ForceOn");
+            this->action_info.push_back("GracefulShutdown");
+            this->action_info.push_back("GracefulRestart");
+            this->action_info.push_back("Nmi");
+            this->action_info.push_back("PushPowerButton");
+        }
+
+    };
+    ~Actions()
+    {
+        // g_record.erase(this->odata.id);
+
+    };
+
+    json::value get_json(void);
+    bool load_json(void);
+};
+
+// class Actions : public Resource
+// {
+//     public:
+//     string id;
+//     string target; //uri
+//     string act_type; // ---ActionInfo
+//     string action_name; // action_by.action_what
+//     string action_by; 
+//     string action_what; // action_by.action_what 의 형태
+//     vector<string> action_info;
+
+//     // for parsing
+//     string uri;
+//     vector<string> uri_tokens;
+
+//     Actions(const string _odata_id) : Resource(ACTIONS_TYPE, _odata_id, ODATA_ACTIONS_TYPE)
+//     {
+//         // cout << "odata : " << _odata_id << endl;
+//         this->uri = _odata_id;
+//         this->uri_tokens = string_split(this->uri, '/');
+//         string last = uri_tokens[uri_tokens.size()-1];
+//         this->action_name = last;
+//         vector<string> v = string_split(last, '.');
+//         this->action_by = v.at(0);
+//         this->action_what = v.at(1);
+//         this->target = _odata_id;
+
+        
+
+//         g_record[_odata_id] = this;
+
+//     }
+//     Actions(const string _odata_id, const string _act_type) : Actions(_odata_id)
+//     {
+//         this->act_type = _act_type;
+
+//         if(act_type == "Reset")
+//         {
+//             this->action_info.push_back("On");
+//             this->action_info.push_back("ForceOff");
+//             this->action_info.push_back("ForceRestart");
+//             this->action_info.push_back("ForceOn");
+//             this->action_info.push_back("GracefulShutdown");
+//             this->action_info.push_back("GracefulRestart");
+//             this->action_info.push_back("Nmi");
+//             this->action_info.push_back("PushPowerButton");
+//         }
+
+//     };
+//     ~Actions()
+//     {
+//         g_record.erase(this->odata.id);
+
+//     };
+
+//     json::value get_json(void);
+//     bool load_json(void);
+
+// };
 
 
 /**
@@ -558,6 +679,7 @@ public:
  * @brief Resource map of resource
  */
 extern unordered_map<string, Resource *> g_record;
+extern map<string, string> module_id_table;
 // extern unordered_map<string, unordered_map<string, Task *> > task_map;
 
 
@@ -789,6 +911,16 @@ public:
 
         g_record[ODATA_ACCOUNT_SERVICE_ID] = this;
     };
+    // AccountService(const string _odata_id) : Resource(ACCOUNT_SERVICE_TYPE, _odata_id, ODATA_ACCOUNT_SERVICE_TYPE)
+    // {
+    //     this->account_collection = new Collection(_odata_id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
+    //     this->account_collection->name = "Remote Accounts Collection";
+
+    //     this->role_collection = new Collection(_odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
+    //     this->role_collection->name = "Roles Collection";
+    //     // 매니저에 들어가는 리모트어카운트서비스 하는중
+
+    // };
     ~AccountService()
     {
         g_record.erase(this->odata.id);
@@ -798,69 +930,6 @@ public:
     bool load_json(void);
 };
 
-/**
- * @brief Redfish resource of Actions
- * @authors 강
- * @details Actions 클래스가 해당하는 건 /Actions가 아니라 뒤에 더 붙는 /Actions/~~~~.#### 에 해당함
- * 앞에 Actions는 그냥 그걸 담고있는 리소스 안에 컬렉션으로 만들어놓을거임
- */
-
-class Actions : public Resource
-{
-    public:
-    string id;
-    string target; //uri
-    string act_type;
-    string action_name; // action_by.action_what
-    string action_by; 
-    string action_what; // action_by.action_what 의 형태
-    vector<string> action_info;
-
-    // for parsing
-    string uri;
-    vector<string> uri_tokens;
-
-    Actions(const string _odata_id) : Resource(ACTIONS_TYPE, _odata_id, ODATA_ACTIONS_TYPE)
-    {
-        // cout << "odata : " << _odata_id << endl;
-        this->uri = _odata_id;
-        this->uri_tokens = string_split(this->uri, '/');
-        string last = uri_tokens[uri_tokens.size()-1];
-        vector<string> v = string_split(last, '.');
-        this->action_by = v.at(0);
-        this->action_what = v.at(1);
-        this->target = _odata_id;
-
-        if(action_what == "Reset")
-        {
-            this->action_info.push_back("On");
-            this->action_info.push_back("ForceOff");
-            this->action_info.push_back("ForceRestart");
-            this->action_info.push_back("ForceOn");
-            this->action_info.push_back("GracefulShutdown");
-            this->action_info.push_back("GracefulRestart");
-            this->action_info.push_back("Nmi");
-            this->action_info.push_back("PushPowerButton");
-        }
-
-        g_record[_odata_id] = this;
-
-    }
-    Actions(const string _odata_id, const string _act_type) : Actions(_odata_id)
-    {
-        this->act_type = _act_type;
-
-    };
-    ~Actions()
-    {
-        g_record.erase(this->odata.id);
-
-    };
-
-    json::value get_json(void);
-    bool load_json(void);
-
-};
 
 /**
  * @brief Redfish resource of Log Service
@@ -921,6 +990,8 @@ class LogService : public Resource
     Status status;
 
     Collection *entry;
+    // Collection *actions;
+    vector<Actions *> actions;
 
     LogService(const string _odata_id) : Resource(LOG_SERVICE_TYPE, _odata_id, ODATA_LOG_SERVICE_TYPE)
     {
@@ -937,6 +1008,14 @@ class LogService : public Resource
 
         this->entry = new Collection(_odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
         this->entry->name = "Log Entry Collection";
+
+
+        Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
+        actions.push_back(act);
+        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
+        // this->actions->name = "LogService Actions Collection";
+        // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
+        // this->actions->add_member(act);
 
         g_record[_odata_id] = this;
 
@@ -1360,50 +1439,53 @@ public:
 
     EthernetInterfaces(const string _odata_id) : Resource(ETHERNET_INTERFACE_TYPE, _odata_id, ODATA_ETHERNET_INTERFACE_TYPE)
     {
-        this->id = "";
-        this->description = "Manager NIC 1";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->link_status = "LinkUp";
-        this->permanent_mac_address = "12:44:6A:3B:04:11";
-        this->mac_address = "12:44:6A:3B:04:11";
-        this->speed_Mbps = 1000;
-        this->autoneg = true;
-        this->full_duplex = true;
-        this->mtu_size = 1500;
-        this->hostname = "web483";
-        this->fqdn = "web483.contoso.com";
-        this->name_servers.push_back("names.contoso.com");
+        // this->id = "";
+        // this->description = "Manager NIC 1";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
+        // this->link_status = "LinkUp";
+        // this->permanent_mac_address = "12:44:6A:3B:04:11";
+        // this->mac_address = "12:44:6A:3B:04:11";
+        // this->speed_Mbps = 1000;
+        // this->autoneg = true;
+        // this->full_duplex = true;
+        // this->mtu_size = 1500;
+        // this->hostname = "web483";
+        // this->fqdn = "web483.contoso.com";
+        // this->name_servers.push_back("names.contoso.com");
 
-        IPv4_Address add4;
-        add4.address = "192.168.0.10";
-        add4.subnet_mask = "255.255.252.0";
-        add4.address_origin = "DHCP";
-        add4.gateway = "192.168.0.1";
-        this->v_ipv4.push_back(add4);
+        // IPv4_Address add4;
+        // add4.address = "192.168.0.10";
+        // add4.subnet_mask = "255.255.252.0";
+        // add4.address_origin = "DHCP";
+        // add4.gateway = "192.168.0.1";
+        // this->v_ipv4.push_back(add4);
 
-        IPv6_Address add6;
-        add6.address = "fe80::1ec1:deff:fe6f:1e24";
-        add6.address_origin = "SLAAC";
-        add6.address_state = "Preferred";
-        add6.prefix_length = 64;
-        this->v_ipv6.push_back(add6);
+        // IPv6_Address add6;
+        // add6.address = "fe80::1ec1:deff:fe6f:1e24";
+        // add6.address_origin = "SLAAC";
+        // add6.address_state = "Preferred";
+        // add6.prefix_length = 64;
+        // this->v_ipv6.push_back(add6);
 
-        this->dhcp_v4.dhcp_enabled = true;
-        this->dhcp_v4.use_dns_servers = true;
-        this->dhcp_v4.use_ntp_servers = false;
-        this->dhcp_v4.use_gateway = true;
-        this->dhcp_v4.use_static_routes = true;
-        this->dhcp_v4.use_domain_name = true;
+        // this->dhcp_v4.dhcp_enabled = true;
+        // this->dhcp_v4.use_dns_servers = true;
+        // this->dhcp_v4.use_ntp_servers = false;
+        // this->dhcp_v4.use_gateway = true;
+        // this->dhcp_v4.use_static_routes = true;
+        // this->dhcp_v4.use_domain_name = true;
 
-        this->dhcp_v6.operating_mode = "Stateful";
-        this->dhcp_v6.use_dns_servers = true;
-        this->dhcp_v6.use_ntp_servers = false;
-        this->dhcp_v6.use_domain_name = false;
-        this->dhcp_v6.use_rapid_commit = false;
+        // this->dhcp_v6.operating_mode = "Stateful";
+        // this->dhcp_v6.use_dns_servers = true;
+        // this->dhcp_v6.use_ntp_servers = false;
+        // this->dhcp_v6.use_domain_name = false;
+        // this->dhcp_v6.use_rapid_commit = false;
 
-        this->vlan.vlan_enable = true;
-        this->vlan.vlan_id = 101;
+        // this->vlan.vlan_enable = true;
+        // this->vlan.vlan_id = 101;
+
+
+        // 기존
         // this->macaddress = "";
         // this->description = "";
         // this->mtusize = "";
@@ -1456,13 +1538,15 @@ public:
     Status status;
     Collection *ethernet;
     Collection *log_service;
-    Collection *actions;
+    // Collection *actions;
+    vector<Actions *> actions;
+    AccountService *account_service;
 
 
-    Manager(const string _odata_id, const string _manager_id) : Resource(MANAGER_TYPE, _odata_id, ODATA_MANAGER_TYPE)
+    Manager(const string _odata_id) : Resource(MANAGER_TYPE, _odata_id, ODATA_MANAGER_TYPE)
     {
         this->name = "";
-        this->id = _manager_id;
+        // this->id = _manager_id;
         this->manager_type = "CMM";
         this->description = "CMM Manager";
         this->status.state = STATUS_STATE_ENABLED;
@@ -1495,16 +1579,23 @@ public:
         LogEntry *log = new LogEntry(res_id, "Log Entry 0~");
         logservice->entry->add_member(log);
 
-        this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
-        this->actions->name = "Actions Collection";
-        Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset");
-        this->actions->add_member(act);
+        Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
+        actions.push_back(act);
+
+        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
+        // this->actions->name = "Managers Actions Collection";
+        // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
+        // this->actions->add_member(act);
 
 
 
         ((Collection *)g_record[ODATA_MANAGER_ID])->add_member(this);
 
         g_record[_odata_id] = this;
+    }
+    Manager(const string _odata_id, const string _manager_id) : Manager(_odata_id)
+    {
+        this->id = _manager_id;
     };
     ~Manager()
     {
@@ -2153,27 +2244,27 @@ class SimpleStorage : public Resource
     string description;
     string uefi_device_path;
     Status status;
-    string file_system;
+    // string file_system; // Device_info 안으로 들어감
 
     Device_Info info;
     vector<Device_Info> devices;
 
     SimpleStorage(const string _odata_id) : Resource(SIMPLE_STORAGE_TYPE, _odata_id, ODATA_SIMPLE_STORAGE_TYPE)
     {
-        this->description = "System SATA";
-        this->uefi_device_path = "Acpi(PNP0A03, 0) / Pci(1F|1) / Ata(Primary,Master) / HD(Part3, Sig00110011)";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->file_system = "";
+        // this->description = "System SATA";
+        // this->uefi_device_path = "Acpi(PNP0A03, 0) / Pci(1F|1) / Ata(Primary,Master) / HD(Part3, Sig00110011)";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
+        // // this->file_system = "";
 
-        this->info.capacity_KBytes = 8000000;
-        this->info.manufacturer = "Contoso";
-        this->info.model = "3000GT8";
-        this->info.name = "SATA Bay 1";
-        this->info.status.state = STATUS_STATE_ENABLED;
-        this->info.status.health = STATUS_HEALTH_OK;
+        // this->info.capacity_KBytes = 8000000;
+        // this->info.manufacturer = "Contoso";
+        // this->info.model = "3000GT8";
+        // this->info.name = "SATA Bay 1";
+        // this->info.status.state = STATUS_STATE_ENABLED;
+        // this->info.status.health = STATUS_HEALTH_OK;
 
-        this->devices.push_back(info);
+        // this->devices.push_back(info);
 
         g_record[_odata_id] = this;
     }
@@ -2346,29 +2437,33 @@ class Processors : public Resource
     //string UUID?
     ProcessorId p_id;
 
-    Processors(const string _odata_id, const string _processor_id) : Resource(PROCESSOR_TYPE, _odata_id, ODATA_PROCESSOR_TYPE)
+    Processors(const string _odata_id) : Resource(PROCESSOR_TYPE, _odata_id, ODATA_PROCESSOR_TYPE)
     {
-        this->id = _processor_id;
-        this->socket = "CPU 1";
-        this->processor_type = "CPU";
-        this->processor_architecture = "x86";
-        this->instruction_set = "x86-64";
-        this->manufacturer = "Intel(R) Corporation";
-        this->model = "Multi-Core Intel(R) Xeon(R) processor 7xxx Series";
-        this->max_speed_mhz = 3700;
-        this->total_cores = 8;
-        this->total_threads = 16;
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->id = "";
+        // this->socket = "CPU 1";
+        // this->processor_type = "CPU";
+        // this->processor_architecture = "x86";
+        // this->instruction_set = "x86-64";
+        // this->manufacturer = "Intel(R) Corporation";
+        // this->model = "Multi-Core Intel(R) Xeon(R) processor 7xxx Series";
+        // this->max_speed_mhz = 3700;
+        // this->total_cores = 8;
+        // this->total_threads = 16;
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
 
-        this->p_id.vendor_id = "GenuineIntel";
-        this->p_id.identification_registers = "0x34AC34DC8901274A";
-        this->p_id.effective_family = "0x42";
-        this->p_id.effective_model = "0x61";
-        this->p_id.step = "0x1";
-        this->p_id.microcode_info = "0x429943";
+        // this->p_id.vendor_id = "GenuineIntel";
+        // this->p_id.identification_registers = "0x34AC34DC8901274A";
+        // this->p_id.effective_family = "0x42";
+        // this->p_id.effective_model = "0x61";
+        // this->p_id.step = "0x1";
+        // this->p_id.microcode_info = "0x429943";
 
         g_record[_odata_id] = this;
+    }
+    Processors(const string _odata_id, const string _processor_id) : Processors(_odata_id)
+    {
+        this->id = _processor_id;
     };
     ~Processors()
     {
@@ -2397,31 +2492,35 @@ class Memory : public Resource
     vector<unsigned int> max_TDP_milliwatts;
     Status status;
 
-    Memory(const string _odata_id, const string _memory_id) : Resource(MEMORY_TYPE, _odata_id, ODATA_MEMORY_TYPE)
+    Memory(const string _odata_id) : Resource(MEMORY_TYPE, _odata_id, ODATA_MEMORY_TYPE)
     {
-        this->id = _memory_id;
-        this->rank_count = 2;
-        this->capacity_kib = 32768;
-        this->data_width_bits = 64;
-        this->bus_width_bits = 72;
-        this->error_correction = "MultiBitECC";
+        // this->id = _memory_id;
+        // this->rank_count = 2;
+        // this->capacity_kib = 32768;
+        // this->data_width_bits = 64;
+        // this->bus_width_bits = 72;
+        // this->error_correction = "MultiBitECC";
 
-        this->m_location.socket = 1;
-        this->m_location.memory_controller = 1;
-        this->m_location.channel = 1;
-        this->m_location.slot = 1;
+        // this->m_location.socket = 1;
+        // this->m_location.memory_controller = 1;
+        // this->m_location.channel = 1;
+        // this->m_location.slot = 1;
 
-        this->memory_type = "DRAM";
-        this->memory_device_type = "DDR4";
-        this->base_module_type = "RDIMM";
+        // this->memory_type = "DRAM";
+        // this->memory_device_type = "DDR4";
+        // this->base_module_type = "RDIMM";
 
-        this->memory_media.push_back("DRAM");
-        this->max_TDP_milliwatts.push_back(12000);
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->memory_media.push_back("DRAM");
+        // this->max_TDP_milliwatts.push_back(12000);
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
 
         g_record[_odata_id] = this;
     }
+    Memory(const string _odata_id, const string _memory_id) : Memory(_odata_id)
+    {
+        this->id = _memory_id;
+    };
     ~Memory()
     {
         g_record.erase(this->odata.id);
@@ -2474,12 +2573,13 @@ class Systems : public Resource
     // MemorySummary ms;
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
-    Collection *actions;
+    // Collection *actions;
+    vector<Actions *> actions;
     Collection *simple_storage;
 
-    Systems(const string _odata_id, const string _systems_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
+    Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
-        this->id = _systems_id;
+        // this->id = _systems_id;
         // this->sku = "";
         this->system_type = "null";
         this->asset_tag = "null";
@@ -2497,13 +2597,15 @@ class Systems : public Resource
         
         this->status.state = "null";
         this->status.health = "null";
-        
-        
+          
         // this->actions
         this->boot.boot_source_override_enabled = "null";
         this->boot.boot_source_override_target = "null";
         this->boot.boot_source_override_mode = "null";
         this->boot.uefi_target_boot_source_override = "null";
+
+        // this->bios = 0;
+        // null로 넣는법
 
 
 
@@ -2557,10 +2659,13 @@ class Systems : public Resource
         this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
         this->log_service->name = "Log Service Collection";
 
-        this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
-        this->actions->name = "Systems Actions Collection";
-        Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset");
-        this->actions->add_member(act);
+
+        Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
+        actions.push_back(act);
+        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
+        // this->actions->name = "Systems Actions Collection";
+        // Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
+        // this->actions->add_member(act);
 
         this->simple_storage = new Collection(_odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
         this->simple_storage->name = "Simple Storage Collection";
@@ -2571,6 +2676,10 @@ class Systems : public Resource
 
         // cout << "!@#$ sys : " << _odata_id << endl;
         g_record[_odata_id] = this;
+    }
+    Systems(const string _odata_id, const string _systems_id) : Systems(_odata_id)
+    {
+        this->id = _systems_id;
     };
     ~Systems()
     {
@@ -2599,10 +2708,10 @@ public:
     string power_state;
     uint8_t indicator_led;
 
-    double height_mm;
-    double width_mm;
-    double depth_mm;
-    double weight_kg;
+    // double height_mm;
+    // double width_mm;
+    // double depth_mm;
+    // double weight_kg;
     
     Status status;
     Location location;
@@ -2615,10 +2724,10 @@ public:
     Collection *sensors;
 
     // TODO Contains, ManagedBy 추가 필요
-    Chassis(const string _odata_id, const string _chassis_id) : Resource(CHASSIS_TYPE, _odata_id, ODATA_CHASSIS_TYPE)
+    Chassis(const string _odata_id) : Resource(CHASSIS_TYPE, _odata_id, ODATA_CHASSIS_TYPE)
     {
         this->name = "";
-        this->id = _chassis_id;
+        // this->id = _chassis_id;
         this->chassis_type = "";
         this->manufacturer = "";
         this->model = "";
@@ -2642,10 +2751,10 @@ public:
         this->location.placement.rack_offset_units = "";
         this->location.placement.rack_offset = 0;
 
-        this->height_mm = 0;
-        this->width_mm = 0;
-        this->depth_mm = 0;
-        this->weight_kg = 0;
+        // this->height_mm = 0;
+        // this->width_mm = 0;
+        // this->depth_mm = 0;
+        // this->weight_kg = 0;
 
         // Thermal configuration
         this->thermal = new Thermal(this->odata.id + "/Thermal");
@@ -2694,6 +2803,10 @@ public:
         ((Collection *)g_record[ODATA_CHASSIS_ID])->add_member(this);
 
         g_record[_odata_id] = this;
+    }
+    Chassis(const string _odata_id, const string _chassis_id) : Chassis(_odata_id)
+    {
+        this->id = _chassis_id;
     };
     ~Chassis()
     {
@@ -2747,6 +2860,7 @@ public:
 
 
 
+        module_id_table.insert({CMM_ID, CMM_ADDRESS});
         /**
          * @brief System init
          * @authors 강

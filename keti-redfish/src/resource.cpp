@@ -27,40 +27,40 @@ bool init_resource(void)
     return true;
 }
 
-void init_record_bmc(void)
-{
-    string odata_id = ODATA_SYSTEM_ID;
-    odata_id = odata_id + "/2";
-    Systems *system = new Systems(odata_id, "2~");
-    system->name = "EdgeServer BMC 2 System";
-    /* System 정보 넣기 필요 */
+// void init_record_bmc(void) 
+// {
+//     string odata_id = ODATA_SYSTEM_ID;
+//     odata_id = odata_id + "/2";
+//     Systems *system = new Systems(odata_id, "2~");
+//     system->name = "EdgeServer BMC 2 System";
+//     /* System 정보 넣기 필요 */
 
-    odata_id = ODATA_CHASSIS_ID;
-    odata_id = odata_id + "/2";
-    Chassis *chassis = new Chassis(odata_id, "2~");
-    chassis->name = "EdgeServer BMC 2 Chassis";
-    chassis->chassis_type = "Blade";
-    /* Chassis 정보 넣기 필요
-    서비스루트 만들때처럼 temperature 5개 만드는건 안했음아직*/
+//     odata_id = ODATA_CHASSIS_ID;
+//     odata_id = odata_id + "/2";
+//     Chassis *chassis = new Chassis(odata_id, "2~");
+//     chassis->name = "EdgeServer BMC 2 Chassis";
+//     chassis->chassis_type = "Blade";
+//     /* Chassis 정보 넣기 필요
+//     서비스루트 만들때처럼 temperature 5개 만드는건 안했음아직*/
 
-    odata_id = ODATA_MANAGER_ID;
-    odata_id = odata_id + "/2";
-    Manager *manager = new Manager(odata_id, "2~");
-    manager->name = "EdgeServer BMC 2 Manager";
-    manager->manager_type = "Blade";
-    manager->firmware_version = "v1";
-    /* Manager 정보 넣기 필요 */ 
+//     odata_id = ODATA_MANAGER_ID;
+//     odata_id = odata_id + "/2";
+//     Manager *manager = new Manager(odata_id, "2~");
+//     manager->name = "EdgeServer BMC 2 Manager";
+//     manager->manager_type = "Blade";
+//     manager->firmware_version = "v1";
+//     /* Manager 정보 넣기 필요 */ 
 
-    /**
-     * @todo 현재
-     * /redfish/v1/Systems/2
-     * /redfish/v1/Managers/2
-     * /redfish/v1/Chassis/2 3개만 해놧는데
-     * /redfish/v1/Systems/2/~~~~ 뒤에 붙는거까지 다 정보요청해서 읽고 레코드화 json화 해야함.
-     */
+//     /**
+//      * @todo 현재
+//      * /redfish/v1/Systems/2
+//      * /redfish/v1/Managers/2
+//      * /redfish/v1/Chassis/2 3개만 해놧는데
+//      * /redfish/v1/Systems/2/~~~~ 뒤에 붙는거까지 다 정보요청해서 읽고 레코드화 json화 해야함.
+//      */
     
     
-}
+// }
 
 // Resource start
 json::value Resource::get_json(void)
@@ -147,25 +147,10 @@ json::value Collection::get_json(void)
     return j;
 }
 
-// json::value Collection::get_json(void)
-// {
-//     auto j = this->Resource::get_json();
-//     j[U("Members")] = json::value::array();
-//     for (unsigned int i = 0; i < this->members.size(); i++)
-//         j[U("Members")][i] = this->members[i];
-//     j[U("Members@odata.count")] = json::value::number(U(this->members.size()));
-//     return j;
-// }
-
 void Collection::add_member(Resource *_resource)
 {
     this->members.push_back(_resource);
 }
-
-// void Collection::add_member(string _odata_id)
-// {
-//     this->members.push_back(_odata_id);
-// }
 
 bool Collection::load_json(void)
 {
@@ -196,6 +181,7 @@ bool Collection::load_json(void)
 // List start
 json::value List::get_json(void)
 {
+    // json::value j;
     auto j = this->Resource::get_json();
 
     j[U(this->name)] = json::value::array();
@@ -234,14 +220,14 @@ void List::add_member(Resource *_resource)
 // Actions start
 json::value Actions::get_json(void)
 {
-    auto j = this->Resource::get_json();
+    json::value j;
     
     string act = "#";
     act = act + this->action_by + this->action_what;
 
     json::value k = json::value::object();
     k[U("target")] = json::value::string(U(this->target));
-    if(this->action_what == "Reset")
+    if(this->act_type == "Reset")
     {
         k[U("ResetType@Redfish.AllowableValues")] = json::value::array();
         for(int i=0; i<this->action_info.size(); i++)
@@ -409,6 +395,23 @@ json::value LogService::get_json(void)
 
     j[U("Entries")] = this->entry->get_odata_id_json();
 
+    json::value j_act;
+    for(int i=0; i<this->actions.size(); i++)
+    {
+        string act = "#";
+        act = act + this->actions[i]->action_name;
+        j_act[U(act)] = this->actions[i]->get_json();
+    }
+    // std::vector<Resource *>::iterator iter;
+    // for(iter = this->actions->members.begin(); iter != this->actions->members.end(); iter++)
+    // {
+    //     string act = "#";
+    //     act = act + ((Actions *)(*iter))->action_name;
+    //     // act = act + ((Actions *)*iter)->action_by + "." + ((Actions *)*iter)->action_what;
+    //     j_act[U(act)] = ((Actions *)(*iter))->get_json();
+    // }
+    j[U("Actions")] = j_act;
+
 
     return j;
 }
@@ -545,6 +548,9 @@ json::value SoftwareInventory::get_json(void)
 // Temperature start
 json::value Temperature::get_json(void)
 {
+    // json::value j;
+    // json::value k;
+
     auto j = this->Resource::get_json();
     json::value k;
     
@@ -604,6 +610,7 @@ pplx::task<void> Temperature::read(uint8_t _sensor_index, uint8_t _sensor_contex
 // Fan start
 json::value Fan::get_json(void)
 {
+    // json::value j;
     auto j = this->Resource::get_json();
     json::value k;
 
@@ -731,6 +738,7 @@ json::value Sensor::get_json(void)
 
 json::value PowerSupply::get_json(void)
 {
+    // json::value j, k;
     auto j = this->Resource::get_json();
     json::value k;
 
@@ -772,6 +780,7 @@ json::value PowerSupply::get_json(void)
 
 json::value Voltage::get_json(void)
 {
+    // json::value j, k;
     auto j = this->Resource::get_json();
     json::value k;
 
@@ -800,6 +809,7 @@ json::value Voltage::get_json(void)
 
 json::value PowerControl::get_json(void)
 {
+    // json::value j, k;
     auto j = this->Resource::get_json();
     json::value k;
 
@@ -869,10 +879,10 @@ json::value Chassis::get_json(void)
     j[U("AssetTag")] = json::value::string(U(this->asset_tag));
     j[U("PowerState")] = json::value::string(U(this->power_state));
 
-    j[U("HeightMm")] = json::value::number(U(this->height_mm));
-    j[U("WidthMm")] = json::value::number(U(this->width_mm));
-    j[U("DepthMm")] = json::value::number(U(this->depth_mm));
-    j[U("WeightKg")] = json::value::number(U(this->weight_kg));
+    // j[U("HeightMm")] = json::value::number(U(this->height_mm));
+    // j[U("WidthMm")] = json::value::number(U(this->width_mm));
+    // j[U("DepthMm")] = json::value::number(U(this->depth_mm));
+    // j[U("WeightKg")] = json::value::number(U(this->weight_kg));
 
     switch (this->indicator_led)
     {
@@ -977,13 +987,19 @@ json::value Manager::get_json(void)
     j[U("Status")] = k;
 
     json::value j_act;
-    std::vector<Resource *>::iterator iter;
-    for(iter = this->actions->members.begin(); iter != this->actions->members.end(); iter++)
+    for(int i=0; i<this->actions.size(); i++)
     {
         string act = "#";
-        act = act + ((Actions *)*iter)->action_by + "." + ((Actions *)*iter)->action_what;
-        j_act[U(act)] = ((Actions *)(*iter))->get_json();
+        act = act + this->actions[i]->action_name;
+        j_act[U(act)] = this->actions[i]->get_json();
     }
+    // std::vector<Resource *>::iterator iter;
+    // for(iter = this->actions->members.begin(); iter != this->actions->members.end(); iter++)
+    // {
+    //     string act = "#";
+    //     act = act + ((Actions *)*iter)->action_by + "." + ((Actions *)*iter)->action_what;
+    //     j_act[U(act)] = ((Actions *)(*iter))->get_json();
+    // }
     j[U("Actions")] = j_act;
 
     return j;
@@ -1107,7 +1123,7 @@ json::value NetworkProtocol::get_json(void)
     j[U("Status")] = k;
 
     snmp[U("ProtocolEnabled")] = json::value::boolean(this->snmp_enabled);
-    snmp[U("Port")] = json::value::number(U(this->http_port));
+    snmp[U("Port")] = json::value::number(U(this->snmp_port));
     j[U("SNMP")]=snmp;
     
     ipmi[U("ProtocolEnabled")] = json::value::boolean(this->ipmi_enabled);
@@ -1247,9 +1263,15 @@ json::value Systems::get_json(void)
 
     // cout << " 여기일거야 " << endl;
 
-    j[U("Bios")] = this->bios->get_odata_id_json();
-
+    // if(this->bios)
+    // {
+        j[U("Bios")] = this->bios->get_odata_id_json();
+    //     cout << "있어서 트루" << endl;
+    // }
+    // else
+    //     cout << "없어서 폴스" << endl;
     // cout << " 그치? " << endl;
+    
     j[U("Processors")] = this->processor->get_odata_id_json();
     j[U("Memory")] = this->memory->get_odata_id_json();
     j[U("EthernetInterfaces")] = this->ethernet->get_odata_id_json();
@@ -1257,13 +1279,20 @@ json::value Systems::get_json(void)
     j[U("LogServices")] = this->log_service->get_odata_id_json();
 
     json::value j_act;
-    std::vector<Resource *>::iterator iter;
-    for(iter = this->actions->members.begin(); iter != this->actions->members.end(); iter++)
+    for(int i=0; i<this->actions.size(); i++)
     {
         string act = "#";
-        act = act + ((Actions *)*iter)->action_by + "." + ((Actions *)*iter)->action_what;
-        j_act[U(act)] = ((Actions *)(*iter))->get_json();
+        act = act + this->actions[i]->action_name;
+        j_act[U(act)] = this->actions[i]->get_json();
     }
+    // std::vector<Resource *>::iterator iter;
+    // for(iter = this->actions->members.begin(); iter != this->actions->members.end(); iter++)
+    // {
+    //     string act = "#";
+    //     act = act + ((Actions *)(*iter))->action_name;
+    //     // act = act + ((Actions *)*iter)->action_by + "." + ((Actions *)*iter)->action_what;
+    //     j_act[U(act)] = ((Actions *)(*iter))->get_json();
+    // }
     j[U("Actions")] = j_act;
     
     return j;
@@ -1378,7 +1407,7 @@ json::value SimpleStorage::get_json(void)
     j[U("Id")] = json::value::string(U(this->id));
     j[U("Description")] = json::value::string(U(this->description));
     j[U("UefiDevicePath")] = json::value::string(U(this->uefi_device_path));
-    j[U("FileSystem")] = json::value::string(U(this->file_system));
+    // j[U("FileSystem")] = json::value::string(U(this->file_system));
 
 
     json::value k;
@@ -1394,6 +1423,7 @@ json::value SimpleStorage::get_json(void)
         o[U("Manufacturer")] = json::value::string(U(this->devices[i].manufacturer));
         o[U("Model")] = json::value::string(U(this->devices[i].model));
         o[U("CapacityKBytes")] = json::value::number(U(this->devices[i].capacity_KBytes));
+        o[U("FileSystem")] = json::value::string(U(this->devices[i].file_system));
 
         json::value ok;
         ok[U("State")] = json::value::string(U(this->devices[i].status.state));

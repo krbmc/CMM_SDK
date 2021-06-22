@@ -28,34 +28,38 @@ public:
         this->IsChanged=IsChanged;
 
         cout << "start REST service" << endl;
-        string uri = "https://";
+        string uri = "http://";
         try
         {
             uri = uri + PeerPrimaryAddress + ":" + to_string(PeerPort);
             json::value obj, returnobj;
-            obj["PeerPrimaryAddress"] = json::value::string(PeerPrimaryAddress);
-            obj["PrimaryPort"] = json::value::number(PeerPort);
-            obj["PeerSecondaryAddress"] = json::value::string(PeerSecondaryAddress);
-            obj["SecondPort"] = json::value::number(SecondaryPort);
-            obj["Enabled"] = json::value::boolean(true);
+            obj[U("PeerPrimaryAddress")] = json::value::string(U(PeerPrimaryAddress));
+            obj[U("PrimaryPort")] = json::value::number(PeerPort);
+            obj[U("PeerSecondaryAddress")] = json::value::string(U(PeerSecondaryAddress));
+            obj[U("SecondPort")] = json::value::number(SecondaryPort);
+            obj[U("Enabled")] = json::value::boolean(true);
+            obj[U("Origin")]= json::value::boolean(true);
             returnobj = heart_request("/CMM_HA", uri, obj);
+            log(info)<<"Primary CMM_SDK 전송";
         }
         catch (...)
         {
             log(info) << "PeerPrimary rest Init error";
         }
 
-        uri = "https://";
+        uri = "http://";
         try
         {
             uri = uri + PeerSecondaryAddress + ":" + to_string(SecondaryPort);
             json::value obj, returnobj;
-            obj["PeerPrimaryAddress"] = json::value::string(PeerPrimaryAddress);
-            obj["PrimaryPort"] = json::value::number(PeerPort);
-            obj["PeerSecondaryAddress"] = json::value::string(PeerSecondaryAddress);
-            obj["SecondPort"] = json::value::number(SecondaryPort);
-            obj["Enabled"] = json::value::boolean(false);
+            obj[U("PeerPrimaryAddress")] = json::value::string(U(PeerPrimaryAddress));
+            obj[U("PrimaryPort")] = json::value::number(PeerPort);
+            obj[U("PeerSecondaryAddress")] = json::value::string(U(PeerSecondaryAddress));
+            obj[U("SecondPort")] = json::value::number(SecondaryPort);
+            obj[U("Enabled")] = json::value::boolean(false);
+            obj[U("Origin")]= json::value::boolean(false);
             returnobj = heart_request("/CMM_HA", uri, obj);
+            log(info)<<"Second CMM_SDK 전송";
         }
         catch (...)
         {
@@ -63,7 +67,7 @@ public:
         }
     }
 
-    void TryActiveStandbyMode(bool origin, bool IsActived);
+    bool TryActiveStandbyMode(bool origin, bool IsActived);
 
 
 	~KETI_Switch();

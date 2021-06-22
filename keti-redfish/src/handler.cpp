@@ -68,25 +68,34 @@ void Handler::handle_get(http_request _request)
             }
             else
             {
-                if(uri_tokens[3] == "1")
+                if(uri_tokens[3] == CMM_ID)
                 {
                     //CMM 자체처리
                     do_task_cmm_get(_request);
                 }
-                else if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
                 {
+                    if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
                     // 일단 104번에서 처리
-                    do_task_bmc_get(_request);
-                }
-                else
-                {
-                    _request.reply(status_codes::BadRequest);
-                    return ;
+                        do_task_bmc_get(_request);
+                    else
+                    {
+                        json::value j;
+                        j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+                        _request.reply(status_codes::BadRequest, j);
+                        cout << "Unvalid BMC_id" << endl;
+                        return ;
+                    }
                 }
             }
         }
+        else
+        {
+            // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
+            _request.reply(status_codes::BadRequest);
+            return ;
+        }
 
-        // 아마 /redfish/v1/Managers와 같은 길이 3짜리 전체정보 get하는 녀석들 처리필요할듯
     }
     catch(json::json_exception& e)
     {
@@ -305,11 +314,11 @@ void Handler::handle_delete(http_request _request)
 
 
         }
-        /*
-         * @ brief AccountService/Accounts 로 토큰과함께 들어왔을 때 logout(세션종료)
-         * @ authors 강
-         * @ TODO : 세션종료시 레코드 갱신 작업하고 해당세션json파일 삭제 필요
-         * @ TODO : 현재 Accounts에 GET에서 처리하고있는데 Sessions에 DELETE로 옮길것
+        /**
+         * @brief AccountService/Accounts 로 토큰과함께 들어왔을 때 logout(세션종료)
+         * @authors 강
+         * @TODO : 세션종료시 레코드 갱신 작업하고 해당세션json파일 삭제 필요
+         * @TODO : 현재 Accounts에 GET에서 처리하고있는데 Sessions에 DELETE로 옮길것
         */
         else if(filtered_uri == ODATA_SESSION_ID)
         {
@@ -374,6 +383,24 @@ void Handler::handle_delete(http_request _request)
 void Handler::handle_put(http_request _request)
 {
 
+    log(info) << "Request method: PATCH";
+    string uri = _request.request_uri().to_string();
+    vector<string> uri_tokens = string_split(uri, '/');
+    string filtered_uri = make_path(uri_tokens);
+    log(info) << "Reqeust URL : " << filtered_uri;
+    log(info) << "Request Body : " << _request.to_string();
+
+    try
+    {
+        /* code */
+        // if(uri_tokens.size() )
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
+
     cout << "handle_put request" << endl;
 
     auto j = _request.extract_json().get();
@@ -398,6 +425,7 @@ void Handler::handle_post(http_request _request)
 
     try
     {
+        // /Heartbeat 
         if(uri_tokens.size() == 1 && uri_tokens[0] == "Heartbeat")
         {
             json::value j;
@@ -413,6 +441,7 @@ void Handler::handle_post(http_request _request)
             {
                 /* code */
                 heart_beat_cycle = j_cycle.at("Cycle").as_integer();
+                // cout << heart_beat_cycle << endl;
             }
             catch(const std::exception& e)
             {
@@ -430,6 +459,7 @@ void Handler::handle_post(http_request _request)
             return ;
         }
 
+        // /CMM_HA
         if(uri_tokens.size() == 1 && uri_tokens[0] == "CMM_HA")
         {
             json::value ha_info;
@@ -468,6 +498,9 @@ void Handler::handle_post(http_request _request)
             return ;
 
         }
+
+
+        // /HAswtich
         if(uri_tokens.size() == 1 && uri_tokens[0] == "HAswitch")
         {
             json::value switch_info;
@@ -497,7 +530,9 @@ void Handler::handle_post(http_request _request)
                 return ;
             }
 
-            _request.reply(status_codes::OK);
+            json::value rep;
+            rep[U("Result")] = json::value::boolean(U(true));
+            _request.reply(status_codes::OK, rep);
             return ;
         }
 
@@ -510,20 +545,24 @@ void Handler::handle_post(http_request _request)
             }
             else
             {
-                if(uri_tokens[3] == "1")
+                if(uri_tokens[3] == CMM_ID)
                 {
                     //CMM 자체처리
                     do_task_cmm_post(_request);
                 }
-                else if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
                 {
-                    // 일단 104번에서 처리
-                    do_task_bmc_post(_request);
-                }
-                else
-                {
-                     _request.reply(status_codes::BadRequest);
-                    return ;
+                    if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
+                        do_task_bmc_post(_request);
+                    else
+                    {
+                        json::value j;
+                        j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+                        _request.reply(status_codes::BadRequest, j);
+                        cout << "Unvalid BMC_id" << endl;
+                        return ;
+                    }
+                    
                 }
             }
         }

@@ -16,6 +16,7 @@ set(
     handler.cpp
     util.cpp
     KETI_Switch.cpp
+    TaskServer.cpp
 )
 
 
@@ -38,13 +39,14 @@ add_executable(${OUTPUT} ${SOURCE_FILES})
 target_link_libraries(
     ${OUTPUT} 
     crypto 
-    ssl 
+    ssl
     pam
     pam_misc
     cpprest 
     pthread 
     boost_system 
     boost_log 
-    boost_log_setup 
+    boost_log_setup
+	boost_system
     boost_thread
 )

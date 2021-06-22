@@ -17,27 +17,28 @@ class KETIHA_Sync
 	
 public:
 	KETI_Switch *keti_switch;
-	KETIHA_Sync();
+	KETIHA_Sync(string PeerPrimaryAddress,string PeerSecondaryAddress,int PeerPort,int SecondaryPort,KETIhaStatus *IsSwitch,bool *IsChanged);
 	~KETIHA_Sync();
-
-	KETIhaError Start(const std::string& PeerAddress, int port, std::chrono::milliseconds NetworkTimeout,
-		std::chrono::seconds Heartbeat,bool IsActive, KETIhaStatus *IsSwitch,bool *IsChanged,KETI_Switch *keti_switch);
+	
+	KETIhaError Start(std::chrono::milliseconds NetworkTimeout,std::chrono::seconds Heartbeat,bool IsActive, KETIhaStatus *IsSwitch,bool *IsChanged,KETI_Switch *keti_switch);
 	bool SwitchedAS(bool Actived)
 	{
-		this->IsActive=Actived;
-		this->cur_count=0;
-		*this->IsChanged=true;
-		if(this->IsOrigin&& IsActive)
-			*this->IsSwitch = KETIhaStatus::HA_STATUS_ACTIVE;
-		else if(this->IsOrigin&& !IsActive)
-			*this->IsSwitch = KETIhaStatus::HA_STATUS_STANDBY;
-		else if(!this->IsOrigin&& IsActive)
-			*this->IsSwitch = KETIhaStatus::HA_STATUS_STANDBY;	
-		else if(this->IsOrigin&& !IsActive)
-			*this->IsSwitch = KETIhaStatus::HA_STATUS_ACTIVE;	
+		// this->IsActive=Actived;
+		// this->cur_count=0;
+		// *this->IsChanged=true;
+		// if(this->IsOrigin&& IsActive)
+		// 	*this->IsSwitch = KETIhaStatus::HA_STATUS_ACTIVE;
+		// else if(this->IsOrigin&& !IsActive)
+		// 	*this->IsSwitch = KETIhaStatus::HA_STATUS_STANDBY;
+		// else if(!this->IsOrigin&& IsActive)
+		// 	*this->IsSwitch = KETIhaStatus::HA_STATUS_STANDBY;	
+		// else if(this->IsOrigin&& !IsActive)
+		// 	*this->IsSwitch = KETIhaStatus::HA_STATUS_ACTIVE;	
 	}
-	KETIhaError Stop();
-
+	KETIhaError Stop();	
+	
+	void Thread_Origin_Heart();
+	void Thread_Sub_Heart();
 	KETIhaError SyncData(const string& Data);
 
 private:
@@ -47,17 +48,20 @@ private:
 	atomic<bool> m_Quit;
 	bool IsActive;
 	mutex m_Lock;
-	thread *t_SyncHeartbeat;
-	string m_PeerAddress;
-	bool *IsChanged;
+	thread *t_SyncHeartbeat[3];
 	int max_count;
 	int cur_count;
-	int m_PeerPort;
 	KETIhaStatus *IsSwitch;
 	bool IsOrigin;
+	bool OriginEnabled;
+	bool SubEnabled;
 	chrono::milliseconds m_NetworkTimeout;
-
 	chrono::seconds m_Heartbeat;
 	chrono::milliseconds m_SwitchTimeout;
+	string PeerPrimaryAddress;
+    string PeerSecondaryAddress;
+    int PeerPort;
+    int SecondaryPort;
+    bool *IsChanged;
 };
 
