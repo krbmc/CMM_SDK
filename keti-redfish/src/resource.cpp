@@ -12,18 +12,18 @@ bool init_resource(void)
 {
     g_service_root = new ServiceRoot();
     
+    record_load_json();
+    cout << "\t\t dy : load json complete" << endl;
+    
     // init_record_bmc();
 
     // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
-    // record_save_json();
-    // cout << "\t\t dy : save json complete" << endl;
-    record_load_json();
-    cout << "\t\t dy : load json complete" << endl;
-    // 수정할때 서비스루트 만들고 record_init_load하고 load_json하고 save해야할듯
-
+    record_save_json();
+    cout << "\t\t dy : save json complete" << endl;
+    
     return true;
 }
 
@@ -181,7 +181,6 @@ bool Collection::load_json(void)
 // List start
 json::value List::get_json(void)
 {
-    // json::value j;
     auto j = this->Resource::get_json();
 
     j[U(this->name)] = json::value::array();
@@ -548,16 +547,10 @@ json::value SoftwareInventory::get_json(void)
 // Temperature start
 json::value Temperature::get_json(void)
 {
-    // json::value j;
-    // json::value k;
-
     auto j = this->Resource::get_json();
     json::value k;
     
-    j[U("Name")] = json::value::string(U(this->name));
-    j[U("@odata.id")] = json::value::string(U(this->odata.id));
     j[U("MemberId")] = json::value::string(U(this->member_id));
-
     k[U("State")] = json::value::string(U(this->status.state));
     k[U("Health")] = json::value::string(U(this->status.health));
     j[U("Status")] = k;
@@ -610,12 +603,9 @@ pplx::task<void> Temperature::read(uint8_t _sensor_index, uint8_t _sensor_contex
 // Fan start
 json::value Fan::get_json(void)
 {
-    // json::value j;
     auto j = this->Resource::get_json();
     json::value k;
 
-    j[U("Name")] = json::value::string(U(this->name));
-    j[U("@odata.id")] = json::value::string(U(this->odata.id));
     j[U("MemberId")] = json::value::string(U(this->member_id));
 
     k[U("State")] = json::value::string(U(this->status.state));

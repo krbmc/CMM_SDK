@@ -41,6 +41,7 @@
 #define ODATA_RESOURCE_TYPE "#Resource." ODATA_TYPE_VERSION ".Resource"
 #define ODATA_SERVICE_ROOT_TYPE "#ServiceRoot." ODATA_TYPE_VERSION ".ServiceRoot"
 #define ODATA_COLLECTION_TYPE "#Collection.Collection"
+#define ODATA_LIST_TYPE "#List.List"
 #define ODATA_SYSTEM_COLLECTION_TYPE "#ComputerSystemCollection.ComputerSystemCollection"
 #define ODATA_SYSTEM_TYPE "#ComputerSystem." ODATA_TYPE_VERSION ".ComputerSystem"
 #define ODATA_PROCESSOR_COLLECTION_TYPE "#ProcessorCollection.ProcessorCollection"
@@ -386,7 +387,15 @@ typedef struct _Device_Info
 
 } Device_Info;
 
-
+typedef struct _CertContent {
+    string city;
+    string commonName;
+    string country;
+    string email;
+    string organization;
+    string organizationUnit;
+    string state;
+} CertContent; // dy : in certificate
 
 /**
  * @brief Task Resource에 들어가는 Payload
@@ -746,7 +755,7 @@ public:
     uint8_t member_type;
 
     // Class constructor, destructor oveloading
-    List(const string _odata_id, const uint8_t _member_type) : Resource(LIST_TYPE, _odata_id)
+    List(const string _odata_id, const uint8_t _member_type) : Resource(LIST_TYPE, _odata_id, ODATA_LIST_TYPE)
     {
         this->member_type = _member_type;
         g_record[_odata_id] = this;
