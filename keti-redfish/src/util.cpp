@@ -118,3 +118,13 @@ unsigned int allocate_task_num(void)
         }
     }
 }
+
+/**
+ * @brief get uri, return last string
+ * @author dyk
+ * @return resource type string 
+ */
+string get_last_str(string _uri, string delimiter)
+{
+    return _uri.substr(_uri.rfind(delimiter) + 1);
+}

@@ -98,6 +98,14 @@
 #define ODATA_SOFTWARE_INVENTORY_TYPE "#SoftwareInventory." ODATA_TYPE_VERSION ".SoftwareInventory" // @@@@ 추가
 #define ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE "#SoftwareInventoryCollection.SoftwareInventoryCollection" // @@@@ 추가
 
+// doyoung
+#define ODATA_CERTIFICATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/CertificateService"
+#define ODATA_CERTIFICATE_LOCATION_ID ODATA_CERTIFICATE_SERVICE_ID "/CertificateLocations" 
+#define ODATA_CERTIFICATE_ID "/Certificates/"
+#define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate" // @@@@ 도영 추가
+#define ODATA_CERTIFICATE_LOCATION_TYPE "#CertificateLocation." ODATA_TYPE_VERSION ".CertificateLocation" // @@@@ 도영 추가 
+#define ODATA_CERTIFICATE_SERVICE_TYPE "#CertificateService." ODATA_TYPE_VERSION ".CertificateService" // @@@@ 도영 추가
+
 /**
  * @brief Redfish resource status element
  */
@@ -146,6 +154,24 @@ const std::string currentDateTime();
  */
 #define CMM_ID "1"
 #define CMM_ADDRESS "https://10.0.6.107:443"
+/**
+ * @brief Redfish Certificate Key Usage
+ */
+#define KEY_USAGE_CLIENT_AUTHENTICATION "ClientAuthentication"
+#define KEY_USAGE_CODE_SIGNING "CodeSigning"
+#define KEY_USAGE_CRL_SIGNING "CRLSigning"
+#define KEY_USAGE_DATA_ENCIPHERMENT "DataEncipherment"
+#define KEY_USAGE_DECIPHER_ONLY "DecipherOnly"
+#define KEY_USAGE_DIGITAL_SIGNATURE "DigitalSignature"
+#define KEY_USAGE_EMAIL_PROTECTION "EmailProtection"
+#define KEY_USAGE_ENCIPHER_ONLY "EncipherOnly"
+#define KEY_USAGE_KEY_AGREEMENT "KeyAgreement"
+#define KEY_USAGE_KEY_CERT_SIGN "KeyCertSign"
+#define KEY_USAGE_KEY_ENCIPHERMENT "KeyEncipherment"
+#define KEY_USAGE_NON_REPUDIATION "NonRepudiation"
+#define KEY_USAGE_OCSP_SIGNING "OCSPSigning"
+#define KEY_USAGE_SERVER_AUTHENTICATION "ServerAuthentication"
+#define KEY_USAGE_TIMESTAMPING "Timestamping"
 
 /**
  * @brief Resource class type
@@ -191,7 +217,9 @@ enum RESOURCE_TYPE
     EVENT_DESTINATION_TYPE,
     UPDATE_SERVICE_TYPE,
     SOFTWARE_INVENTORY_TYPE,
-    DESTINATION_TYPE
+    DESTINATION_TYPE,
+    CERTIFICATE_TYPE,
+    CERTIFICATE_SERVICE_TYPE
 };
 
 /**
@@ -619,6 +647,13 @@ public:
     uint8_t type;
 
     // Class constructor, destructor oveloading
+    Resource(const string _odata_id)
+    {
+        this->name = "";
+        this->type = -1;
+        this->odata.id = _odata_id;
+        this->odata.type = "";
+    };
     Resource(const uint8_t _type, const string _odata_id)
     {
         this->name = "";
@@ -630,12 +665,14 @@ public:
     {
         this->odata.type = _odata_type;
     };
-    ~Resource(){};
+    ~Resource(){
+        cout << odata.id << "Resource Destructed.." << endl;
+    };
 
     json::value get_json(void);
     json::value get_odata_id_json(void);
     bool save_json(void);
-    bool load_json(void);
+    bool load_resource_json(json::value &j);
 };
 
 /**
@@ -658,6 +695,7 @@ class Collection : public Resource
 {
 public:
     vector<Resource *> members;
+    vector<string> s_members;
 
     // Class constructor, destructor oveloading
     Collection(const string _odata_id, const string _odata_type) : Resource(COLLECTION_TYPE, _odata_id, _odata_type)
@@ -683,6 +721,7 @@ public:
         //         this->name = "Event Subscriptions Collection";
         //         break;
         // }
+        // cout << "\t\t dy : print collection name " << _odata_id << endl;
         g_record[_odata_id] = this;
     };
     ~Collection()
@@ -890,7 +929,6 @@ public:
     json::value get_json(void);
     bool load_json(void);
 };
-
 
 
 /**
@@ -1206,19 +1244,88 @@ class UpdateService : public Resource
 };
 
 // /**
-//  * @brief Redfish resource of Certificate Service
-//  * @authors 강
+//  * @brief Redfish resource of Certificate
+//  * @authors 김
 //  */
 
-// class CertificateService : public Resource
-// {
-//     public:
+class Certificate : public Resource
+{
+    public:
+    string id;
+    string certificateString;
+    /* available certificate type
+        0. PEM
+        1. PKCS7                    */
+    string certificateType;
+    string validNotBefore; // The date when the certificate becomes valid
+    string validNotAfter; // The date when the certificate is no longer valid
+    CertContent issuer;
+    CertContent subject;
+    vector<string> keyUsage;
 
-// };
+    Certificate(const string _odata_id) : Resource(CERTIFICATE_TYPE, _odata_id, ODATA_CERTIFICATE_TYPE)
+    {
+        this->id = "";
+        this->certificateString = "";
+        this->certificateType = "";
 
+        this->issuer.city = "";
+        this->issuer.commonName = "";
+        this->issuer.country = "";
+        this->issuer.email = "";
+        this->issuer.organization = "";
+        this->issuer.organizationUnit = "";
+        this->issuer.state = "";
 
+        this->subject.city = "";
+        this->subject.commonName = "";
+        this->subject.country = "";
+        this->subject.email = "";
+        this->subject.organization = "";
+        this->subject.organizationUnit = "";
+        this->subject.state = "";
 
+        g_record[_odata_id] = this;
+    
+    }
+    Certificate(const string _odata_id, const string _certificateString, const string _certificateType) : Certificate(_odata_id)
+    {
+        this->certificateString = _certificateString;
+        this->certificateType = _certificateType;
+    };
+    ~Certificate(){
+        g_record.erase(this->odata.id);
+    };
 
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
+
+// Actions 구현 필요. ( GenerateCSR, ReplaceCertificate )
+class CertificateService : public Resource
+{
+    public:
+    string id;
+    Collection *certificate_location;
+    
+    CertificateService() : Resource(CERTIFICATE_SERVICE_TYPE, ODATA_CERTIFICATE_SERVICE_ID, ODATA_CERTIFICATE_SERVICE_TYPE)
+    {
+        this->id = "CertificateService";
+        this->name = "Certificate Service";
+        
+        this->certificate_location = new Collection(ODATA_CERTIFICATE_LOCATION_ID, ODATA_CERTIFICATE_LOCATION_TYPE);
+        this->certificate_location->name = "Certificate Locations";
+
+        g_record[ODATA_CERTIFICATE_SERVICE_ID] = this;
+    }
+    ~CertificateService()
+    {
+        g_record.erase(this->odata.id);
+    }
+
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
 
 /**
  * @brief Redfish resource of managers
@@ -2490,9 +2597,7 @@ class Systems : public Resource
         
         this->status.state = "null";
         this->status.health = "null";
-        
-        
-        
+          
         // this->actions
         this->boot.boot_source_override_enabled = "null";
         this->boot.boot_source_override_target = "null";
@@ -2732,6 +2837,7 @@ public:
     AccountService *account_service;
     SessionService *session_service;
     TaskService *task_service;
+    CertificateService *certificate_service;
     // Collection *task_service;
     // Collection *event_service;
 
@@ -2886,6 +2992,25 @@ public:
 
         }
 
+        /**
+         * @brief Certificate init
+         * @authors 김
+         */
+        certificate_service = new CertificateService();
+
+        // test data
+        // string temp_odata_id = ODATA_ACCOUNT_ID;
+        // temp_odata_id += "/10";
+        // temp_odata_id += ODATA_CERTIFICATE_ID;
+        // temp_odata_id += "10";
+
+        // string temp_cert_string = "------BEGIN CERTIFICATE-----\nMIIFsTCC [**truncated example**] GXG5zljlu\n-----ENDCERTIFICATE-----";
+        // string temp_cert_type = "PEM";    
+        
+        // Certificate *test_cert = new Certificate(temp_odata_id, temp_cert_string, temp_cert_type);
+        
+        // certificate_service->certificate_location->add_member(test_cert);
+        
         /**
          * @authors 강
          */
