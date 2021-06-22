@@ -526,6 +526,13 @@ public:
     uint8_t type;
 
     // Class constructor, destructor oveloading
+    Resource(const string _odata_id)
+    {
+        this->name = "";
+        this->type = -1;
+        this->odata.id = _odata_id;
+        this->odata.type = "";
+    };
     Resource(const uint8_t _type, const string _odata_id)
     {
         this->name = "";
@@ -537,12 +544,14 @@ public:
     {
         this->odata.type = _odata_type;
     };
-    ~Resource(){};
+    ~Resource(){
+        cout << odata.id << "Resource Destructed.." << endl;
+    };
 
     json::value get_json(void);
     json::value get_odata_id_json(void);
     bool save_json(void);
-    bool load_json(void);
+    bool load_resource_json(json::value &j);
 };
 
 /**
@@ -564,6 +573,7 @@ class Collection : public Resource
 {
 public:
     vector<Resource *> members;
+    vector<string> s_members;
 
     // Class constructor, destructor oveloading
     Collection(const string _odata_id, const string _odata_type) : Resource(COLLECTION_TYPE, _odata_id, _odata_type)
@@ -589,6 +599,7 @@ public:
         //         this->name = "Event Subscriptions Collection";
         //         break;
         // }
+        // cout << "\t\t dy : print collection name " << _odata_id << endl;
         g_record[_odata_id] = this;
     };
     ~Collection()
@@ -1163,21 +1174,21 @@ class Certificate : public Resource
     public:
     string id;
     string certificateString;
-    /* available certification type
+    /* available certificate type
         0. PEM
         1. PKCS7                    */
-    string certificationType;
+    string certificateType;
     string validNotBefore; // The date when the certificate becomes valid
     string validNotAfter; // The date when the certificate is no longer valid
     CertContent issuer;
     CertContent subject;
     vector<string> keyUsage;
 
-    Certificate(const string _odata_id, const string _certificateString, const string _certificationType) : Resource(CERTIFICATE_TYPE, _odata_id, ODATA_CERTIFICATE_TYPE)
+    Certificate(const string _odata_id) : Resource(CERTIFICATE_TYPE, _odata_id, ODATA_CERTIFICATE_TYPE)
     {
         this->id = "";
-        this->certificateString = _certificateString;
-        this->certificationType = _certificationType;
+        this->certificateString = "";
+        this->certificateType = "";
 
         this->issuer.city = "";
         this->issuer.commonName = "";
@@ -1196,15 +1207,19 @@ class Certificate : public Resource
         this->subject.state = "";
 
         g_record[_odata_id] = this;
-        cout << "\t\t dy : odata_id : " << _odata_id << endl;
-        // cout << "\t\tdy : cert : " << record_get_json(_odata_id) << endl;
+    
+    }
+    Certificate(const string _odata_id, const string _certificateString, const string _certificateType) : Certificate(_odata_id)
+    {
+        this->certificateString = _certificateString;
+        this->certificateType = _certificateType;
     };
     ~Certificate(){
         g_record.erase(this->odata.id);
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 // Actions 구현 필요. ( GenerateCSR, ReplaceCertificate )
@@ -1223,7 +1238,6 @@ class CertificateService : public Resource
         this->certificate_location->name = "Certificate Locations";
 
         g_record[ODATA_CERTIFICATE_SERVICE_ID] = this;
-        cout << "\t\tdy : cert service : " << record_get_json(ODATA_CERTIFICATE_SERVICE_ID) << endl;
     }
     ~CertificateService()
     {
@@ -1231,7 +1245,7 @@ class CertificateService : public Resource
     }
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -2870,24 +2884,19 @@ public:
          */
         certificate_service = new CertificateService();
 
-        //test data
-        string temp_odata_id = ODATA_ACCOUNT_ID;
-        temp_odata_id += "/10";
-        temp_odata_id += ODATA_CERTIFICATE_ID;
-        temp_odata_id += "10";
+        // test data
+        // string temp_odata_id = ODATA_ACCOUNT_ID;
+        // temp_odata_id += "/10";
+        // temp_odata_id += ODATA_CERTIFICATE_ID;
+        // temp_odata_id += "10";
 
-        string temp_cert_string = "------BEGIN CERTIFICATE-----\nMIIFsTCC [**truncated example**] GXG5zljlu\n-----ENDCERTIFICATE-----";
-        string temp_cert_type = "PEM";    
+        // string temp_cert_string = "------BEGIN CERTIFICATE-----\nMIIFsTCC [**truncated example**] GXG5zljlu\n-----ENDCERTIFICATE-----";
+        // string temp_cert_type = "PEM";    
         
-        Certificate *test_cert = new Certificate(temp_odata_id, temp_cert_string, temp_cert_type);
+        // Certificate *test_cert = new Certificate(temp_odata_id, temp_cert_string, temp_cert_type);
         
-        certificate_service->certificate_location->add_member(test_cert);
-        cout << "\t\t dy : checkpoint 1" << endl;
-        cout << "\t\t dy : certificate json => " << record_get_json(temp_odata_id).serialize() << endl;
-        cout << "\t\t dy : checkpoint 2" << endl;
+        // certificate_service->certificate_location->add_member(test_cert);
         
-        // cout << "\t\t dy : certificate service id : " << certificate_service->odata.id << endl;
-        // cout << "\t\t dy : certificate id : " << certificate_service->certificate_location->members[0]->odata.id << endl;
         /**
          * @authors 강
          */

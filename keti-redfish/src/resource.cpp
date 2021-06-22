@@ -10,16 +10,18 @@ extern ServiceRoot *g_service_root;
  */
 bool init_resource(void)
 {
-    // record_init_load("/redfish");
     g_service_root = new ServiceRoot();
-    // record_init_load("/redfish");
-    init_record_bmc();
+    
+    // init_record_bmc();
 
-    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-
-    // record_load_json();
-    record_save_json();
+    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // cout << "\t\t dy : add new bmc complete" << endl;
+    
+    // record_save_json();
+    // cout << "\t\t dy : save json complete" << endl;
+    record_load_json();
+    cout << "\t\t dy : load json complete" << endl;
     // 수정할때 서비스루트 만들고 record_init_load하고 load_json하고 save해야할듯
 
     return true;
@@ -67,6 +69,7 @@ json::value Resource::get_json(void)
     j[U("@odata.type")] = json::value::string(U(this->odata.type));
     j[U("Name")] = json::value::string(U(this->name));
     j[U("@odata.id")] = json::value::string(U(this->odata.id));
+    j["type"] = json::value::string(to_string(this->type)); // uint_8
     return j;
 }
 
@@ -97,14 +100,14 @@ bool Resource::save_json(void)
     ofstream out(this->odata.id + ".json");
     out << record_get_json(this->odata.id).serialize() << endl;
     out.close();
+    cout << "\t\t dy : save complete : " << this->odata.id + ".json" << endl;
 
     return true;
 }
 
-bool Resource::load_json(void)
+bool Resource::load_resource_json(json::value &j)
 {
-    json::value j;
-
+    int type;
     try
     {
         ifstream target_file(this->odata.id + ".json");
@@ -114,6 +117,13 @@ bool Resource::load_json(void)
         target_file.close();
 
         j = json::value::parse(string_stream);
+        // cout << "\t\t dy in load resource : " << j << endl;
+
+        this->name = j.at("Name").as_string();
+        this->type = atoi(j.at("type").as_string().c_str());
+        this->odata.id = j.at("@odata.id").as_string();
+        this->odata.type = j.at("@odata.type").as_string();
+        g_record[this->odata.id] = this;
     }
     catch (json::json_exception &e)
     {
@@ -121,7 +131,7 @@ bool Resource::load_json(void)
         return false;
     }
 
-    this->name = j.at("Name").as_string();
+    
     return true;
 }
 // Resource end
@@ -137,10 +147,25 @@ json::value Collection::get_json(void)
     return j;
 }
 
+// json::value Collection::get_json(void)
+// {
+//     auto j = this->Resource::get_json();
+//     j[U("Members")] = json::value::array();
+//     for (unsigned int i = 0; i < this->members.size(); i++)
+//         j[U("Members")][i] = this->members[i];
+//     j[U("Members@odata.count")] = json::value::number(U(this->members.size()));
+//     return j;
+// }
+
 void Collection::add_member(Resource *_resource)
 {
     this->members.push_back(_resource);
 }
+
+// void Collection::add_member(string _odata_id)
+// {
+//     this->members.push_back(_odata_id);
+// }
 
 bool Collection::load_json(void)
 {
@@ -171,7 +196,8 @@ bool Collection::load_json(void)
 // List start
 json::value List::get_json(void)
 {
-    json::value j;
+    auto j = this->Resource::get_json();
+
     j[U(this->name)] = json::value::array();
     for (unsigned int i = 0; i < this->members.size(); i++)
         switch (this->member_type)
@@ -208,7 +234,8 @@ void List::add_member(Resource *_resource)
 // Actions start
 json::value Actions::get_json(void)
 {
-    json::value j;
+    auto j = this->Resource::get_json();
+    
     string act = "#";
     act = act + this->action_by + this->action_what;
 
@@ -518,9 +545,9 @@ json::value SoftwareInventory::get_json(void)
 // Temperature start
 json::value Temperature::get_json(void)
 {
-    json::value j;
+    auto j = this->Resource::get_json();
     json::value k;
-
+    
     j[U("Name")] = json::value::string(U(this->name));
     j[U("@odata.id")] = json::value::string(U(this->odata.id));
     j[U("MemberId")] = json::value::string(U(this->member_id));
@@ -577,7 +604,7 @@ pplx::task<void> Temperature::read(uint8_t _sensor_index, uint8_t _sensor_contex
 // Fan start
 json::value Fan::get_json(void)
 {
-    json::value j;
+    auto j = this->Resource::get_json();
     json::value k;
 
     j[U("Name")] = json::value::string(U(this->name));
@@ -704,7 +731,8 @@ json::value Sensor::get_json(void)
 
 json::value PowerSupply::get_json(void)
 {
-    json::value j, k;
+    auto j = this->Resource::get_json();
+    json::value k;
 
     j[U("MemberId")] = json::value::string(U(this->member_id));
     j[U("@odata.id")] = json::value::string(U(this->odata.id));
@@ -744,7 +772,8 @@ json::value PowerSupply::get_json(void)
 
 json::value Voltage::get_json(void)
 {
-    json::value j, k;
+    auto j = this->Resource::get_json();
+    json::value k;
 
     j[U("MemberId")] = json::value::string(U(this->member_id));
     j[U("@odata.id")] = json::value::string(U(this->odata.id));
@@ -771,7 +800,8 @@ json::value Voltage::get_json(void)
 
 json::value PowerControl::get_json(void)
 {
-    json::value j, k;
+    auto j = this->Resource::get_json();
+    json::value k;
 
     j[U("MemberId")] = json::value::string(U(this->member_id));
     j[U("@odata.id")] = json::value::string(U(this->odata.id));
@@ -1440,14 +1470,11 @@ json::value Memory::get_json(void)
 // dy : certificate start
 json::value Certificate::get_json(void)
 {
-    cout << "\t\t dy : cert get json" << endl;
-
     json::value j = this->Resource::get_json();
     j["Id"] = json::value::string(this->id);
     j["CertificateString"] = json::value::string(this->certificateString);
-    j["CertificateType"] = json::value::string(this->certificationType);
+    j["CertificateType"] = json::value::string(this->certificateType);
     
-    cout << "여기어때1" << endl;
     json::value Issuer = json::value::object();
     Issuer["Country"] = json::value::string(this->issuer.country);
     Issuer["State"] = json::value::string(this->issuer.state);
@@ -1457,7 +1484,6 @@ json::value Certificate::get_json(void)
     Issuer["CommonName"] = json::value::string(this->issuer.commonName);
     j["Issuer"] = Issuer;
 
-    cout << "여기어때2" << endl;
     json::value Subject = json::value::object();
     Subject["Country"] = json::value::string(this->subject.country);
     Subject["State"] = json::value::string(this->subject.state);
@@ -1470,14 +1496,56 @@ json::value Certificate::get_json(void)
     j["ValidNotBefore"] = json::value::string(this->validNotBefore);
     j["ValidNotAfter"] = json::value::string(this->validNotAfter);
     
-    cout << "혹시 여기?" << endl;
     j["KeyUsage"] = json::value::array();
     for(int i = 0; i < this->keyUsage.size(); i++)
         j["KeyUsage"][i] = json::value::string(this->keyUsage[i]);
-    cout << "여기어때3" << endl;
     
-    cout << j.serialize() << endl;
     return j;
+}
+
+bool Certificate::load_json(json::value &j)
+{
+    json::value issuer, subject;
+    json::value key_usage;
+
+    try {
+        this->certificateString = j.at("CertificateString").as_string();
+        this->certificateType = j.at("CertificateType").as_string();
+        this->id = j.at("Id").as_string();
+        this->validNotAfter = j.at("ValidNotAfter").as_string();
+        this->validNotBefore = j.at("ValidNotBefore").as_string();
+
+        key_usage = j.at("KeyUsage");
+        for(json::value item : key_usage.as_array())
+            this->keyUsage.push_back(item.at("@odata.id").as_string());
+        
+        issuer = j.at("Issuer");
+        this->issuer.city = issuer.at("City").as_string();
+        this->issuer.commonName = issuer.at("CommonName").as_string();
+        this->issuer.country = issuer.at("Country").as_string();
+        this->issuer.organization = issuer.at("Organization").as_string();
+        this->issuer.organizationUnit = issuer.at("OrganizationUnit").as_string();
+        this->issuer.state = issuer.at("State").as_string();
+
+        subject = j.at("Subject");
+        this->subject.city = subject.at("City").as_string();
+        this->subject.commonName = subject.at("CommonName").as_string();
+        this->subject.country = subject.at("Country").as_string();
+        this->subject.organization = subject.at("Organization").as_string();
+        this->subject.organizationUnit = subject.at("OrganizationUnit").as_string();
+        this->subject.state = subject.at("State").as_string();
+    
+    }
+    catch (json::json_exception &e)
+    {
+        throw json::json_exception("json parsing error in Certificate");
+        return false;
+    }
+
+    g_record[this->odata.id] = this;
+    cout << "\t\t dy : certificate load check : " << get_json() << endl;
+    
+    return true;
 }
 
 json::value CertificateService::get_json(void)
@@ -1490,6 +1558,33 @@ json::value CertificateService::get_json(void)
         j["CertificateLocations"][i] = this->certificate_location->members[i]->get_odata_id_json();
 
     return j;
+}
+
+bool CertificateService::load_json(json::value &j)
+{
+    json::value certificates;
+    
+    if (record_is_exist(this->odata.id))
+    if (!Resource::load_resource_json(j)){
+        fprintf(stderr, "load resource error in Certificate Service\n");
+        return false;    
+    }
+
+    try{
+        certificates = j.at("CertificateLocations");
+        
+        for (json::value item : certificates.as_array())
+            certificate_location->s_members.push_back(item.at("@odata.id").as_string());
+    }
+    catch (json::json_exception &e)
+    {
+        throw json::json_exception("json parsing error in Certificate Service");
+        return false;
+    }
+
+    g_record[this->odata.id] = this;
+    cout << "\t\t dy : certificate service load check : " << get_json() << endl;
+    return true;
 }
 // dy : certificate end
 
