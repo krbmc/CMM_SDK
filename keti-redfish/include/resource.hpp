@@ -107,6 +107,8 @@
 #define ODATA_CERTIFICATE_LOCATION_TYPE "#CertificateLocation." ODATA_TYPE_VERSION ".CertificateLocation" // @@@@ 도영 추가 
 #define ODATA_CERTIFICATE_SERVICE_TYPE "#CertificateService." ODATA_TYPE_VERSION ".CertificateService" // @@@@ 도영 추가
 
+#define NO_DATA_TYPE 0
+
 /**
  * @brief Redfish resource status element
  */
@@ -581,7 +583,7 @@ class Actions
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 // class Actions : public Resource
@@ -640,10 +642,9 @@ class Actions
 //     };
 
 //     json::value get_json(void);
-//     bool load_json(void);
+//     bool load_json(json::value &j);
 
 // };
-
 
 /**
  * @brief Resource of redfish schema
@@ -674,14 +675,17 @@ public:
     {
         this->odata.type = _odata_type;
     };
-    ~Resource(){
-        cout << odata.id << "Resource Destructed.." << endl;
+    virtual ~Resource(){
+        // cout << odata.id << ": Resource Destructed.." << endl;
     };
 
     json::value get_json(void);
+    json::value get_json(int type);
     json::value get_odata_id_json(void);
     bool save_json(void);
-    bool load_resource_json(json::value &j);
+    bool load_json(json::value &j);
+    bool load_json(json::value &j, int type);
+    bool load_json_from_file(json::value &j);
 };
 
 /**
@@ -690,7 +694,6 @@ public:
 extern unordered_map<string, Resource *> g_record;
 extern map<string, string> module_id_table;
 // extern unordered_map<string, unordered_map<string, Task *> > task_map;
-
 
 /**
  * @brief Root of resource
@@ -704,34 +707,16 @@ class Collection : public Resource
 {
 public:
     vector<Resource *> members;
-    vector<string> s_members;
 
     // Class constructor, destructor oveloading
-    Collection(const string _odata_id, const string _odata_type) : Resource(COLLECTION_TYPE, _odata_id, _odata_type)
+    Collection(const string _odata_id) : Resource(COLLECTION_TYPE, _odata_id)
     {
-        // switch(_odata_type)
-        // {
-        //     case ODATA_PROCESSOR_COLLECTION_TYPE:
-        //         this->name = "Processor Collection";
-        //         break;
-        //     case ODATA_SIMPLE_STORAGE_COLLECTION_TYPE:
-        //         this->name = "Simple Storage Collection";
-        //         break;
-        //     case ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE:
-        //         this->name = "Ethernet Network Interface Collection";
-        //         break;
-        //     case ODATA_LOG_SERVICE_COLLECTION_TYPE:
-        //         this->name = "Log Service Collection";
-        //         break;
-        //     case ODATA_LOG_ENTRY_COLLECTION_TYPE:
-        //         this->name = "Log Entry Collection";
-        //         break;
-        //     case ODATA_DESTINATION_COLLECTION_TYPE:
-        //         this->name = "Event Subscriptions Collection";
-        //         break;
-        // }
-        // cout << "\t\t dy : print collection name " << _odata_id << endl;
         g_record[_odata_id] = this;
+        
+    }
+    Collection(const string _odata_id, const string _odata_type) : Collection(_odata_id)
+    {
+        this->odata.type = _odata_type;
     };
     ~Collection()
     {
@@ -740,7 +725,7 @@ public:
 
     void add_member(Resource *);
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -755,10 +740,14 @@ public:
     uint8_t member_type;
 
     // Class constructor, destructor oveloading
-    List(const string _odata_id, const uint8_t _member_type) : Resource(LIST_TYPE, _odata_id, ODATA_LIST_TYPE)
+    List(const string _odata_id) : Resource(LIST_TYPE, _odata_id, ODATA_LIST_TYPE)
+    {
+        this->member_type = SUPER_TYPE;
+        g_record[_odata_id] = this;
+    }
+    List(const string _odata_id, const uint8_t _member_type) : List(_odata_id)
     {
         this->member_type = _member_type;
-        g_record[_odata_id] = this;
     };
 
     ~List()
@@ -768,7 +757,7 @@ public:
 
     void add_member(Resource *);
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -787,16 +776,20 @@ public:
         this->is_predefined = false;
         assigned_privileges.push_back("test");
 
-        ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
         g_record[_odata_id] = this;
     };
+    Role(const string _odata_id, const string _permission_name) : Role(_odata_id)
+    {
+        this->id = _permission_name;
+        ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
+    }
     ~Role()
     {
         g_record.erase(this->odata.id);
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -811,25 +804,32 @@ public:
     string user_name;
     bool locked;
     Role *role;
+    string role_id;
 
-    Account(const string _odata_id, const string _role_id) : Resource(ACCOUNT_TYPE, _odata_id, ODATA_ACCOUNT_TYPE)
+    Account(const string _odata_id) : Resource(ACCOUNT_TYPE, _odata_id, ODATA_ACCOUNT_TYPE)
+    {
+        this->id = "";
+        this->enabled = false;
+        this->password = "";
+        this->user_name = "";
+        this->locked = false;
+
+        g_record[_odata_id] = this;
+    }
+    Account(const string _odata_id, const string _role_id) : Account(_odata_id)
     {
         string odata_id;
         odata_id = ODATA_ROLE_ID;
         odata_id = odata_id + '/' + _role_id;
 
-        this->id = "";
-        this->enabled = false;
-        this->password = "";
-        this->user_name = "";
-        if (record_is_exist(odata_id))
+        if (record_is_exist(odata_id)){
             this->role = (Role *)g_record[odata_id];
-        else
+            this->role_id = this->role->odata.id;
+        }
+        else{
             this->role = nullptr;
-        this->locked = false;
-
+        }
         ((Collection *)g_record[ODATA_ACCOUNT_ID])->add_member(this);
-        g_record[_odata_id] = this;
     };
     ~Account()
     {
@@ -837,7 +837,7 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -854,7 +854,7 @@ public:
     unsigned int account_lockout_threshold;
     unsigned int account_lockout_duration;
     unsigned int account_lockout_counter_reset_after;
-    unsigned int account_lockout_counter_reset_enabled;
+    bool account_lockout_counter_reset_enabled;
     Collection *account_collection;
     Collection *role_collection;
 
@@ -882,7 +882,7 @@ public:
         this->account_collection->name = "Accounts Collection";
 
         // Administrator role configuration
-        Role *_administrator = new Role(this->role_collection->odata.id + "/Administrator");
+        Role *_administrator = new Role(this->role_collection->odata.id + "/Administrator", "Administrator");
         _administrator->id = "Administrator";
         _administrator->name = "User Role";
         _administrator->is_predefined = true;
@@ -893,7 +893,7 @@ public:
         _administrator->assigned_privileges.push_back("ConfigureComponents");
 
         // Operator role configuration
-        Role *_operator = new Role(this->role_collection->odata.id + "/Operator");
+        Role *_operator = new Role(this->role_collection->odata.id + "/Operator", "Operator");
         _operator->id = "Operator";
         _operator->name = "User Role";
         _operator->is_predefined = true;
@@ -902,7 +902,7 @@ public:
         _operator->assigned_privileges.push_back("ConfigureComponents");
 
         // ReadOnly role configuration
-        Role *_read_only = new Role(this->role_collection->odata.id + "/ReadOnly");
+        Role *_read_only = new Role(this->role_collection->odata.id + "/ReadOnly", "ReadOnly");
         _read_only->id = "ReadOnly";
         _read_only->name = "User Role";
         _read_only->is_predefined = true;
@@ -936,7 +936,7 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 
@@ -981,7 +981,7 @@ class LogEntry : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -999,7 +999,7 @@ class LogService : public Resource
     Status status;
 
     Collection *entry;
-    // Collection *actions;
+    
     vector<Actions *> actions;
 
     LogService(const string _odata_id) : Resource(LOG_SERVICE_TYPE, _odata_id, ODATA_LOG_SERVICE_TYPE)
@@ -1039,7 +1039,7 @@ class LogService : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
     
 
 };
@@ -1076,14 +1076,13 @@ class EventDestination : public Resource
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
         
-        ((Collection *)g_record[ODATA_EVENT_DESTINATION_ID])->add_member(this);
         g_record[_odata_id] = this;
 
     }
     EventDestination(const string _odata_id, const string _dest_id) : EventDestination(_odata_id)
     {
         this->id = _dest_id;
-
+        ((Collection *)g_record[ODATA_EVENT_DESTINATION_ID])->add_member(this);
     };
     ~EventDestination()
     {
@@ -1091,7 +1090,7 @@ class EventDestination : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -1150,7 +1149,7 @@ class EventService : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -1200,7 +1199,7 @@ class SoftwareInventory : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -1212,8 +1211,10 @@ class UpdateService : public Resource
     string http_push_uri;
 
     Status status;
+    
     Collection *firmware_inventory;
     Collection *software_inventory;
+    
     Collection *actions;
 
     UpdateService(const string _odata_id) : Resource(UPDATE_SERVICE_TYPE, _odata_id, ODATA_UPDATE_SERVICE_TYPE)
@@ -1234,13 +1235,12 @@ class UpdateService : public Resource
         this->actions->name = "UpdateService Actions Collection";
         Actions *act = new Actions(_odata_id + "/Actions/UpdateService.SimpleUpdate");
 
-        ((Collection *)(g_record[ODATA_UPDATE_SERVICE_ID]))->add_member(this);
-
         g_record[_odata_id] = this;
     }
     UpdateService(const string _odata_id, const string _update_id) : UpdateService(_odata_id)
     {
         this->id = _update_id;
+        ((Collection *)(g_record[ODATA_UPDATE_SERVICE_ID]))->add_member(this);
     };
     ~UpdateService()
     {
@@ -1248,7 +1248,7 @@ class UpdateService : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -1295,7 +1295,6 @@ class Certificate : public Resource
         this->subject.state = "";
 
         g_record[_odata_id] = this;
-    
     }
     Certificate(const string _odata_id, const string _certificateString, const string _certificateType) : Certificate(_odata_id)
     {
@@ -1403,7 +1402,7 @@ class NetworkProtocol : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 class EthernetInterfaces : public Resource
@@ -1523,7 +1522,7 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 
 };
@@ -1541,17 +1540,16 @@ public:
     string datetime_offset;
     string power_state;
 
-    // Actions actions;
-    NetworkProtocol *network;
-    
     Status status;
+
     Collection *ethernet;
     Collection *log_service;
-    // Collection *actions;
-    vector<Actions *> actions;
+    
+    NetworkProtocol *network;
     AccountService *account_service;
 
-
+    vector<Actions *> actions;
+    
     Manager(const string _odata_id) : Resource(MANAGER_TYPE, _odata_id, ODATA_MANAGER_TYPE)
     {
         this->name = "";
@@ -1579,14 +1577,14 @@ public:
 
         this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
         this->log_service->name = "Log Service Collection";
-        string res_id = _odata_id + "/LogServices";
-        res_id = res_id + "/Log1";
-        LogService *logservice = new LogService(res_id, "Log Service 1~");
-        this->log_service->add_member(logservice);
-        res_id = res_id + "/Entries";
-        res_id = res_id + "/0";
-        LogEntry *log = new LogEntry(res_id, "Log Entry 0~");
-        logservice->entry->add_member(log);
+        // string res_id = _odata_id + "/LogServices";
+        // res_id = res_id + "/Log1";
+        // LogService *logservice = new LogService(res_id, "Log Service 1~");
+        // this->log_service->add_member(logservice);
+        // res_id = res_id + "/Entries";
+        // res_id = res_id + "/0";
+        // LogEntry *log = new LogEntry(res_id, "Log Entry 0~");
+        // logservice->entry->add_member(log);
 
         Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
         actions.push_back(act);
@@ -1598,13 +1596,13 @@ public:
 
 
 
-        ((Collection *)g_record[ODATA_MANAGER_ID])->add_member(this);
 
         g_record[_odata_id] = this;
     }
     Manager(const string _odata_id, const string _manager_id) : Manager(_odata_id)
     {
         this->id = _manager_id;
+        ((Collection *)g_record[ODATA_MANAGER_ID])->add_member(this);
     };
     ~Manager()
     {
@@ -1613,7 +1611,7 @@ public:
     };
 
     json::value get_json(void); // 여기 가서 수정해줘야함
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 
 };
@@ -1633,28 +1631,31 @@ class Task : public Resource
     string task_status;
     Payload payload;
 
-    Task(const string _odata_id, const string _task_id) : Resource(TASK_TYPE, _odata_id, ODATA_TASK_TYPE)
+    Task(const string _odata_id) : Resource(TASK_TYPE, _odata_id, ODATA_TASK_TYPE)
     {
         this->name = "Task";
-        this->id = _task_id;
+        this->id = "";
         this->start_time = currentDateTime();
         this->end_time = "";
         this->task_state = TASK_STATE_NEW;
         this->task_status = TASK_STATUS_OK;
         // starttime, state, status는 임의로 넣어놓음
 
-        ((Collection *)g_record[ODATA_TASK_ID])->add_member(this);
         g_record[_odata_id] = this;
 
+    }
+    Task(const string _odata_id, const string _task_id) : Task(_odata_id)
+    {
+        ((Collection *)g_record[ODATA_TASK_ID])->add_member(this);
+        this->id = _task_id;
     };
     ~Task()
     {
         g_record.erase(this->odata.id);
-
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
     void set_payload(http_headers _header, string _operation, json::value _json, string _target_uri);
     // pplx가 필요한구조인가..?
 
@@ -1685,7 +1686,7 @@ public:
         this->service_enabled = true;
         this->datetime = currentDateTime();
 
-        this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_TYPE);
+        this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
         task_collection->name = "Task Collection";
 
         Task *_test = new Task(this->task_collection->odata.id + "/test", "Test Task");
@@ -1698,7 +1699,7 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -1729,7 +1730,7 @@ public:
         this->session_timeout = 86400; // 30sec to 86400sec
 
         // AccountCollection configuration
-        this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_TYPE);
+        this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
         session_collection->name = "Session Collection";
 
         g_record[ODATA_SESSION_SERVICE_ID] = this;
@@ -1740,7 +1741,7 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -1750,6 +1751,7 @@ class Session : public Resource
 {
 public:
     string id;
+    string account_id;
     Account *account;
     unsigned int _remain_expires_time;
     // @@@@@@@@ authors 강
@@ -1757,22 +1759,28 @@ public:
     pplx::cancellation_token c_token = cts.get_token();
 
     // Class constructor, destructor oveloading
-    Session(const string _odata_id, const string _session_id, Account *_account) : Resource(SESSION_TYPE, _odata_id, ODATA_SESSION_TYPE)
+    Session(const string _odata_id) : Resource(SESSION_TYPE, _odata_id, ODATA_SESSION_TYPE)
     {
         this->name = "User Session";
+        this->id = "";
+        
+        g_record[_odata_id] = this;
+    }
+    Session(const string _odata_id, const string _session_id, Account *_account) : Session(_odata_id)
+    {
         this->id = _session_id;
         this->account = _account;
+        this->account_id = _account->odata.id;
         this->_remain_expires_time = ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout;
-
+        cout << "\t\t\t\t\t\t\\t" << _account->odata.id << "kk" << endl;
         ((Collection *)g_record[ODATA_SESSION_ID])->add_member(this);
-        g_record[_odata_id] = this;
     };
     ~Session()
     {
         g_record.erase(this->odata.id);
     };
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
     pplx::task<void> start(void);
 
 private:
@@ -1831,7 +1839,7 @@ public:
     }
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
     pplx::task<void> read(uint8_t _sensor_index, uint8_t _sensor_context);
 
 private:
@@ -1897,8 +1905,7 @@ class Sensor : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
-
+    bool load_json(json::value &j);
 };
 
 
@@ -1956,7 +1963,7 @@ public:
     }
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -1991,7 +1998,7 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 /**
@@ -2048,8 +2055,7 @@ class Voltage : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
-
+    bool load_json(json::value &j);
 };
 
 class PowerSupply : public Resource
@@ -2118,7 +2124,7 @@ class PowerSupply : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -2168,7 +2174,7 @@ class PowerControl : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -2201,7 +2207,7 @@ class Power : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -2220,9 +2226,9 @@ class Bios : public Resource
     Attribute attribute;
     //Action 있더라 근데 액션에 바이오스 패스워드 어딨지?
 
-    Bios(const string _odata_id, const string _bios_id) : Resource(BIOS_TYPE, _odata_id, ODATA_BIOS_TYPE)
+    Bios(const string _odata_id) : Resource(BIOS_TYPE, _odata_id, ODATA_BIOS_TYPE)
     {
-        this->id = _bios_id;
+        this->id = "";
         this->attribute_registry = "Attribute registry";
         this->attribute.boot_mode = "Uefi";
         this->attribute.embedded_sata = "Raid";
@@ -2234,7 +2240,11 @@ class Bios : public Resource
         this->attribute.proc_turbo_mode = "Enabled";
         this->attribute.usb_control = "UsbEnabled";
 
-        g_record[_odata_id] = this;
+        g_record[_odata_id] = this;    
+    }
+    Bios(const string _odata_id, const string _bios_id) : Bios(_odata_id)
+    {
+        this->id = _bios_id;
     };
     ~Bios()
     {
@@ -2242,7 +2252,7 @@ class Bios : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -2287,7 +2297,7 @@ class SimpleStorage : public Resource
     }
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -2306,9 +2316,9 @@ class StorageControllers : public Resource
     vector<string> support_device_protocols;
     Status status;
 
-    StorageControllers(const string _odata_id, const string _controller_id) : Resource(STORAGE_CONTROLLER_TYPE, _odata_id, ODATA_STORAGE_CONTROLLER_TYPE)
+    StorageControllers(const string _odata_id) : Resource(STORAGE_CONTROLLER_TYPE, _odata_id, ODATA_STORAGE_CONTROLLER_TYPE)
     {
-        this->id = _controller_id;
+        this->id = "";
         this->manufacturer = "storage controller manufacturer";
         this->model = "storage controller model";
         this->serial_number = "storage controller serial";
@@ -2326,7 +2336,10 @@ class StorageControllers : public Resource
         this->status.health = STATUS_HEALTH_OK;
 
         g_record[_odata_id] = this;
-
+    }
+    StorageControllers(const string _odata_id, const string _controller_id) : StorageControllers(_odata_id)
+    {
+        this->id = _controller_id;
     };
     ~StorageControllers()
     {
@@ -2334,7 +2347,7 @@ class StorageControllers : public Resource
     }
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 class Storage : public Resource
@@ -2345,9 +2358,9 @@ class Storage : public Resource
     Status status;
     List *controller;
 
-    Storage(const string _odata_id, const string _storage_id) : Resource(STORAGE_TYPE, _odata_id, ODATA_STORAGE_TYPE)
+    Storage(const string _odata_id) : Resource(STORAGE_TYPE, _odata_id, ODATA_STORAGE_TYPE)
     {
-        this->id = _storage_id;
+        this->id = "";
         this->description = "";
         this->status.health = STATUS_HEALTH_OK;
         this->status.state = STATUS_STATE_ENABLED;
@@ -2357,6 +2370,10 @@ class Storage : public Resource
 
         g_record[_odata_id] = this;
 
+    }
+    Storage(const string _odata_id, const string _storage_id) : Storage(_odata_id)
+    {
+        this->id = _storage_id;
     };
     ~Storage()
     {
@@ -2364,7 +2381,7 @@ class Storage : public Resource
     };
 
     json::value get_json(void); // 이거 할때 컨트롤러 리스트기때문에 Thermal-temperature 참고할것
-    bool load_json(void);
+    bool load_json(json::value &j);
 };
 
 // class NetworkInterfaces : public Resource
@@ -2389,7 +2406,7 @@ class Storage : public Resource
 //         g_record.erase(this->odata.id);
 //     };
 
-//     bool load_json(void);
+//     bool load_json(json::value &j);
 //     json::value get_json(void);
 
 // };
@@ -2426,7 +2443,7 @@ class Storage : public Resource
 //     };
 
 //     json::value get_json(void); // 여기 가서 수정해줘야함
-//     bool load_json(void);
+//     bool load_json(json::value &j);
 // };
 
 class Processors : public Resource
@@ -2480,7 +2497,7 @@ class Processors : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -2536,7 +2553,7 @@ class Memory : public Resource
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
 
 };
 
@@ -2616,10 +2633,6 @@ class Systems : public Resource
         // this->bios = 0;
         // null로 넣는법
 
-
-
-
-
         // this->id = _systems_id;
         // // this->sku = "";
         // this->system_type = "Physical";
@@ -2671,17 +2684,11 @@ class Systems : public Resource
 
         Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
         actions.push_back(act);
-        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
-        // this->actions->name = "Systems Actions Collection";
-        // Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
-        // this->actions->add_member(act);
 
         this->simple_storage = new Collection(_odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
         this->simple_storage->name = "Simple Storage Collection";
-        SimpleStorage *sim = new SimpleStorage(this->simple_storage->odata.id + "/0", "0~");
-        this->simple_storage->add_member(sim);
-
-        ((Collection *)g_record[ODATA_SYSTEM_ID])->add_member(this);
+        // SimpleStorage *sim = new SimpleStorage(this->simple_storage->odata.id + "/0", "0~");
+        // this->simple_storage->add_member(sim);
 
         // cout << "!@#$ sys : " << _odata_id << endl;
         g_record[_odata_id] = this;
@@ -2689,13 +2696,14 @@ class Systems : public Resource
     Systems(const string _odata_id, const string _systems_id) : Systems(_odata_id)
     {
         this->id = _systems_id;
+        ((Collection *)g_record[ODATA_SYSTEM_ID])->add_member(this);
     };
     ~Systems()
     {
         g_record.erase(this->odata.id);
     };
 
-    bool load_json(void);
+    bool load_json(json::value &j);
     json::value get_json(void);
 
 };
@@ -2809,13 +2817,12 @@ public:
         // cout << "OUT CHASSIS" << endl;
 
 
-        ((Collection *)g_record[ODATA_CHASSIS_ID])->add_member(this);
-
         g_record[_odata_id] = this;
     }
     Chassis(const string _odata_id, const string _chassis_id) : Chassis(_odata_id)
     {
         this->id = _chassis_id;
+        ((Collection *)g_record[ODATA_CHASSIS_ID])->add_member(this);
     };
     ~Chassis()
     {
@@ -2823,7 +2830,7 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    bool load_json(json::value &j);
     pplx::task<void> led_off(uint8_t _led_index);
     pplx::task<void> led_lit(uint8_t _led_index);
     pplx::task<void> led_blinking(uint8_t _led_index);
@@ -2840,19 +2847,18 @@ public:
     string id;
     string redfish_version;
     string uuid;
+
     Collection *system_collection;
     Collection *chassis_collection;
     Collection *manager_collection;
+    Collection *update_service;
+    
     AccountService *account_service;
     SessionService *session_service;
     TaskService *task_service;
     CertificateService *certificate_service;
-    // Collection *task_service;
-    // Collection *event_service;
-
     EventService *event_service;
-    Collection *update_service;
-
+    
     // Class constructor, destructor oveloading
     ServiceRoot() : Resource(SERVICE_ROOT_TYPE, ODATA_SERVICE_ROOT_ID, ODATA_SERVICE_ROOT_TYPE)
     {
@@ -2866,8 +2872,6 @@ public:
         // System configuration
         system_collection = new Collection(ODATA_SYSTEM_ID, ODATA_SYSTEM_COLLECTION_TYPE);
         system_collection->name = "Computer System Collection";
-
-
 
         module_id_table.insert({CMM_ID, CMM_ADDRESS});
         /**
@@ -2998,7 +3002,6 @@ public:
             EthernetInterfaces *ether = new EthernetInterfaces(s.str(), to_string(i));
             ether->name = "EthernetInterface in Manager";
             manager->ethernet->add_member(ether);
-
         }
 
         /**
@@ -3056,11 +3059,12 @@ public:
     };
 
     json::value get_json(void);
-    bool load_json(void);
+    // bool load_json(json::value &j);
 };
 
 bool init_resource(void);
 bool is_session_valid(const string _token_id);
 void init_record_bmc(void);
+void dependency_injection(Resource *res);
 
 #endif
