@@ -65,7 +65,8 @@ void timer(boost::asio::deadline_timer* _timer, unsigned int *_remain_expires_ti
 string generate_token(const int len);
 unsigned int allocate_task_num(void);
 unsigned int allocate_account_num(void);
-string get_last_str(string _uri, string delimiter);
+string get_current_object_name(string _uri, string delimiter);
+string get_parent_object_uri(string _uri, string delimiter);
 
 /**
  * @brief Function of record
@@ -76,5 +77,4 @@ bool record_load_json(void);
 bool record_save_json(void);
 void record_print(void);
 void record_init_load(string _path); // @@@@@
-
 #endif

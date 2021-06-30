@@ -142,11 +142,21 @@ unsigned int allocate_account_num(void)
 // 꽉차면?
 
 /**
- * @brief get uri, return last string
+ * @brief get uri, return current resource name
  * @author dyk
  * @return resource type string 
  */
-string get_last_str(string _uri, string delimiter)
+string get_current_object_name(string _uri, string delimiter)
 {
     return _uri.substr(_uri.rfind(delimiter) + 1);
+}
+
+/**
+ * @brief get uri, return parent resource uri
+ * @author dyk
+ * @return resource uri string 
+ */
+string get_parent_object_uri(string _uri, string delimiter)
+{
+    return _uri.substr(0, _uri.rfind(delimiter));
 }
