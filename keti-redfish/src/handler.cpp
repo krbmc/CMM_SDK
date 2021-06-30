@@ -20,6 +20,7 @@ Handler::Handler(utility::string_t _url, http_listener_config _config) : m_liste
     this->m_listener.support(methods::PUT, bind(&Handler::handle_put, this, placeholders::_1));
     this->m_listener.support(methods::POST, bind(&Handler::handle_post, this, placeholders::_1));
     this->m_listener.support(methods::DEL, bind(&Handler::handle_delete, this, placeholders::_1));
+    this->m_listener.support(methods::PATCH, bind(&Handler::handle_patch, this, placeholders::_1));
 }
 
 /**
@@ -330,27 +331,32 @@ void Handler::handle_delete(http_request _request)
                 session_uri = session_uri + '/' + token;
                 Session *session;
 
-                SessionService * ses_service = (SessionService *)g_record[ODATA_SESSION_SERVICE_ID];
-                std::vector<Resource *>::iterator iter;
-                for(iter = ses_service->session_collection->members.begin(); iter != ses_service->session_collection->members.end(); iter++)
-                {
-                    Session *t = (Session *)*iter;
-                    if(t->id == token)
-                    {
-                        session = (Session *)*iter;
-                        // session->cts.cancel();
-                        cout << "YYYY : " << session->id << endl;
-                        session->_remain_expires_time = 1;
-                        ses_service->session_collection->members.erase(iter);
-                        // 이 작업을 해야 record_get_json(ODATA_SESSION_ID))때 안나옴
-                        break;
-                    }
-                }
+                session = (Session *)g_record[session_uri];
+                // cout << "YYYY : " << session->id << endl;
+                session->_remain_expires_time = 1;
+                // 여기서는 남은시간 1로만 만들고 삭제작업은 session pplx then에서
+
+                // SessionService * ses_service = (SessionService *)g_record[ODATA_SESSION_SERVICE_ID];
+                // std::vector<Resource *>::iterator iter;
+                // for(iter = ses_service->session_collection->members.begin(); iter != ses_service->session_collection->members.end(); iter++)
+                // {
+                //     Session *t = (Session *)*iter;
+                //     if(t->id == token)
+                //     {
+                //         session = (Session *)*iter;
+                //         // session->cts.cancel();
+                //         cout << "YYYY : " << session->id << endl;
+                //         session->_remain_expires_time = 1;
+                //         ses_service->session_collection->members.erase(iter);
+                //         // 이 작업을 해야 record_get_json(ODATA_SESSION_ID))때 안나옴
+                //         break;
+                //     }
+                // }
                 // 세션서비스->컬렉션->멤버스 돌면서 해당하는 세션의 남은시간 1로 만들어서 종료되게끔 함
                 
-                cout << "Session : " << session_uri << endl;
-                cout << record_get_json(ODATA_SESSION_ID) << endl;
-                cout << "AAAAAAA" << endl;
+                // cout << "Session : " << session_uri << endl;
+                // cout << record_get_json(ODATA_SESSION_ID) << endl;
+                // cout << "AAAAAAA" << endl;
                 // 토큰 붙인거로 Session들어가고 세션에 취소토큰만들어서 취소줘야겠다 여기서
 
                 //Session *session = (Session *)g_record[ODATA_SESSION_ID];
@@ -383,22 +389,22 @@ void Handler::handle_delete(http_request _request)
 void Handler::handle_put(http_request _request)
 {
 
-    log(info) << "Request method: PATCH";
-    string uri = _request.request_uri().to_string();
-    vector<string> uri_tokens = string_split(uri, '/');
-    string filtered_uri = make_path(uri_tokens);
-    log(info) << "Reqeust URL : " << filtered_uri;
-    log(info) << "Request Body : " << _request.to_string();
+    // log(info) << "Request method: PATCH";
+    // string uri = _request.request_uri().to_string();
+    // vector<string> uri_tokens = string_split(uri, '/');
+    // string filtered_uri = make_path(uri_tokens);
+    // log(info) << "Reqeust URL : " << filtered_uri;
+    // log(info) << "Request Body : " << _request.to_string();
 
-    try
-    {
-        /* code */
-        // if(uri_tokens.size() )
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
+    // try
+    // {
+    //     /* code */
+    //     // if(uri_tokens.size() )
+    // }
+    // catch(const std::exception& e)
+    // {
+    //     std::cerr << e.what() << '\n';
+    // }
     
 
     cout << "handle_put request" << endl;
@@ -744,6 +750,79 @@ void Handler::handle_post(http_request _request)
 
 //     return response;
 // }
+
+/**
+ * @brief PATCH request handler
+ * @authors 강
+ * @param _request Request object
+ */
+void Handler::handle_patch(http_request _request)
+{
+    log(info) << "Request method: PATCH";
+    string uri = _request.request_uri().to_string();
+    vector<string> uri_tokens = string_split(uri, '/');
+    string filtered_uri = make_path(uri_tokens);
+    log(info) << "Reqeust URL : " << filtered_uri;
+    log(info) << "Request Body : " << _request.to_string();
+
+    // cout << "HELL YEAH" << endl;
+    // cout << _request.get_remote_address() << endl;
+    // cout << _request.remote_address() << endl;
+
+    try
+    {
+        /* code */
+        if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
+        {
+            do_task_cmm_patch(_request);
+            return ;
+        }
+
+        if(uri_tokens.size() >= 4)
+        {
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            {
+                //CMM자체 동작으로다가 처리하시면됨
+                do_task_cmm_patch(_request);
+            }
+            else
+            {
+                if(uri_tokens[3] == CMM_ID)
+                {
+                    //CMM 자체처리
+                    do_task_cmm_patch(_request);
+                }
+                else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                {
+                    if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
+                    // 일단 104번에서 처리
+                        do_task_bmc_patch(_request);
+                    else
+                    {
+                        json::value j;
+                        j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+                        _request.reply(status_codes::BadRequest, j);
+                        cout << "Unvalid BMC_id" << endl;
+                        return ;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
+            _request.reply(status_codes::BadRequest);
+            return ;
+        }
+       
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        _request.reply(status_codes::BadRequest);
+    }
+    
+}
 
 
 /**

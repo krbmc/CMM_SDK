@@ -285,6 +285,7 @@ bool record_save_json(void)
 {
     for (auto it = g_record.begin(); it != g_record.end(); it++)
     {
+        
         // cout << "cur record : " << it->second->odata.id << endl;
         it->second->save_json();
     }

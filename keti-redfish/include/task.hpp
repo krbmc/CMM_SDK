@@ -80,10 +80,21 @@ class Task_Manager
 
 void do_task_cmm_get(http_request _request);
 void do_task_cmm_post(http_request _request);
+void do_task_cmm_patch(http_request _request);
 void do_task_bmc_get(http_request _request);
 void do_task_bmc_post(http_request _request);
+void do_task_bmc_patch(http_request _request);
+
 
 Task_Manager *category(vector<string> _token);
+
+m_Request work_before_request_process(string _method, string _host, string _uri, json::value _jv, http_headers _header);
+void work_after_request_process(Task_Manager* _t, Task_Manager* _c, m_Request _msg);
+m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value _jv);
+m_Request make_account(http_request _request, m_Request _msg, json::value _jv);
+m_Request make_session(http_request _request, m_Request _msg, json::value _jv);
+m_Request modify_account(http_request _request, m_Request _msg, json::value _jv, string _uri);
+m_Request reply_error(http_request _request, m_Request _msg, string _message, web::http::status_code _status);
 
 
 #endif

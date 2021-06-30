@@ -386,7 +386,16 @@ typedef struct _Device_Info
 
 } Device_Info;
 
-
+typedef struct _CertContent
+{    
+    string city;   
+    string commonName; 
+    string country;
+    string email;   
+    string organization;   
+    string organizationUnit; 
+    string state;
+} CertContent; // dy : in certificate
 
 /**
  * @brief Task Resource에 들어가는 Payload
@@ -777,9 +786,16 @@ public:
         this->id = "";
         this->is_predefined = false;
         assigned_privileges.push_back("test");
+        // test용인거 같은데 나중에 빼줘야할듯 add_bmc하면 중복되네
 
-        ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
+        // ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
+        // AccountService/Roles 에 그냥 붙으면 이렇게 생성자에서 add해줘도되는데
+        // Managers/[Bmc_id]/RemoteAccountService/Roles 면 이게 안되니까 AccountService에서 연결함
         g_record[_odata_id] = this;
+    }
+    Role(const string _odata_id, const string _role_id) : Role(_odata_id)
+    {
+        this->id = _role_id;
     };
     ~Role()
     {
@@ -803,24 +819,37 @@ public:
     bool locked;
     Role *role;
 
-    Account(const string _odata_id, const string _role_id) : Resource(ACCOUNT_TYPE, _odata_id, ODATA_ACCOUNT_TYPE)
+    Account(const string _odata_id) : Resource(ACCOUNT_TYPE, _odata_id, ODATA_ACCOUNT_TYPE)
+    {
+        
+        this->id = "";
+        this->enabled = false;
+        this->password = "";
+        this->user_name = "";
+        
+        this->locked = false;
+        this->role = nullptr;
+
+        // ((Collection *)g_record[ODATA_ACCOUNT_ID])->add_member(this);
+        // AccountService/Accounts 에 그냥 붙으면 이렇게 생성자에서 add해줘도되는데
+        // Managers/[Bmc_id]/RemoteAccountService/Accounts 면 이게 안되니까 AccountService에서 연결함
+        g_record[_odata_id] = this;
+    }
+    Account(const string _odata_id, const string _account_id) : Account(_odata_id)
+    {
+        this->id = _account_id;
+    }
+    Account(const string _odata_id, const string _account_id, const string _role_id) : Account(_odata_id, _account_id)
     {
         string odata_id;
         odata_id = ODATA_ROLE_ID;
         odata_id = odata_id + '/' + _role_id;
 
-        this->id = "";
-        this->enabled = false;
-        this->password = "";
-        this->user_name = "";
         if (record_is_exist(odata_id))
             this->role = (Role *)g_record[odata_id];
         else
             this->role = nullptr;
-        this->locked = false;
 
-        ((Collection *)g_record[ODATA_ACCOUNT_ID])->add_member(this);
-        g_record[_odata_id] = this;
     };
     ~Account()
     {
@@ -845,7 +874,13 @@ public:
     unsigned int account_lockout_threshold;
     unsigned int account_lockout_duration;
     unsigned int account_lockout_counter_reset_after;
-    unsigned int account_lockout_counter_reset_enabled;
+    bool account_lockout_counter_reset_enabled;
+    // unsigned int account_lockout_counter_reset_enabled;
+    // threshold(횟수) 로그인실패하면 계정잠금됨
+    // reset_enabled가 false면 로그인실패횟수 리셋안되고 계정잠금은 관리자가 풀어줘야함
+    // reset_enabled가 true면 reset_after(초)가 지나면 로그인실패횟수 리셋됨
+    // reset_after는 duration이 최대치인가봄(duration보다 작거나 같은값으로만 설정가능
+    // logging threshold(횟수)는 계정당 인증실패하면 관리자 로그에 기록됨
     Collection *account_collection;
     Collection *role_collection;
 
@@ -882,6 +917,7 @@ public:
         _administrator->assigned_privileges.push_back("ConfigureUsers");
         _administrator->assigned_privileges.push_back("ConfigureSelf");
         _administrator->assigned_privileges.push_back("ConfigureComponents");
+        this->role_collection->add_member(_administrator);
 
         // Operator role configuration
         Role *_operator = new Role(this->role_collection->odata.id + "/Operator");
@@ -891,6 +927,7 @@ public:
         _operator->assigned_privileges.push_back("Login");
         _operator->assigned_privileges.push_back("ConfigureSelf");
         _operator->assigned_privileges.push_back("ConfigureComponents");
+        this->role_collection->add_member(_operator);
 
         // ReadOnly role configuration
         Role *_read_only = new Role(this->role_collection->odata.id + "/ReadOnly");
@@ -899,28 +936,35 @@ public:
         _read_only->is_predefined = true;
         _read_only->assigned_privileges.push_back("Login");
         _read_only->assigned_privileges.push_back("ConfigureSelf");
+        this->role_collection->add_member(_read_only);
 
         // Root account configure
-        Account *_root = new Account(this->account_collection->odata.id + "/root", "Administrator");
-        _root->id = "root";
+        string acc_odata = this->account_collection->odata.id + "/";
+        string acc_id = to_string(allocate_account_num());
+        acc_odata = acc_odata + acc_id;
+        Account *_root = new Account(acc_odata, acc_id, "Administrator");
+        // _root->id = "root";
         _root->name = "User Account";
         _root->user_name = "root";
         _root->password = "ketilinux";
         _root->enabled = true;
         _root->locked = false;
+        this->account_collection->add_member(_root);
 
         g_record[ODATA_ACCOUNT_SERVICE_ID] = this;
+    }
+    AccountService(const string _odata_id) : Resource(ACCOUNT_SERVICE_TYPE, _odata_id, ODATA_ACCOUNT_SERVICE_TYPE)
+    {
+        this->account_collection = new Collection(_odata_id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
+        this->account_collection->name = "Remote Accounts Collection";
+
+        this->role_collection = new Collection(_odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
+        this->role_collection->name = "Remote Roles Collection";
+
+        g_record[_odata_id] = this;
+        // 매니저에 들어가는 리모트어카운트서비스의 생성자에 해당하게됨
+
     };
-    // AccountService(const string _odata_id) : Resource(ACCOUNT_SERVICE_TYPE, _odata_id, ODATA_ACCOUNT_SERVICE_TYPE)
-    // {
-    //     this->account_collection = new Collection(_odata_id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
-    //     this->account_collection->name = "Remote Accounts Collection";
-
-    //     this->role_collection = new Collection(_odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
-    //     this->role_collection->name = "Roles Collection";
-    //     // 매니저에 들어가는 리모트어카운트서비스 하는중
-
-    // };
     ~AccountService()
     {
         g_record.erase(this->odata.id);
@@ -1418,6 +1462,8 @@ public:
     vector<IPv6_Address> v_ipv6;
     Vlan vlan;
 
+    string ipv6_default_gateway;
+
     Status status;
     // string address;
     // string subnetMask;
@@ -1540,7 +1586,8 @@ public:
     Collection *log_service;
     // Collection *actions;
     vector<Actions *> actions;
-    AccountService *account_service;
+    AccountService *remote_account_service;
+    // BMC의 계정정보를 관리하는 AccountService
 
 
     Manager(const string _odata_id) : Resource(MANAGER_TYPE, _odata_id, ODATA_MANAGER_TYPE)
@@ -1586,6 +1633,12 @@ public:
         // this->actions->name = "Managers Actions Collection";
         // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
         // this->actions->add_member(act);
+
+        // cout << "!!!! MANAGER MODULE ID : " << get_last_str(_odata_id, "/") << endl;
+        if(get_last_str(_odata_id, "/") != CMM_ID)
+            remote_account_service = new AccountService(_odata_id + "/AccountService");
+
+        
 
 
 
@@ -1676,7 +1729,7 @@ public:
         this->service_enabled = true;
         this->datetime = currentDateTime();
 
-        this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_TYPE);
+        this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
         task_collection->name = "Task Collection";
 
         Task *_test = new Task(this->task_collection->odata.id + "/test", "Test Task");
@@ -1720,7 +1773,7 @@ public:
         this->session_timeout = 86400; // 30sec to 86400sec
 
         // AccountCollection configuration
-        this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_TYPE);
+        this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
         session_collection->name = "Session Collection";
 
         g_record[ODATA_SESSION_SERVICE_ID] = this;
@@ -2566,7 +2619,7 @@ class Systems : public Resource
 
     // ProcessorSummary *ps; // 구조체로 바꿔야할듯 현재리소슨데
     Collection *network; // resource NetworkInterfaces // 일단 없음
-    Collection *storage; // resource Storages
+    // Collection *storage; // resource Storages
     Collection *processor; // resource Processors
     Bios *bios; // resource Bios
     Collection *memory; // resource Memory
@@ -2644,8 +2697,8 @@ class Systems : public Resource
         this->processor = new Collection(_odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
         this->processor->name = "Processor Collection";
 
-        this->storage = new Collection(_odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
-        this->storage->name = "Storage Collection";
+        // this->storage = new Collection(_odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
+        // this->storage->name = "Storage Collection";
 
         this->bios = new Bios(_odata_id + "/Bios", "BIOS");
         this->bios->name = "BIOS Configuration Current Settings";
@@ -2880,15 +2933,15 @@ public:
         system->processor->add_member(pro);
 
 
-        //storage & storagecontrollers
-        res_id = odata_id + "/Storage";
-        res_id = res_id + "/1";
-        Storage *sto = new Storage(res_id, "1~");
-        system->storage->add_member(sto);
-        res_id = res_id + "/StorageControllers";
-        res_id = res_id + "/0";
-        StorageControllers *stocon = new StorageControllers(res_id, "0~");
-        sto->controller->add_member(stocon);
+        // //storage & storagecontrollers
+        // res_id = odata_id + "/Storage";
+        // res_id = res_id + "/1";
+        // Storage *sto = new Storage(res_id, "1~");
+        // system->storage->add_member(sto);
+        // res_id = res_id + "/StorageControllers";
+        // res_id = res_id + "/0";
+        // StorageControllers *stocon = new StorageControllers(res_id, "0~");
+        // sto->controller->add_member(stocon);
 
         //memory
         res_id = odata_id + "/Memory";
@@ -2976,7 +3029,8 @@ public:
          * @authors 강
          */
         odata_id = ODATA_MANAGER_ID;
-        odata_id = odata_id + "/1";
+        odata_id = odata_id + "/" + CMM_ID;
+        // cout << "info oooo : " << odata_id << endl;
         Manager *manager = new Manager(odata_id, "1~");
         manager->name = "EdgeServer CMM Manager";
         manager->manager_type = "Enclosure";

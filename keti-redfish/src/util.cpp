@@ -99,12 +99,14 @@ string generate_token(const int _length)
 }
 
 /**
- * @brief generate task number
+ * @brief generate task, account number
  * @author 강
- * @return unsigned int 
+ * @return unsigned int , unsigned int(to string변환필요)
  */
 
 set<unsigned int> task_numset;
+set<unsigned int> account_numset;
+unsigned int account_numset_num = 1;
 
 unsigned int allocate_task_num(void)
 {
@@ -118,6 +120,26 @@ unsigned int allocate_task_num(void)
         }
     }
 }
+
+unsigned int allocate_account_num(void)
+{
+    for(account_numset_num; account_numset_num <= UINT_MAX; account_numset_num++)
+    {
+        if(account_numset_num == UINT_MAX)
+        {
+            account_numset_num = 0;
+            continue;
+        }
+
+        if(account_numset.find(account_numset_num) == account_numset.end())
+        {
+            account_numset.insert(account_numset_num);
+            return account_numset_num;
+        }
+    }
+
+}
+// 꽉차면?
 
 /**
  * @brief get uri, return last string

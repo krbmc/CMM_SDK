@@ -64,6 +64,7 @@ bool comp(const string &s1, const string &s2);
 void timer(boost::asio::deadline_timer* _timer, unsigned int *_remain_expires_time);
 string generate_token(const int len);
 unsigned int allocate_task_num(void);
+unsigned int allocate_account_num(void);
 string get_last_str(string _uri, string delimiter);
 
 /**

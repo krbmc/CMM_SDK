@@ -14,14 +14,14 @@ bool init_resource(void)
     
     // init_record_bmc();
 
-    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
-    // record_save_json();
-    // cout << "\t\t dy : save json complete" << endl;
-    record_load_json();
-    cout << "\t\t dy : load json complete" << endl;
+    record_save_json();
+    cout << "\t\t dy : save json complete" << endl;
+    // record_load_json();
+    // cout << "\t\t dy : load json complete" << endl;
     // 수정할때 서비스루트 만들고 record_init_load하고 load_json하고 save해야할듯
 
     return true;
@@ -100,7 +100,7 @@ bool Resource::save_json(void)
     ofstream out(this->odata.id + ".json");
     out << record_get_json(this->odata.id).serialize() << endl;
     out.close();
-    cout << "\t\t dy : save complete : " << this->odata.id + ".json" << endl;
+    // cout << "\t\t dy : save complete : " << this->odata.id + ".json" << endl;
 
     return true;
 }
@@ -185,6 +185,7 @@ json::value List::get_json(void)
     auto j = this->Resource::get_json();
 
     j[U(this->name)] = json::value::array();
+    j["MemberType"] = json::value::number(this->member_type);
     for (unsigned int i = 0; i < this->members.size(); i++)
         switch (this->member_type)
         {
@@ -294,7 +295,8 @@ json::value AccountService::get_json(void)
     j[U("AccountLockoutThreshold")] = json::value::number(U(this->account_lockout_threshold));
     j[U("AccountLockoutDuration")] = json::value::number(U(this->account_lockout_duration));
     j[U("AccountLockoutCounterResetAfter")] = json::value::number(U(this->account_lockout_counter_reset_after));
-    j[U("AccountLockoutCounterResetEnabled")] = json::value::number(U(this->account_lockout_counter_reset_enabled));
+    j[U("AccountLockoutCounterResetEnabled")] = json::value::boolean(U(this->account_lockout_counter_reset_enabled));
+    // j[U("AccountLockoutCounterResetEnabled")] = json::value::number(U(this->account_lockout_counter_reset_enabled));
     j[U("Accounts")] = this->account_collection->get_odata_id_json();
     j[U("Roles")] = this->role_collection->get_odata_id_json();
     return j;
@@ -358,7 +360,24 @@ pplx::task<void> Session::start(void)
 
             string path = ODATA_SESSION_ID;
             path = path + '/' + session->id;
-            g_record.erase(path); // 레코드 지운거
+            cout << path << endl;
+
+            g_record.erase(path); // 레코드자체 지운거
+
+            cout << "지우기 전" << endl;
+            cout << record_get_json(ODATA_SESSION_ID) << endl;
+
+            Collection *col = (Collection *)g_record[ODATA_SESSION_ID];
+            std::vector<Resource *>::iterator iter;
+            for(iter=col->members.begin(); iter!=col->members.end(); iter++)
+            {
+                if(((Session *)(*iter))->id == session->id)
+                {
+                    col->members.erase(iter);
+                    break;
+                }
+            } // 컬렉션에서 지운거
+
             record_save_json(); // 레코드 json파일 갱신
             string json_path = path;
             json_path = json_path + ".json";
@@ -366,8 +385,10 @@ pplx::task<void> Session::start(void)
             {
                 cout << "delete error in session remove" << endl;
             }
-            // 세션 json파일 제거
-            delete session;
+            // json파일 제거
+
+            // delete session;
+            cout << "지운 후" << endl;
             cout << record_get_json(ODATA_SESSION_ID) << endl;
             cout << "LOGOUT!!!!" << endl;
         });
@@ -1019,6 +1040,7 @@ json::value EthernetInterfaces::get_json(void)
     j[U("MTUSize")] = json::value::number(U(this->mtu_size));
     j[U("HostName")] = json::value::string(U(this->hostname));
     j[U("FQDN")] = json::value::string(U(this->fqdn));
+    j[U("IPv6DefaultGateway")] = json::value::string(U(this->ipv6_default_gateway));
     
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));

@@ -32,6 +32,7 @@ private:
     void handle_put(http_request _request);
     void handle_post(http_request _request);
     void handle_delete(http_request _request);
+    void handle_patch(http_request _request);
 };
 
 // json::value/*pplx::task<http_response>*/ redfish_request_get(string _uri, string _host, int _port);
