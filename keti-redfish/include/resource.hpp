@@ -389,13 +389,14 @@ typedef struct _Device_Info
 
 } Device_Info;
 
-typedef struct _CertContent {
-    string city;
-    string commonName;
+typedef struct _CertContent
+{    
+    string city;   
+    string commonName; 
     string country;
-    string email;
-    string organization;
-    string organizationUnit;
+    string email;   
+    string organization;   
+    string organizationUnit; 
     string state;
 } CertContent; // dy : in certificate
 
@@ -775,13 +776,18 @@ public:
         this->id = "";
         this->is_predefined = false;
         assigned_privileges.push_back("test");
+        // test용인거 같은데 나중에 빼줘야할듯 add_bmc하면 중복되네
 
+        // ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
+        // AccountService/Roles 에 그냥 붙으면 이렇게 생성자에서 add해줘도되는데
+        // Managers/[Bmc_id]/RemoteAccountService/Roles 면 이게 안되니까 AccountService에서 연결함
         g_record[_odata_id] = this;
-    };
-    Role(const string _odata_id, const string _permission_name) : Role(_odata_id)
+    }
+    Role(const string _odata_id, const string _role_id) : Role(_odata_id)
     {
-        this->id = _permission_name;
-        ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
+        this->id = _role_id;
+        // =========================================================
+        // ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
     }
     ~Role()
     {
@@ -813,10 +819,15 @@ public:
         this->password = "";
         this->user_name = "";
         this->locked = false;
+        this->role = nullptr;
 
         g_record[_odata_id] = this;
     }
-    Account(const string _odata_id, const string _role_id) : Account(_odata_id)
+    Account(const string _odata_id, const string _account_id) : Account(_odata_id)
+    {
+        this->id = _account_id;
+    }
+    Account(const string _odata_id, const string _account_id, const string _role_id) : Account(_odata_id, _account_id)
     {
         string odata_id;
         odata_id = ODATA_ROLE_ID;
@@ -829,7 +840,6 @@ public:
         else{
             this->role = nullptr;
         }
-        ((Collection *)g_record[ODATA_ACCOUNT_ID])->add_member(this);
     };
     ~Account()
     {
@@ -855,6 +865,12 @@ public:
     unsigned int account_lockout_duration;
     unsigned int account_lockout_counter_reset_after;
     bool account_lockout_counter_reset_enabled;
+    // unsigned int account_lockout_counter_reset_enabled;
+    // threshold(횟수) 로그인실패하면 계정잠금됨
+    // reset_enabled가 false면 로그인실패횟수 리셋안되고 계정잠금은 관리자가 풀어줘야함
+    // reset_enabled가 true면 reset_after(초)가 지나면 로그인실패횟수 리셋됨
+    // reset_after는 duration이 최대치인가봄(duration보다 작거나 같은값으로만 설정가능
+    // logging threshold(횟수)는 계정당 인증실패하면 관리자 로그에 기록됨
     Collection *account_collection;
     Collection *role_collection;
 
@@ -874,62 +890,74 @@ public:
         this->account_lockout_counter_reset_after = 0;
         this->account_lockout_counter_reset_enabled = 0;
 
-        // Role collection configure
-        this->role_collection = new Collection(ODATA_ROLE_ID, ODATA_ROLE_COLLECTION_TYPE);
-        this->role_collection->name = "Roles Collection";
-        // Account collection configure
-        this->account_collection = new Collection(ODATA_ACCOUNT_ID, ODATA_ACCOUNT_COLLECTION_TYPE);
-        this->account_collection->name = "Accounts Collection";
+        // // Role collection configure
+        // this->role_collection = new Collection(ODATA_ROLE_ID, ODATA_ROLE_COLLECTION_TYPE);
+        // this->role_collection->name = "Roles Collection";
+        // // Account collection configure
+        // this->account_collection = new Collection(ODATA_ACCOUNT_ID, ODATA_ACCOUNT_COLLECTION_TYPE);
+        // this->account_collection->name = "Accounts Collection";
 
+        // ==========================================================================
         // Administrator role configuration
-        Role *_administrator = new Role(this->role_collection->odata.id + "/Administrator", "Administrator");
-        _administrator->id = "Administrator";
-        _administrator->name = "User Role";
-        _administrator->is_predefined = true;
-        _administrator->assigned_privileges.push_back("Login");
-        _administrator->assigned_privileges.push_back("ConfigureManager");
-        _administrator->assigned_privileges.push_back("ConfigureUsers");
-        _administrator->assigned_privileges.push_back("ConfigureSelf");
-        _administrator->assigned_privileges.push_back("ConfigureComponents");
+        // Role *_administrator = new Role(this->role_collection->odata.id + "/Administrator", "Administrator");
+        // _administrator->id = "Administrator";
+        // _administrator->name = "User Role";
+        // _administrator->is_predefined = true;
+        // _administrator->assigned_privileges.push_back("Login");
+        // _administrator->assigned_privileges.push_back("ConfigureManager");
+        // _administrator->assigned_privileges.push_back("ConfigureUsers");
+        // _administrator->assigned_privileges.push_back("ConfigureSelf");
+        // _administrator->assigned_privileges.push_back("ConfigureComponents");
+        // this->role_collection->add_member(_administrator);
 
-        // Operator role configuration
-        Role *_operator = new Role(this->role_collection->odata.id + "/Operator", "Operator");
-        _operator->id = "Operator";
-        _operator->name = "User Role";
-        _operator->is_predefined = true;
-        _operator->assigned_privileges.push_back("Login");
-        _operator->assigned_privileges.push_back("ConfigureSelf");
-        _operator->assigned_privileges.push_back("ConfigureComponents");
+        // // Operator role configuration
+        // Role *_operator = new Role(this->role_collection->odata.id + "/Operator", "Operator");
+        // _operator->id = "Operator";
+        // _operator->name = "User Role";
+        // _operator->is_predefined = true;
+        // _operator->assigned_privileges.push_back("Login");
+        // _operator->assigned_privileges.push_back("ConfigureSelf");
+        // _operator->assigned_privileges.push_back("ConfigureComponents");
+        // this->role_collection->add_member(_operator);
 
-        // ReadOnly role configuration
-        Role *_read_only = new Role(this->role_collection->odata.id + "/ReadOnly", "ReadOnly");
-        _read_only->id = "ReadOnly";
-        _read_only->name = "User Role";
-        _read_only->is_predefined = true;
-        _read_only->assigned_privileges.push_back("Login");
-        _read_only->assigned_privileges.push_back("ConfigureSelf");
+        // // ReadOnly role configuration
+        // Role *_read_only = new Role(this->role_collection->odata.id + "/ReadOnly", "ReadOnly");
+        // _read_only->id = "ReadOnly";
+        // _read_only->name = "User Role";
+        // _read_only->is_predefined = true;
+        // _read_only->assigned_privileges.push_back("Login");
+        // _read_only->assigned_privileges.push_back("ConfigureSelf");
+        // this->role_collection->add_member(_read_only);
 
-        // Root account configure
-        Account *_root = new Account(this->account_collection->odata.id + "/root", "Administrator");
-        _root->id = "root";
-        _root->name = "User Account";
-        _root->user_name = "root";
-        _root->password = "ketilinux";
-        _root->enabled = true;
-        _root->locked = false;
+        // // Root account configure
+        // string acc_odata = this->account_collection->odata.id + "/";
+        // string acc_id = to_string(allocate_account_num());
+        // acc_odata = acc_odata + acc_id;
+        
+        // ===================================================
+        // Account *_root = new Account(acc_odata, acc_id, "Administrator");
+        // // _root->id = "root";
+        // _root->name = "User Account";
+        // _root->user_name = "root";
+        // _root->password = "ketilinux";
+        // _root->enabled = true;
+        // _root->locked = false;
+        // this->account_collection->add_member(_root);
 
         g_record[ODATA_ACCOUNT_SERVICE_ID] = this;
+    }
+    AccountService(const string _odata_id) : Resource(ACCOUNT_SERVICE_TYPE, _odata_id, ODATA_ACCOUNT_SERVICE_TYPE)
+    {
+        // this->account_collection = new Collection(_odata_id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
+        // this->account_collection->name = "Remote Accounts Collection";
+
+        // this->role_collection = new Collection(_odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
+        // this->role_collection->name = "Remote Roles Collection";
+
+        g_record[_odata_id] = this;
+        // 매니저에 들어가는 리모트어카운트서비스의 생성자에 해당하게됨
+
     };
-    // AccountService(const string _odata_id) : Resource(ACCOUNT_SERVICE_TYPE, _odata_id, ODATA_ACCOUNT_SERVICE_TYPE)
-    // {
-    //     this->account_collection = new Collection(_odata_id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
-    //     this->account_collection->name = "Remote Accounts Collection";
-
-    //     this->role_collection = new Collection(_odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
-    //     this->role_collection->name = "Roles Collection";
-    //     // 매니저에 들어가는 리모트어카운트서비스 하는중
-
-    // };
     ~AccountService()
     {
         g_record.erase(this->odata.id);
@@ -1015,8 +1043,8 @@ class LogService : public Resource
         this->log_entry_type = "Event";
         this->service_enabled = true;
 
-        this->entry = new Collection(_odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
-        this->entry->name = "Log Entry Collection";
+        // this->entry = new Collection(_odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
+        // this->entry->name = "Log Entry Collection";
 
 
         // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
@@ -1135,8 +1163,8 @@ class EventService : public Resource
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
 
-        this->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
-        this->subscriptions->name = "Subscription Collection";
+        // this->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
+        // this->subscriptions->name = "Subscription Collection";
 
         g_record[ODATA_EVENT_SERVICE_ID] = this;
 
@@ -1213,7 +1241,7 @@ class UpdateService : public Resource
     Collection *firmware_inventory;
     Collection *software_inventory;
     
-    Collection *actions;
+    // Collection *actions;
 
     UpdateService(const string _odata_id) : Resource(UPDATE_SERVICE_TYPE, _odata_id, ODATA_UPDATE_SERVICE_TYPE)
     {
@@ -1224,10 +1252,10 @@ class UpdateService : public Resource
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
 
-        this->firmware_inventory = new Collection(_odata_id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
-        this->firmware_inventory->name = "Firmware Inventory Collection";
-        this->software_inventory = new Collection(_odata_id + "/SoftwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
-        this->software_inventory->name = "Software Inventory Collection";
+        // this->firmware_inventory = new Collection(_odata_id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
+        // this->firmware_inventory->name = "Firmware Inventory Collection";
+        // this->software_inventory = new Collection(_odata_id + "/SoftwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
+        // this->software_inventory->name = "Software Inventory Collection";
 
         // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
         // this->actions->name = "UpdateService Actions Collection";
@@ -1238,7 +1266,7 @@ class UpdateService : public Resource
     UpdateService(const string _odata_id, const string _update_id) : UpdateService(_odata_id)
     {
         this->id = _update_id;
-        ((Collection *)(g_record[ODATA_UPDATE_SERVICE_ID]))->add_member(this);
+        // ((Collection *)(g_record[ODATA_UPDATE_SERVICE_ID]))->add_member(this);
     };
     ~UpdateService()
     {
@@ -1424,6 +1452,8 @@ public:
     vector<IPv6_Address> v_ipv6;
     Vlan vlan;
 
+    string ipv6_default_gateway;
+
     Status status;
     // string address;
     // string subnetMask;
@@ -1542,11 +1572,12 @@ public:
 
     Collection *ethernet;
     Collection *log_service;
+    // Collection *actions;
+    vector<Actions *> actions;
+    AccountService *remote_account_service;
+    // BMC의 계정정보를 관리하는 AccountService
     
     NetworkProtocol *network;
-    AccountService *account_service;
-
-    vector<Actions *> actions;
     
     Manager(const string _odata_id) : Resource(MANAGER_TYPE, _odata_id, ODATA_MANAGER_TYPE)
     {
@@ -1561,20 +1592,20 @@ public:
         this->model = "Manager Model";
         this->power_state = "On";
 
-        this->network = new NetworkProtocol(this->odata.id + "/NetworkProtocol", "NetworkProtocol");
+        // this->network = new NetworkProtocol(this->odata.id + "/NetworkProtocol", "NetworkProtocol");
 
         string oodata = _odata_id;
         // cout << "oodata : " << oodata << endl;
         oodata = oodata + "/EthernetInterfaces";
         // cout << "oodata2 : " << oodata << endl;
-        this->ethernet = new Collection(oodata, ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+        // this->ethernet = new Collection(oodata, ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         // 여기에 이더넷 4개 만드는거 걍 넣어놓기 -> 서비스루트에서 이닛할때로 만듬.
 
         this->datetime = currentDateTime();
         this->datetime_offset = "+06:00";
 
-        this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
-        this->log_service->name = "Log Service Collection";
+        // this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        // this->log_service->name = "Log Service Collection";
         // string res_id = _odata_id + "/LogServices";
         // res_id = res_id + "/Log1";
         // LogService *logservice = new LogService(res_id, "Log Service 1~");
@@ -1592,6 +1623,12 @@ public:
         // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
         // this->actions->add_member(act);
 
+        // cout << "!!!! MANAGER MODULE ID : " << get_last_str(_odata_id, "/") << endl;
+        if(get_current_object_name(_odata_id, "/") != CMM_ID)
+            remote_account_service = new AccountService(_odata_id + "/AccountService");
+
+        
+
 
 
 
@@ -1600,7 +1637,7 @@ public:
     Manager(const string _odata_id, const string _manager_id) : Manager(_odata_id)
     {
         this->id = _manager_id;
-        ((Collection *)g_record[ODATA_MANAGER_ID])->add_member(this);
+        // ((Collection *)g_record[ODATA_MANAGER_ID])->add_member(this);
     };
     ~Manager()
     {
@@ -1684,8 +1721,8 @@ public:
         this->service_enabled = true;
         this->datetime = currentDateTime();
 
-        this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
-        task_collection->name = "Task Collection";
+        // this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
+        // task_collection->name = "Task Collection";
 
         g_record[ODATA_TASK_SERVICE_ID] = this;
     };
@@ -1726,8 +1763,8 @@ public:
         this->session_timeout = 86400; // 30sec to 86400sec
 
         // AccountCollection configuration
-        this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
-        session_collection->name = "Session Collection";
+        // this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
+        // session_collection->name = "Session Collection";
 
         g_record[ODATA_SESSION_SERVICE_ID] = this;
     };
@@ -1978,13 +2015,13 @@ public:
     {
         this->id = "Thermal";
 
-        // Temperatures configuration
-        this->temperatures = new List(this->odata.id + "/Temperatures", TEMPERATURE_TYPE);
-        this->temperatures->name = "Temperatures";
+        // // Temperatures configuration
+        // this->temperatures = new List(this->odata.id + "/Temperatures", TEMPERATURE_TYPE);
+        // this->temperatures->name = "Chassis Temperatures";
 
-        // Fans configuration
-        this->fans = new List(this->odata.id + "/Fans", FAN_TYPE);
-        this->fans->name = "Fans";
+        // // Fans configuration
+        // this->fans = new List(this->odata.id + "/Fans", FAN_TYPE);
+        // this->fans->name = "Chassis Fans";
 
         g_record[_odata_id] = this;
     };
@@ -2186,14 +2223,14 @@ class Power : public Resource
     {
         this->id = "Power";
 
-        this->power_control = new List(this->odata.id + "/PowerControl", POWER_CONTROL_TYPE);
-        this->power_control->name = "PowerControl";
+        // this->power_control = new List(this->odata.id + "/PowerControl", POWER_CONTROL_TYPE);
+        // this->power_control->name = "PowerControl";
 
-        this->voltages = new List(this->odata.id + "/Voltages", VOLTAGE_TYPE);
-        this->voltages->name = "Voltages";
+        // this->voltages = new List(this->odata.id + "/Voltages", VOLTAGE_TYPE);
+        // this->voltages->name = "Voltages";
 
-        this->power_supplies = new List(this->odata.id + "/PowerSupplies", POWER_SUPPLY_TYPE);
-        this->power_supplies->name = "PowerSupplies";
+        // this->power_supplies = new List(this->odata.id + "/PowerSupplies", POWER_SUPPLY_TYPE);
+        // this->power_supplies->name = "PowerSupplies";
 
         g_record[_odata_id] = this;
     };
@@ -2589,15 +2626,14 @@ class Systems : public Resource
     Bios *bios; // resource Bios
     
     Collection *network; // resource NetworkInterfaces // 일단 없음
-    Collection *storage; // resource Storages
+    // Collection *storage; // resource Storages
     Collection *processor; // resource Processors
     Collection *memory; // resource Memory
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
     Collection *simple_storage;
-    
-    vector<Actions *> actions;
-    
+
+
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
         // this->id = _systems_id;
@@ -2657,41 +2693,38 @@ class Systems : public Resource
         // this->ms.total_system_memory_GiB = 96;
         // this->ms.total_
 
-        // this->ps = new ProcessorSummary(_odata_id + "/ProcessorSummary", "ProcessorSummary");
-        this->processor = new Collection(_odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
-        this->processor->name = "Processor Collection";
+        // Collection Generate
+        // 컬렉션인거 processor, memory, ethernet, log_service, simple_storage;
+        // this->processor = new Collection(_odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
+        // this->processor->name = "Computer System Processor Collection";
+
+        // this->memory = new Collection(_odata_id + "/Memory", ODATA_MEMORY_COLLECTION_TYPE);
+        // this->memory->name = "Computer System Memory Collection";
+
+        // this->ethernet = new Collection(_odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+        // this->ethernet->name = "Computer System Ethernet Interface Collection";
+
+        // this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        // this->log_service->name = "Computer System Log Service Collection";
+
+        // this->simple_storage = new Collection(_odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
+        // this->simple_storage->name = "Computer System Simple Storage Collection";
 
         // this->storage = new Collection(_odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
         // this->storage->name = "Storage Collection";
-
-        this->bios = new Bios(_odata_id + "/Bios", "BIOS");
-        this->bios->name = "BIOS Configuration Current Settings";
-
-        this->memory = new Collection(_odata_id + "/Memory", ODATA_MEMORY_COLLECTION_TYPE);
-        this->memory->name = "Memory Collection";
-
-        this->ethernet = new Collection(_odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
-        this->ethernet->name = "Ethernet Interface Collection";
-
-        this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
-        this->log_service->name = "Log Service Collection";
-
+        // 일단은 포인터변수들 중에 컬렉션만 만들고 나머지 포인터 변수에 해당하는 멤버변수들은 system을 초기화하는
+        // 부분에서 별도로 생성 >> 에서 컬렉션도 밖에서 별도생성으로 바꿈
 
         // Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
         // actions.push_back(act);
 
-        this->simple_storage = new Collection(_odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
-        this->simple_storage->name = "Simple Storage Collection";
-        // SimpleStorage *sim = new SimpleStorage(this->simple_storage->odata.id + "/0", "0~");
-        // this->simple_storage->add_member(sim);
-
-        // cout << "!@#$ sys : " << _odata_id << endl;
         g_record[_odata_id] = this;
     }
     Systems(const string _odata_id, const string _systems_id) : Systems(_odata_id)
     {
         this->id = _systems_id;
-        ((Collection *)g_record[ODATA_SYSTEM_ID])->add_member(this);
+        // ((Collection *)g_record[ODATA_SYSTEM_ID])->add_member(this);
+        // 이거 뺄거고 이거빼면 add_bmc에서도 처리해줘야함
     };
     ~Systems()
     {
@@ -2778,45 +2811,52 @@ public:
     {
         this->id = _chassis_id;
         // Thermal configuration
-        this->thermal = new Thermal(this->odata.id + "/Thermal");
-        this->thermal->name = "EdgeServer Chassis Thermal";
+        // this->thermal = new Thermal(this->odata.id + "/Thermal");
+        // this->thermal->name = "EdgeServer Chassis Thermal";
 
-        ostringstream os;
-        os << this->thermal->fans->odata.id << "/" << "0";
-        Fan *f = new Fan(os.str(), "0~~");
-        this->thermal->fans->add_member(f);
+        // ostringstream os;
+        // os << this->thermal->fans->odata.id << "/" << "0";
+        // Fan *f = new Fan(os.str(), "0~~");
+        // this->thermal->fans->add_member(f);
 
         // Power configuration
-        this->power = new Power(this->odata.id + "/Power");
-        this->power->name = "EdgeServer Chassis Power";
+        // this->power = new Power(this->odata.id + "/Power");
+        // this->power->name = "EdgeServer Chassis Power";
 
-        ostringstream s;
-        s << this->power->power_control->odata.id << "/" << "0";
-        // cout << "IN CHASSIS" << endl;
-        // cout << "1st// " << s.str() << endl;
-        PowerControl *pc = new PowerControl(s.str(), "0~~");
-        this->power->power_control->add_member(pc);
+        // ostringstream s;
+        // s << this->power->power_control->odata.id << "/" << "0";
+        // // cout << "IN CHASSIS" << endl;
+        // // cout << "1st// " << s.str() << endl;
+        // PowerControl *pc = new PowerControl(s.str(), "0~~");
+        // this->power->power_control->add_member(pc);
 
-        s.str("");
-        s << this->power->voltages->odata.id << "/" << "0";
-        Voltage *volt = new Voltage(s.str(), "0~~");
-        this->power->voltages->add_member(volt);
+        // s.str("");
+        // s << this->power->voltages->odata.id << "/" << "0";
+        // Voltage *volt = new Voltage(s.str(), "0~~");
+        // this->power->voltages->add_member(volt);
 
-        s.str("");
-        s << this->power->power_supplies->odata.id << "/" << "0";
-        PowerSupply *ps = new PowerSupply(s.str(), "0~~");
-        this->power->power_supplies->add_member(ps);
+        // s.str("");
+        // s << this->power->power_supplies->odata.id << "/" << "0";
+        // PowerSupply *ps = new PowerSupply(s.str(), "0~~");
+        // this->power->power_supplies->add_member(ps);
 
-        s.str("");
-        s << this->sensors->odata.id << "/" << "Sensor1";
-        Sensor *sen = new Sensor(s.str(), "Sensor Number 1~~");
-        this->sensors->add_member(sen);
+        // Sensor configuration
+        // this->sensors = new Collection(this->odata.id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
+        // this->sensors->name = "Sensor Collection";
+        // s.str("");
+        // s << this->sensors->odata.id << "/" << "Sensor1";
+        // Sensor *sen = new Sensor(s.str(), "Sensor Number 1~~");
+        // this->sensors->add_member(sen);
 
         // cout << "2nd// " << s.str() << endl;
         // cout << "OUT CHASSIS" << endl;
 
-        ((Collection *)g_record[ODATA_CHASSIS_ID])->add_member(this);
-
+        g_record[_odata_id] = this;
+    }
+    Chassis(const string _odata_id, const string _chassis_id) : Chassis(_odata_id)
+    {
+        this->id = _chassis_id;
+        // ((Collection *)g_record[ODATA_CHASSIS_ID])->add_member(this);
     };
     ~Chassis()
     {
@@ -2863,31 +2903,98 @@ public:
         this->redfish_version = "1.0.0";
         this->uuid = "";
 
-        // System configuration
+        // CMM ID와 주소 등록
+        module_id_table.insert({CMM_ID, CMM_ADDRESS});
+        
+        // Collection Generate
         system_collection = new Collection(ODATA_SYSTEM_ID, ODATA_SYSTEM_COLLECTION_TYPE);
         system_collection->name = "Computer System Collection";
 
-        module_id_table.insert({CMM_ID, CMM_ADDRESS});
+        chassis_collection = new Collection(ODATA_CHASSIS_ID, ODATA_CHASSIS_COLLECTION_TYPE);
+        chassis_collection->name = "Chassis Collection";
+
+        manager_collection = new Collection(ODATA_MANAGER_ID, ODATA_MANAGER_COLLECTION_TYPE);
+        manager_collection->name = "Manager Collection";
+
+        update_service = new Collection(ODATA_UPDATE_SERVICE_ID, ODATA_UPDATE_SERVICE_COLLECTION_TYPE);
+        update_service->name = "UpdateService Collection";
+
+        
         /**
-         * @brief System init
+         * @brief CMM System init
          * @authors 강
-         * @todo 나중에 첫 init은 systems 안으로 옮기고 함수만들어서 추가/수정..
          */
         odata_id = ODATA_SYSTEM_ID;
-        odata_id = odata_id + "/1";
+        odata_id = odata_id + "/" + CMM_ID;
         // cout << "odata : " << odata_id << endl;
         // system
-        Systems *system = new Systems(odata_id, "1~");
-        system->name = "EdgeServer CMM System";
+        Systems *system = new Systems(odata_id, CMM_ID);
+        system->name = "CMM Computer System";
 
+        /**
+         * @todo 여기에 system 멤버변수값 넣어주기
+         */
 
-        //processor
-        string res_id = odata_id + "/Processors";
-        Processors *pro = new Processors(res_id + "/CPU1", "CPU1");
-        system->processor->add_member(pro);
+        // Collection Generate in systems
+        system->processor = new Collection(odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
+        system->processor->name = "Computer System Processor Collection";
 
+        system->memory = new Collection(odata_id + "/Memory", ODATA_MEMORY_COLLECTION_TYPE);
+        system->memory->name = "Computer System Memory Collection";
 
-        //storage & storagecontrollers
+        system->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+        system->ethernet->name = "Computer System Ethernet Interface Collection";
+
+        system->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        system->log_service->name = "Computer System Log Service Collection";
+
+        system->simple_storage = new Collection(odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
+        system->simple_storage->name = "Computer System Simple Storage Collection";
+
+        // system - bios
+        system->bios = new Bios(odata_id + "/Bios", "Bios");
+        system->bios->name = "BIOS Configuration Current Settings";
+
+        // system - processor
+        string res_odata_id = odata_id + "/Processors";
+        Processors *system_pro = new Processors(res_odata_id + "/CPU1", "CPU1");
+        system->processor->add_member(system_pro);
+
+        // system - memory
+        res_odata_id = odata_id + "/Memory";
+        res_odata_id = res_odata_id + "/Mem1";
+        Memory *system_mem = new Memory(res_odata_id, "DIMM1");
+        system->memory->add_member(system_mem);
+
+        // system - ethernetinterface
+        res_odata_id = odata_id + "/EthernetInterfaces";
+        res_odata_id = res_odata_id + "/0";
+        EthernetInterfaces *system_ether = new EthernetInterfaces(res_odata_id, "0~");
+        system->ethernet->add_member(system_ether);
+
+        // system - logservice & logentry
+        res_odata_id = odata_id + "/LogServices";
+        res_odata_id = res_odata_id + "/Log1";
+        LogService *system_logservice = new LogService(res_odata_id, "Log Service 1~");
+        system->log_service->add_member(system_logservice);
+
+        res_odata_id = res_odata_id + "/Entries";
+        system_logservice->entry = new Collection(res_odata_id, ODATA_LOG_ENTRY_COLLECTION_TYPE);
+        system_logservice->entry->name = "Computer System Log Entry Collection";
+
+        res_odata_id = res_odata_id + "/0";
+        LogEntry *system_log = new LogEntry(res_odata_id, "Log Entry 0~");
+        system_logservice->entry->add_member(system_log);
+
+        // system - simplestorage
+        res_odata_id = odata_id + "/SimpleStorage";
+        res_odata_id = res_odata_id + "/0";
+        SimpleStorage *system_sim = new SimpleStorage(res_odata_id, "0~");
+        system->simple_storage->add_member(system_sim);
+
+        system_collection->add_member(system);
+
+        // //storage & storagecontrollers
         // res_id = odata_id + "/Storage";
         // res_id = res_id + "/1";
         // Storage *sto = new Storage(res_id, "1~");
@@ -2897,38 +3004,20 @@ public:
         // StorageControllers *stocon = new StorageControllers(res_id, "0~");
         // sto->controller->add_member(stocon);
 
-        //memory
-        res_id = odata_id + "/Memory";
-        res_id = res_id + "/Mem1";
-        Memory *mem = new Memory(res_id, "DIMM1");
-        system->memory->add_member(mem);
+        /**
+         * @brief CMM Chassis init
+         */
         
-        // ethernetinterface
-        res_id = odata_id + "/EthernetInterfaces";
-        res_id = res_id + "/0";
-        EthernetInterfaces *ether = new EthernetInterfaces(res_id, "0~");
-        system->ethernet->add_member(ether);
-
-
-        // logservice & logentry
-        res_id = odata_id + "/LogServices";
-        res_id = res_id + "/Log1";
-        LogService *logservice = new LogService(res_id, "Log Service 1~");
-        system->log_service->add_member(logservice);
-        res_id = res_id + "/Entries";
-        res_id = res_id + "/0";
-        LogEntry *log = new LogEntry(res_id, "Log Entry 0~");
-        logservice->entry->add_member(log);
-
-        
-        
-        // Chassis configration
-        chassis_collection = new Collection(ODATA_CHASSIS_ID, ODATA_CHASSIS_COLLECTION_TYPE);
-        chassis_collection->name = "Chassis Collection";
         odata_id = ODATA_CHASSIS_ID;
-        odata_id = odata_id + "/1";
-        Chassis *chassis = new Chassis(odata_id, "1~");
-        chassis->name = "EdgeServer CMM Chassis";
+        odata_id = odata_id + "/" + CMM_ID;
+
+        // chassis
+        Chassis *chassis = new Chassis(odata_id, CMM_ID);
+        chassis->name = "CMM Chassis";
+
+        /**
+         * @todo chassis 멤버변수값 넣어주기
+         */
         chassis->chassis_type = "Enclosure";
         chassis->manufacturer = "KETI";
         chassis->indicator_led = LED_OFF;
@@ -2943,7 +3032,23 @@ public:
         }
         // 이거 순서 바뀐거같은데 temp[0]이 maxvalue인듯
 
+        // Collection Generate in chassis
+        chassis->sensors = new Collection(odata_id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
+        chassis->sensors->name = "Chassis Sensor Collection";
 
+        // chassis - thermal
+        res_odata_id = odata_id + "/Thermal";
+        chassis->thermal = new Thermal(res_odata_id);
+        chassis->thermal->name = "CMM Chassis Thermal";
+
+        // List Generate in thermal
+        chassis->thermal->temperatures = new List(res_odata_id + "/Temperatures", TEMPERATURE_TYPE);
+        chassis->thermal->temperatures->name = "Chassis Temperatures";
+
+        chassis->thermal->fans = new List(res_odata_id + "/Fans", FAN_TYPE);
+        chassis->thermal->fans->name = "Chassis Fans";
+
+        // chassis - thermal - temperatures
         for (uint8_t i = 0; i < 4; i++)
         {
             ostringstream s;
@@ -2973,30 +3078,109 @@ public:
         cpu_temperature->read(chassis->thermal->temperatures->members.size(), CPU_CONTEXT);
         chassis->thermal->temperatures->add_member(cpu_temperature);
 
+        // chassis - thermal - fans
+        ostringstream os;
+        os << chassis->thermal->fans->odata.id << "/0";// << "0";
+        Fan *chassis_f = new Fan(os.str(), "0~~");
+        chassis->thermal->fans->add_member(chassis_f);
 
-        // Manager configration
-        manager_collection = new Collection(ODATA_MANAGER_ID, ODATA_MANAGER_COLLECTION_TYPE);
-        manager_collection->name = "Manager Collection";
+        // chassis - power
+        res_odata_id = odata_id + "/Power";
+        chassis->power = new Power(res_odata_id);
+        chassis->power->name = "CMM Chassis Power";
+
+        // List Generate in power
+        chassis->power->power_control = new List(res_odata_id + "/PowerControl", POWER_CONTROL_TYPE);
+        chassis->power->power_control->name = "Chassis PowerControl";
+
+        chassis->power->voltages = new List(res_odata_id + "/Voltages", VOLTAGE_TYPE);
+        chassis->power->voltages->name = "Chassis Voltages";
+
+        chassis->power->power_supplies = new List(res_odata_id + "/PowerSupplies", POWER_SUPPLY_TYPE);
+        chassis->power->power_supplies->name = "Chassis PowerSupplies";
+
+        // chassis - power - power_control
+        os.str("");
+        os << chassis->power->power_control->odata.id << "/0";
+        PowerControl *chassis_pc = new PowerControl(os.str(), "0~~");
+        chassis->power->power_control->add_member(chassis_pc);
+
+        // chassis - power - voltage
+        os.str("");
+        os << chassis->power->voltages->odata.id << "/0";
+        Voltage *chassis_volt = new Voltage(os.str(), "0~~");
+        chassis->power->voltages->add_member(chassis_volt);
+
+        // chassis - power - power_supply
+        os.str("");
+        os << chassis->power->power_supplies->odata.id << "/0";
+        PowerSupply *chassis_ps = new PowerSupply(os.str(), "0~~");
+        chassis->power->power_supplies->add_member(chassis_ps);
+
+        // chassis - sensor
+        os.str("");
+        os << chassis->sensors->odata.id << "/Sensor1";
+        Sensor *chassis_sen = new Sensor(os.str(), "Sensor Number 1~~");
+        chassis->sensors->add_member(chassis_sen);
+
+        chassis_collection->add_member(chassis);
+
+
         
         /**
-         * @brief Manager init
+         * @brief CMM Manager init
          * @authors 강
          */
         odata_id = ODATA_MANAGER_ID;
-        odata_id = odata_id + "/1";
-        Manager *manager = new Manager(odata_id, "1~");
-        manager->name = "EdgeServer CMM Manager";
+        odata_id = odata_id + "/" + CMM_ID;
+        // cout << "info oooo : " << odata_id << endl;
+
+        // manager
+        Manager *manager = new Manager(odata_id, CMM_ID);
+        manager->name = "CMM Manager";
         manager->manager_type = "Enclosure";
         manager->firmware_version = "v1";
         // cout << "ethernet->odata.id : " << manager->ethernet->odata.id << endl;
+
+        /**
+         * @todo manager 멤버변수값 넣어주기
+         */
+
+        // Collection Generate in manager
+        manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+        manager->ethernet->name = "Manager Ethernet Interface Collection";
+
+        manager->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        manager->log_service->name = "Manager Log Service Collection";
+
+        // manager - networkprotocol
+        res_odata_id = odata_id + "/NetworkProtocol";
+        manager->network = new NetworkProtocol(res_odata_id, "NetworkProtocol");
+
+        // manager - ethernetinterfaces
         for(uint8_t i =0; i<4; i++)
         {
             ostringstream s;
             s << manager->ethernet->odata.id << "/" << to_string(i);
-            EthernetInterfaces *ether = new EthernetInterfaces(s.str(), to_string(i));
-            ether->name = "EthernetInterface in Manager";
-            manager->ethernet->add_member(ether);
+            EthernetInterfaces *manager_ether = new EthernetInterfaces(s.str(), to_string(i));
+            manager_ether->name = "EthernetInterface in Manager";
+            manager->ethernet->add_member(manager_ether);
         }
+
+        // manager - logservice & logentry
+        res_odata_id = odata_id + "/LogServices";
+        res_odata_id = res_odata_id + "/Log1";
+        LogService *manager_logservice = new LogService(res_odata_id, "Log Service 1~");
+        manager->log_service->add_member(manager_logservice);
+
+        res_odata_id = res_odata_id + "/Entries";
+        manager_logservice->entry = new Collection(res_odata_id, ODATA_LOG_ENTRY_COLLECTION_TYPE);
+
+        res_odata_id = res_odata_id + "/0";
+        LogEntry *manager_log = new LogEntry(res_odata_id, "Log Entry 0~");
+        manager_logservice->entry->add_member(manager_log);
+
+        manager_collection->add_member(manager);
 
         /**
          * @brief Certificate init
@@ -3022,16 +3206,28 @@ public:
          */
         // TaskService configuration
         task_service = new TaskService();
+        task_service->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
+        task_service->task_collection->name = "Task Collection";
 
         // EventService configuration
         event_service = new EventService();
+        event_service->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
+        event_service->subscriptions->name = "Subscription Collection";
+        EventDestination *ev_dest = new EventDestination(event_service->subscriptions->odata.id + "/1", "Subscriber 1");
+        // 생성자에 collection에 add되는거 있음
 
         // UpdateService configuration
-        update_service = new Collection(ODATA_UPDATE_SERVICE_ID, ODATA_UPDATE_SERVICE_COLLECTION_TYPE);
-        update_service->name = "UpdateService Collection";
         string str_up = ODATA_UPDATE_SERVICE_ID;
-        str_up = str_up + "/1";
-        UpdateService *up = new UpdateService(str_up, "1~~");
+        str_up = str_up + "/" + CMM_ID;
+        UpdateService *up = new UpdateService(str_up, CMM_ID);
+        update_service->add_member(up);
+
+        // updateservice collection generate
+        up->firmware_inventory = new Collection(up->odata.id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
+        up->firmware_inventory->name = "Firmware Inventory Collection";
+        up->software_inventory = new Collection(up->odata.id + "/SoftwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
+        up->software_inventory->name = "Software Inventory Collection";
+
         SoftwareInventory *sf1 = new SoftwareInventory(up->firmware_inventory->odata.id + "/CMM", "CMM Firmware");
         SoftwareInventory *sf2 = new SoftwareInventory(up->software_inventory->odata.id + "/CMM", "CMM Software");
         up->firmware_inventory->add_member(sf1);
@@ -3042,8 +3238,70 @@ public:
         // AccountService configuration
         account_service = new AccountService();
 
+        // Collection Generate in accountservice
+        account_service->role_collection = new Collection(ODATA_ROLE_ID, ODATA_ROLE_COLLECTION_TYPE);
+        account_service->role_collection->name = "Roles Collection";
+
+        account_service->account_collection = new Collection(ODATA_ACCOUNT_ID, ODATA_ACCOUNT_COLLECTION_TYPE);
+        account_service->account_collection->name = "Accounts Collection";
+
+        // accountservice - role
+        string role_odata = account_service->role_collection->odata.id;
+
+        // Administrator role configuration
+        Role *_administrator = new Role(role_odata + "/Administrator", "Administrator");
+        _administrator->id = "Administrator";
+        _administrator->name = "User Role";
+        _administrator->is_predefined = true;
+        _administrator->assigned_privileges.push_back("Login");
+        _administrator->assigned_privileges.push_back("ConfigureManager");
+        _administrator->assigned_privileges.push_back("ConfigureUsers");
+        _administrator->assigned_privileges.push_back("ConfigureSelf");
+        _administrator->assigned_privileges.push_back("ConfigureComponents");
+        account_service->role_collection->add_member(_administrator);
+
+        // Operator role configuration
+        Role *_operator = new Role(role_odata + "/Operator", "Operator");
+        _operator->id = "Operator";
+        _operator->name = "User Role";
+        _operator->is_predefined = true;
+        _operator->assigned_privileges.push_back("Login");
+        _operator->assigned_privileges.push_back("ConfigureSelf");
+        _operator->assigned_privileges.push_back("ConfigureComponents");
+        account_service->role_collection->add_member(_operator);
+
+        // ReadOnly role configuration
+        Role *_read_only = new Role(role_odata + "/ReadOnly", "ReadOnly");
+        _read_only->id = "ReadOnly";
+        _read_only->name = "User Role";
+        _read_only->is_predefined = true;
+        _read_only->assigned_privileges.push_back("Login");
+        _read_only->assigned_privileges.push_back("ConfigureSelf");
+        account_service->role_collection->add_member(_read_only);
+
+        // accountservice - account
+        string acc_odata = account_service->account_collection->odata.id;
+        string acc_id = to_string(allocate_account_num());
+        acc_odata = acc_odata + "/" + acc_id;
+
+        // Root account configure
+        Account *_root = new Account(acc_odata, acc_id, "Administrator");
+        // _root->id = "root";
+        _root->name = "User Account";
+        _root->user_name = "root";
+        _root->password = "ketilinux";
+        _root->enabled = true;
+        _root->locked = false;
+        account_service->account_collection->add_member(_root);
+        
+
         // SessionService configuration
         session_service = new SessionService();
+
+        // Collection Generate in accountservice
+        session_service->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
+        session_service->session_collection->name = "Session Collection";
+
 
         g_record[ODATA_SERVICE_ROOT_ID] = this;
     };

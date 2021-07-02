@@ -12,19 +12,18 @@ bool init_resource(void)
 {
     g_service_root = new ServiceRoot();
     
-    record_load_json();
+    // record_load_json();
     log(info) << "record load json complete";
     
-    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
+    // cout << " 갑자기? " << endl;
     record_save_json();
+    // cout << " 갑자기?2 " << endl;
     log(info) << "record save json complete";
-    // for (auto iter = g_record.begin(); iter != g_record.end(); iter++){
-    //     cout << iter->first << endl;
-    //     cout << iter->second << endl;
-    // }
+    
     return true;
 }
 
@@ -114,8 +113,12 @@ json::value Resource::get_odata_id_json(void)
 bool Resource::save_json(void)
 {
     string json_content;
-
+    // cout << "어딘데 ? start" << endl;
+cout << this->odata.id << endl;
     json_content = record_get_json(this->odata.id).serialize();
+
+    // cout << "어딘데 ? 0" << endl;
+    // cout << this->odata.id << endl;
     
     if (json_content == "null"){
         log(warning) << "Something Wrong in save json : " << this->odata.id << endl;
@@ -123,6 +126,7 @@ bool Resource::save_json(void)
     }
     // log(info) << "file " << this->odata.id << " : " << json_content;
     
+    // cout << "어딘데 ? 1" << endl;
     vector<string> tokens = string_split(this->odata.id, '/');
     string sub_path = "/";
     for (unsigned int i = 0; i < tokens.size() - 1; i++)
@@ -134,12 +138,14 @@ bool Resource::save_json(void)
         
         mkdir(sub_path.c_str(), 0755);
     }
+    // cout << "어딘데 ? 2" << endl;
 
     // Save json file to path
     ofstream out(this->odata.id + ".json");
     out << json_content << endl;
     out.close();
-    log(info) << "save complete : " << this->odata.id + ".json" << endl << endl;
+    // log(info) << "save complete : " << this->odata.id + ".json" << endl << endl;
+    // cout << "어딘데 ? 3" << endl;
 
     return true;
 }
@@ -256,6 +262,7 @@ json::value List::get_json(void)
     
     j["MemberType"] = json::value::number(this->member_type);
     j[U(this->name)] = json::value::array();
+    j["MemberType"] = json::value::number(this->member_type);
     for (unsigned int i = 0; i < this->members.size(); i++)
         switch (this->member_type)
         {
@@ -613,7 +620,24 @@ pplx::task<void> Session::start(void)
 
             string path = ODATA_SESSION_ID;
             path = path + '/' + session->id;
-            g_record.erase(path); // 레코드 지운거
+            cout << path << endl;
+
+            g_record.erase(path); // 레코드자체 지운거
+
+            cout << "지우기 전" << endl;
+            cout << record_get_json(ODATA_SESSION_ID) << endl;
+
+            Collection *col = (Collection *)g_record[ODATA_SESSION_ID];
+            std::vector<Resource *>::iterator iter;
+            for(iter=col->members.begin(); iter!=col->members.end(); iter++)
+            {
+                if(((Session *)(*iter))->id == session->id)
+                {
+                    col->members.erase(iter);
+                    break;
+                }
+            } // 컬렉션에서 지운거
+
             record_save_json(); // 레코드 json파일 갱신
             string json_path = path;
             json_path = json_path + ".json";
@@ -621,8 +645,10 @@ pplx::task<void> Session::start(void)
             {
                 cout << "delete error in session remove" << endl;
             }
-            // 세션 json파일 제거
-            delete session;
+            // json파일 제거
+
+            // delete session;
+            cout << "지운 후" << endl;
             cout << record_get_json(ODATA_SESSION_ID) << endl;
             cout << "LOGOUT!!!!" << endl;
         });
@@ -1802,6 +1828,7 @@ json::value EthernetInterfaces::get_json(void)
     j[U("MTUSize")] = json::value::number(U(this->mtu_size));
     j[U("HostName")] = json::value::string(U(this->hostname));
     j[U("FQDN")] = json::value::string(U(this->fqdn));
+    j[U("IPv6DefaultGateway")] = json::value::string(U(this->ipv6_default_gateway));
     
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
@@ -2170,7 +2197,6 @@ json::value Systems::get_json(void)
     j[U("EthernetInterfaces")] = this->ethernet->get_odata_id_json();
     j[U("SimpleStorage")] = this->simple_storage->get_odata_id_json();
     j[U("LogServices")] = this->log_service->get_odata_id_json();
-
     // json::value j_act;
     // for(int i=0; i<this->actions.size(); i++)
     // {
