@@ -1019,8 +1019,8 @@ class LogService : public Resource
         this->entry->name = "Log Entry Collection";
 
 
-        Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
-        actions.push_back(act);
+        // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
+        // actions.push_back(act);
         // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
         // this->actions->name = "LogService Actions Collection";
         // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
@@ -1138,8 +1138,6 @@ class EventService : public Resource
         this->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
         this->subscriptions->name = "Subscription Collection";
 
-        EventDestination *_test = new EventDestination(this->subscriptions->odata.id + "/1", "Subscriber 1");
-
         g_record[ODATA_EVENT_SERVICE_ID] = this;
 
     };
@@ -1231,9 +1229,9 @@ class UpdateService : public Resource
         this->software_inventory = new Collection(_odata_id + "/SoftwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
         this->software_inventory->name = "Software Inventory Collection";
 
-        this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
-        this->actions->name = "UpdateService Actions Collection";
-        Actions *act = new Actions(_odata_id + "/Actions/UpdateService.SimpleUpdate");
+        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
+        // this->actions->name = "UpdateService Actions Collection";
+        // Actions *act = new Actions(_odata_id + "/Actions/UpdateService.SimpleUpdate");
 
         g_record[_odata_id] = this;
     }
@@ -1586,8 +1584,8 @@ public:
         // LogEntry *log = new LogEntry(res_id, "Log Entry 0~");
         // logservice->entry->add_member(log);
 
-        Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
-        actions.push_back(act);
+        // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
+        // actions.push_back(act);
 
         // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
         // this->actions->name = "Managers Actions Collection";
@@ -1688,8 +1686,6 @@ public:
 
         this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
         task_collection->name = "Task Collection";
-
-        Task *_test = new Task(this->task_collection->odata.id + "/test", "Test Task");
 
         g_record[ODATA_TASK_SERVICE_ID] = this;
     };
@@ -2582,27 +2578,26 @@ class Systems : public Resource
     string bios_version;
 
     Status status;
+    string uuid;
+    Boot boot;
+    // Ipmifru *fru_this;
     // Location location;
     // Thermal *thermal;
     // Resource *power;
-    string uuid;
-    Boot boot;
-    // Actions actions;
-    // Ipmifru *fru_this;
-
     // ProcessorSummary *ps; // 구조체로 바꿔야할듯 현재리소슨데
+    // MemorySummary ms;
+    Bios *bios; // resource Bios
+    
     Collection *network; // resource NetworkInterfaces // 일단 없음
     Collection *storage; // resource Storages
     Collection *processor; // resource Processors
-    Bios *bios; // resource Bios
     Collection *memory; // resource Memory
-    // MemorySummary ms;
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
-    // Collection *actions;
-    vector<Actions *> actions;
     Collection *simple_storage;
-
+    
+    vector<Actions *> actions;
+    
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
         // this->id = _systems_id;
@@ -2666,8 +2661,8 @@ class Systems : public Resource
         this->processor = new Collection(_odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
         this->processor->name = "Processor Collection";
 
-        this->storage = new Collection(_odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
-        this->storage->name = "Storage Collection";
+        // this->storage = new Collection(_odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
+        // this->storage->name = "Storage Collection";
 
         this->bios = new Bios(_odata_id + "/Bios", "BIOS");
         this->bios->name = "BIOS Configuration Current Settings";
@@ -2682,8 +2677,8 @@ class Systems : public Resource
         this->log_service->name = "Log Service Collection";
 
 
-        Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
-        actions.push_back(act);
+        // Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
+        // actions.push_back(act);
 
         this->simple_storage = new Collection(_odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
         this->simple_storage->name = "Simple Storage Collection";
@@ -2773,6 +2768,15 @@ public:
         // this->depth_mm = 0;
         // this->weight_kg = 0;
 
+        // Sensor configuration
+        this->sensors = new Collection(this->odata.id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
+        this->sensors->name = "Sensor Collection";
+        
+        g_record[_odata_id] = this;
+    }
+    Chassis(const string _odata_id, const string _chassis_id) : Chassis(_odata_id)
+    {
+        this->id = _chassis_id;
         // Thermal configuration
         this->thermal = new Thermal(this->odata.id + "/Thermal");
         this->thermal->name = "EdgeServer Chassis Thermal";
@@ -2803,26 +2807,16 @@ public:
         PowerSupply *ps = new PowerSupply(s.str(), "0~~");
         this->power->power_supplies->add_member(ps);
 
-        // Sensor configuration
-        this->sensors = new Collection(this->odata.id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
-        this->sensors->name = "Sensor Collection";
         s.str("");
         s << this->sensors->odata.id << "/" << "Sensor1";
         Sensor *sen = new Sensor(s.str(), "Sensor Number 1~~");
         this->sensors->add_member(sen);
 
-
-
         // cout << "2nd// " << s.str() << endl;
         // cout << "OUT CHASSIS" << endl;
 
-
-        g_record[_odata_id] = this;
-    }
-    Chassis(const string _odata_id, const string _chassis_id) : Chassis(_odata_id)
-    {
-        this->id = _chassis_id;
         ((Collection *)g_record[ODATA_CHASSIS_ID])->add_member(this);
+
     };
     ~Chassis()
     {
@@ -2894,14 +2888,14 @@ public:
 
 
         //storage & storagecontrollers
-        res_id = odata_id + "/Storage";
-        res_id = res_id + "/1";
-        Storage *sto = new Storage(res_id, "1~");
-        system->storage->add_member(sto);
-        res_id = res_id + "/StorageControllers";
-        res_id = res_id + "/0";
-        StorageControllers *stocon = new StorageControllers(res_id, "0~");
-        sto->controller->add_member(stocon);
+        // res_id = odata_id + "/Storage";
+        // res_id = res_id + "/1";
+        // Storage *sto = new Storage(res_id, "1~");
+        // system->storage->add_member(sto);
+        // res_id = res_id + "/StorageControllers";
+        // res_id = res_id + "/0";
+        // StorageControllers *stocon = new StorageControllers(res_id, "0~");
+        // sto->controller->add_member(stocon);
 
         //memory
         res_id = odata_id + "/Memory";

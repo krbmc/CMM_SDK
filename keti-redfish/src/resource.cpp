@@ -839,7 +839,7 @@ json::value EventService::get_json(void)
     j_sse[U("SubordinateResources")] = json::value::boolean(U(this->sse.subordinate_resources));
     j[U("SSEFilterPropertiesSupported")] = j_sse;
 
-    j[U("Subscriptions")] = this->subscriptions->get_odata_id_json();
+    // j[U("Subscriptions")] = this->subscriptions->get_odata_id_json();
 
     return j;
 }
@@ -1195,12 +1195,12 @@ json::value Sensor::get_json(void)
     j[U("ReadingType")] = json::value::string(U(this->reading_type));
     j[U("ReadingTime")] = json::value::string(U(this->reading_time));
 
-    ostringstream o;
-    o << this->reading;
-    j[U("Reading")] = json::value::string(U(o.str()));
+    // ostringstream o;
+    // o << this->reading;
+    // j[U("Reading")] = json::value::string(U(o.str()));
     // 이렇게 하면 소수점 다 안나오게 할 수 있네 double형인거? 나중에 참고
-    // j[U("Reading")] = json::value::number(U(this->reading));
-    
+
+    j[U("Reading")] = json::value::number(U(this->reading));
     j[U("ReadingUnits")] = json::value::string(U(this->reading_units));
     j[U("ReadingRangeMin")] = json::value::number(U(this->reading_range_min));
     j[U("ReadingRangeMax")] = json::value::number(U(this->reading_range_max));
@@ -1255,7 +1255,6 @@ bool Sensor::load_json(json::value &j)
         this->id = j.at("Id").as_string();
         this->reading_type = j.at("ReadingType").as_string();
         this->reading_time = j.at("ReadingTime").as_string();
-
         this->reading = j.at("Reading").as_double();
         this->reading_units = j.at("ReadingUnits").as_string();
         this->reading_range_max = j.at("ReadingRangeMax").as_double();
@@ -1284,7 +1283,6 @@ bool Sensor::load_json(json::value &j)
         lower_fatal = threshold.at("LowerFatal");
         this->thresh.lower_fatal.reading = lower_fatal.at("Reading").as_double();
         this->thresh.lower_fatal.activation = lower_fatal.at("Activation").as_string();
-        
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
@@ -1292,7 +1290,8 @@ bool Sensor::load_json(json::value &j)
     }
     catch (json::json_exception &e)
     {
-        log(warning) << "read something failed in sensor";
+        log(warning) << "read something failed in sensor : " << this->odata.id;
+        
         return true;
     }
 
@@ -2089,9 +2088,10 @@ bool Task::load_json(json::value &j)
         this->payload.target_uri = payload.at("TargetUri").as_string();
         
         http_headers = payload.at("HttpHeaders");
-        for(auto iter = http_headers.as_object().begin(); iter != http_headers.as_object().end(); ++iter)
-        {
-            this->payload.http_headers[iter->first] = iter->second.as_string();
+        if (!http_headers.is_null()){
+            for(auto iter = http_headers.as_object().begin(); iter != http_headers.as_object().end(); ++iter)            {
+                this->payload.http_headers[iter->first] = iter->second.as_string();
+            }
         }
     }
     catch (json::json_exception &e)
@@ -2171,14 +2171,14 @@ json::value Systems::get_json(void)
     j[U("SimpleStorage")] = this->simple_storage->get_odata_id_json();
     j[U("LogServices")] = this->log_service->get_odata_id_json();
 
-    json::value j_act;
-    for(int i=0; i<this->actions.size(); i++)
-    {
-        string act = "#";
-        act = act + this->actions[i]->action_name;
-        j_act[U(act)] = this->actions[i]->get_json();
-    }
-    j[U("Actions")] = j_act;
+    // json::value j_act;
+    // for(int i=0; i<this->actions.size(); i++)
+    // {
+    //     string act = "#";
+    //     act = act + this->actions[i]->action_name;
+    //     j_act[U(act)] = this->actions[i]->get_json();
+    // }
+    // j[U("Actions")] = j_act;
     
     return j;
 }
