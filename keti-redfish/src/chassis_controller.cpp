@@ -154,12 +154,32 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     json::value system_info;
     system_info = response.extract_json().get();
 
+    // log(warning) << "일단 SYSTEM INFO " << endl;
     // cout << "일단 SYSTEM INFO " << endl;
     // cout <<system_info << endl;
 
 
     // Resource 드디어 생성
     Systems *system = new Systems(_bmc_id, "BMC System");
+
+    // System Collection Generate
+    system->processor = new Collection(system->odata.id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
+    system->processor->name = "Computer System Processor Collection";
+
+    system->memory = new Collection(system->odata.id + "/Memory", ODATA_MEMORY_COLLECTION_TYPE);
+    system->memory->name = "Computer System Memory Collection";
+
+    system->ethernet = new Collection(system->odata.id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+    system->ethernet->name = "Computer System Ethernet Interface Collection";
+
+    system->log_service = new Collection(system->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+    system->log_service->name = "Computer System Log Service Collection";
+
+    system->simple_storage = new Collection(system->odata.id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
+    system->simple_storage->name = "Computer System Simple Storage Collection";
+    // 여기에서 한번더 하위로 만드는 리소스가 로그서비스이기 때문에 로그서비스(아직 처리안함) 할때 엔트리컬렉션 만들어주면됨
+
+    system->bios = new Bios(system->odata.id + "/Bios", "Bios");
     
 
     // System 멤버변수 넣어주기
@@ -339,6 +359,7 @@ void add_system(string _bmc_id, string _host, string _auth_token)
         else
         {
             // 뭐 Bios 안에 @odata.id가 없으면 없는거지 뭐 안만들면됨
+            cout << "Bios 없음" << endl;
         }
 
         // 얘는 멤버아니고 바로 정보 사용하면 되네
@@ -936,6 +957,28 @@ void add_chassis(string _bmc_id, string _host, string _auth_token)
     // Chassis Resource 생성
     Chassis *chassis = new Chassis(_bmc_id, "BMC Chassis");
 
+    // Chassis Thermal, Power, Sensor collection
+    chassis->thermal = new Thermal(chassis->odata.id + "/Thermal");
+    chassis->thermal->name = "BMC Chassis Thermal";
+    chassis->thermal->temperatures = new List(chassis->thermal->odata.id + "/Temperatures", TEMPERATURE_TYPE);
+    chassis->thermal->temperatures->name = "Chassis Temperatures";
+    chassis->thermal->fans = new List(chassis->thermal->odata.id + "/Fans", FAN_TYPE);
+    chassis->thermal->fans->name = "Chassis Fans";
+
+    chassis->power = new Power(chassis->odata.id + "/Power");
+    chassis->power->name = "BMC Chassis Power";
+    chassis->power->power_control = new List(chassis->power->odata.id + "/PowerControl", POWER_CONTROL_TYPE);
+    chassis->power->power_control->name = "Chassis PowerControl";
+    chassis->power->voltages = new List(chassis->power->odata.id + "/Voltages", VOLTAGE_TYPE);
+    chassis->power->voltages->name = "Chassis Voltages";
+    chassis->power->power_supplies = new List(chassis->power->odata.id + "/PowerSupplies", POWER_SUPPLY_TYPE);
+    chassis->power->power_supplies->name = "Chassis PowerSupplies";
+
+    chassis->sensors = new Collection(chassis->odata.id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
+    chassis->sensors->name = "Chassis Sensor Collection";
+    // 센서 파워는 나중에 쓰임
+
+
     // Chassis 멤버변수 넣어주기
     if(chassis_info.as_object().find("Id") != chassis_info.as_object().end())
     {
@@ -1374,7 +1417,22 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
     cout<<"일단 MANAGER INFO "<<endl;
     cout<<manager_info<<endl;
 
+    // Manager Resource 생성
     Manager *manager = new Manager(_bmc_id, "BMC Manager");
+
+    // Manager ethernet, logservice, remote_accountservice
+    manager->ethernet = new Collection(manager->odata.id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+    manager->ethernet->name = "Manager Ethernet Interface Collection";
+
+    manager->log_service = new Collection(manager->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+    manager->log_service->name = "Manager Log Service Collection";
+
+    manager->remote_account_service = new AccountService(manager->odata.id + "/AccountService");
+    manager->remote_account_service->account_collection = new Collection(manager->remote_account_service->odata.id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
+    manager->remote_account_service->account_collection->name = "Remote Accounts Collection";
+
+    manager->remote_account_service->role_collection = new Collection(manager->remote_account_service->odata.id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
+    manager->remote_account_service->role_collection->name = "Remote Roles Collection";
 
     // Manager 멤버변수 넣어주기
     if(manager_info.as_object().find("Id") != manager_info.as_object().end())
@@ -1787,7 +1845,7 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
                         // cout << role_info << endl;
 
                         // Role 만들기
-                        string last_token = get_last_str(member_uri, "/");
+                        string last_token = get_current_object_name(member_uri, "/");
                         string my_odata = _bmc_id + "/AccountService/Roles/" + last_token;
                         // cout << "MY_odata : " << my_odata << endl;
 
@@ -1844,7 +1902,7 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
                         // cout << account_info << endl;
 
                         // Account 만들기
-                        string last_token = get_last_str(member_uri, "/");
+                        string last_token = get_current_object_name(member_uri, "/");
                         string my_odata = _bmc_id + "/AccountService/Accounts/" + last_token;
                         // cout << "MY_odata : " << my_odata << endl;
                         Account *acc = new Account(my_odata);
@@ -1875,7 +1933,7 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
                                 {
                                     string role_odata, role_id, new_odata;
                                     role_odata = tmp2.at("@odata.id").as_string();
-                                    role_id = get_last_str(role_odata, "/");
+                                    role_id = get_current_object_name(role_odata, "/");
                                     new_odata = _bmc_id + "/AccountService/Roles/" + role_id;
                                     if(record_is_exist(new_odata))
                                     {
@@ -1911,6 +1969,7 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
         }
 
     }
+    
 }
 
 

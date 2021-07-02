@@ -1954,7 +1954,7 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
     // Session session = *((Session *)g_record[session_uri]);
     Session *session = (Session *)g_record[session_uri];
 
-    string last = get_last_str(_uri, "/"); // account_id임 last는
+    string last = get_current_object_name(_uri, "/"); // account_id임 last는
 
     if(session->account->role->id == "Administrator")
     {

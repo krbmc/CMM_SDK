@@ -12,14 +12,16 @@ bool init_resource(void)
 {
     g_service_root = new ServiceRoot();
     
-    record_load_json();
+    // record_load_json();
     log(info) << "record load json complete";
     
-    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
+    // cout << " 갑자기? " << endl;
     record_save_json();
+    // cout << " 갑자기?2 " << endl;
     log(info) << "record save json complete";
     
     return true;
@@ -111,8 +113,12 @@ json::value Resource::get_odata_id_json(void)
 bool Resource::save_json(void)
 {
     string json_content;
-
+    // cout << "어딘데 ? start" << endl;
+cout << this->odata.id << endl;
     json_content = record_get_json(this->odata.id).serialize();
+
+    // cout << "어딘데 ? 0" << endl;
+    // cout << this->odata.id << endl;
     
     if (json_content == "null"){
         log(warning) << "Something Wrong in save json : " << this->odata.id << endl;
@@ -120,6 +126,7 @@ bool Resource::save_json(void)
     }
     // log(info) << "file " << this->odata.id << " : " << json_content;
     
+    // cout << "어딘데 ? 1" << endl;
     vector<string> tokens = string_split(this->odata.id, '/');
     string sub_path = "/";
     for (unsigned int i = 0; i < tokens.size() - 1; i++)
@@ -131,12 +138,14 @@ bool Resource::save_json(void)
         
         mkdir(sub_path.c_str(), 0755);
     }
+    // cout << "어딘데 ? 2" << endl;
 
     // Save json file to path
     ofstream out(this->odata.id + ".json");
     out << json_content << endl;
     out.close();
-    log(info) << "save complete : " << this->odata.id + ".json" << endl << endl;
+    // log(info) << "save complete : " << this->odata.id + ".json" << endl << endl;
+    // cout << "어딘데 ? 3" << endl;
 
     return true;
 }
@@ -2188,15 +2197,14 @@ json::value Systems::get_json(void)
     j[U("EthernetInterfaces")] = this->ethernet->get_odata_id_json();
     j[U("SimpleStorage")] = this->simple_storage->get_odata_id_json();
     j[U("LogServices")] = this->log_service->get_odata_id_json();
-
-    json::value j_act;
-    for(int i=0; i<this->actions.size(); i++)
-    {
-        string act = "#";
-        act = act + this->actions[i]->action_name;
-        j_act[U(act)] = this->actions[i]->get_json();
-    }
-    j[U("Actions")] = j_act;
+    // json::value j_act;
+    // for(int i=0; i<this->actions.size(); i++)
+    // {
+    //     string act = "#";
+    //     act = act + this->actions[i]->action_name;
+    //     j_act[U(act)] = this->actions[i]->get_json();
+    // }
+    // j[U("Actions")] = j_act;
     
     return j;
 }
