@@ -154,12 +154,32 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     json::value system_info;
     system_info = response.extract_json().get();
 
+    // log(warning) << "일단 SYSTEM INFO " << endl;
     // cout << "일단 SYSTEM INFO " << endl;
     // cout <<system_info << endl;
 
 
     // Resource 드디어 생성
     Systems *system = new Systems(_bmc_id, "BMC System");
+
+    // System Collection Generate
+    system->processor = new Collection(system->odata.id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
+    system->processor->name = "Computer System Processor Collection";
+
+    system->memory = new Collection(system->odata.id + "/Memory", ODATA_MEMORY_COLLECTION_TYPE);
+    system->memory->name = "Computer System Memory Collection";
+
+    system->ethernet = new Collection(system->odata.id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+    system->ethernet->name = "Computer System Ethernet Interface Collection";
+
+    system->log_service = new Collection(system->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+    system->log_service->name = "Computer System Log Service Collection";
+
+    system->simple_storage = new Collection(system->odata.id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
+    system->simple_storage->name = "Computer System Simple Storage Collection";
+    // 여기에서 한번더 하위로 만드는 리소스가 로그서비스이기 때문에 로그서비스(아직 처리안함) 할때 엔트리컬렉션 만들어주면됨
+
+    system->bios = new Bios(system->odata.id + "/Bios", "Bios");
     
 
     // System 멤버변수 넣어주기
@@ -339,6 +359,7 @@ void add_system(string _bmc_id, string _host, string _auth_token)
         else
         {
             // 뭐 Bios 안에 @odata.id가 없으면 없는거지 뭐 안만들면됨
+            cout << "Bios 없음" << endl;
         }
 
         // 얘는 멤버아니고 바로 정보 사용하면 되네
@@ -936,6 +957,28 @@ void add_chassis(string _bmc_id, string _host, string _auth_token)
     // Chassis Resource 생성
     Chassis *chassis = new Chassis(_bmc_id, "BMC Chassis");
 
+    // Chassis Thermal, Power, Sensor collection
+    chassis->thermal = new Thermal(chassis->odata.id + "/Thermal");
+    chassis->thermal->name = "BMC Chassis Thermal";
+    chassis->thermal->temperatures = new List(chassis->thermal->odata.id + "/Temperatures", TEMPERATURE_TYPE);
+    chassis->thermal->temperatures->name = "Chassis Temperatures";
+    chassis->thermal->fans = new List(chassis->thermal->odata.id + "/Fans", FAN_TYPE);
+    chassis->thermal->fans->name = "Chassis Fans";
+
+    chassis->power = new Power(chassis->odata.id + "/Power");
+    chassis->power->name = "BMC Chassis Power";
+    chassis->power->power_control = new List(chassis->power->odata.id + "/PowerControl", POWER_CONTROL_TYPE);
+    chassis->power->power_control->name = "Chassis PowerControl";
+    chassis->power->voltages = new List(chassis->power->odata.id + "/Voltages", VOLTAGE_TYPE);
+    chassis->power->voltages->name = "Chassis Voltages";
+    chassis->power->power_supplies = new List(chassis->power->odata.id + "/PowerSupplies", POWER_SUPPLY_TYPE);
+    chassis->power->power_supplies->name = "Chassis PowerSupplies";
+
+    chassis->sensors = new Collection(chassis->odata.id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
+    chassis->sensors->name = "Chassis Sensor Collection";
+    // 센서 파워는 나중에 쓰임
+
+
     // Chassis 멤버변수 넣어주기
     if(chassis_info.as_object().find("Id") != chassis_info.as_object().end())
     {
@@ -1374,7 +1417,22 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
     cout<<"일단 MANAGER INFO "<<endl;
     cout<<manager_info<<endl;
 
+    // Manager Resource 생성
     Manager *manager = new Manager(_bmc_id, "BMC Manager");
+
+    // Manager ethernet, logservice, remote_accountservice
+    manager->ethernet = new Collection(manager->odata.id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+    manager->ethernet->name = "Manager Ethernet Interface Collection";
+
+    manager->log_service = new Collection(manager->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+    manager->log_service->name = "Manager Log Service Collection";
+
+    manager->remote_account_service = new AccountService(manager->odata.id + "/AccountService");
+    manager->remote_account_service->account_collection = new Collection(manager->remote_account_service->odata.id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
+    manager->remote_account_service->account_collection->name = "Remote Accounts Collection";
+
+    manager->remote_account_service->role_collection = new Collection(manager->remote_account_service->odata.id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
+    manager->remote_account_service->role_collection->name = "Remote Roles Collection";
 
     // Manager 멤버변수 넣어주기
     if(manager_info.as_object().find("Id") != manager_info.as_object().end())
@@ -1612,10 +1670,10 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
                     if(array_member[i].as_object().find("@odata.id") != array_member[i].as_object().end())
                     {
                         member_uri = array_member[i].at("@odata.id").as_string();
-                        // cout << "MEMBER URI : " << member_uri << endl;
+                        cout << "MEMBER URI : " << member_uri << endl;
                         ethernet_info = get_json_info(member_uri, _host, _auth_token);
-                        // cout << "받아라 EthernetInterfaces Collection 안의 EthernetInterfaces INFO" << endl;
-                        // cout << ethernet_info << endl;
+                        cout << "받아라 EthernetInterfaces Collection 안의 EthernetInterfaces INFO" << endl;
+                        cout << ethernet_info << endl;
 
                         // EthernetInterfaces 만들기
                         
@@ -1643,6 +1701,9 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
 
                         if(ethernet_info.as_object().find("FQDN") != ethernet_info.as_object().end())
                             eth->fqdn = ethernet_info.at("FQDN").as_string();
+
+                        if(ethernet_info.as_object().find("IPv6DefaultGateway") != ethernet_info.as_object().end())
+                            eth->ipv6_default_gateway = ethernet_info.at("IPv6DefaultGateway").as_string();
 
                         if(ethernet_info.as_object().find("IPv4Addresses") != ethernet_info.as_object().end())
                         {
@@ -1685,6 +1746,8 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
 
                                 if(ip_array[ip_num].as_object().find("PrefixLength") != ip_array[ip_num].as_object().end())
                                     tmp.prefix_length = ip_array[ip_num].at("PrefixLength").as_integer();
+                                else
+                                    tmp.prefix_length = 0;
 
                                 eth->v_ipv6.push_back(tmp);
                             }
@@ -1710,6 +1773,203 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
     }
     else
         cout << "LogServices is X" << endl;
+
+    // Remote AccountService(BMC AccountService)
+    json::value remote_info;
+    string remote_uri = ODATA_ACCOUNT_SERVICE_ID;
+    remote_info = get_json_info(remote_uri, _host, _auth_token);
+    // cout << "받아라 Remote AccountService INFO" << endl;
+    // cout << remote_info << endl;
+
+    if(remote_info.as_object().find("Id") != remote_info.as_object().end())
+        manager->remote_account_service->id = remote_info.at("Id").as_string();
+
+    if(remote_info.as_object().find("ServiceEnabled") != remote_info.as_object().end())
+        manager->remote_account_service->service_enabled = remote_info.at("ServiceEnabled").as_bool();
+
+    if(remote_info.as_object().find("AuthFailureLoggingThreshold") != remote_info.as_object().end())
+        manager->remote_account_service->auth_failure_logging_threshold = remote_info.at("AuthFailureLoggingThreshold").as_integer();
+
+    if(remote_info.as_object().find("MinPasswordLength") != remote_info.as_object().end())
+        manager->remote_account_service->min_password_length = remote_info.at("MinPasswordLength").as_integer();
+
+    if(remote_info.as_object().find("AccountLockoutThreshold") != remote_info.as_object().end())
+        manager->remote_account_service->account_lockout_threshold = remote_info.at("AccountLockoutThreshold").as_integer();
+
+    if(remote_info.as_object().find("AccountLockoutDuration") != remote_info.as_object().end())
+        manager->remote_account_service->account_lockout_duration = remote_info.at("AccountLockoutDuration").as_integer();
+
+    if(remote_info.as_object().find("AccountLockoutCounterResetAfter") != remote_info.as_object().end())
+        manager->remote_account_service->account_lockout_counter_reset_after = remote_info.at("AccountLockoutCounterResetAfter").as_integer();
+
+    if(remote_info.as_object().find("AccountLockoutCounterResetEnabled") != remote_info.as_object().end())
+        manager->remote_account_service->account_lockout_counter_reset_enabled = remote_info.at("AccountLockoutCounterResetEnabled").as_integer();
+
+    if(remote_info.as_object().find("Status") != remote_info.as_object().end())
+    {
+        json::value j = json::value::object();
+        j = remote_info.at("Status");
+
+        if(j.as_object().find("State") != j.as_object().end())
+            manager->remote_account_service->status.state = j.at("State").as_string();
+        if(j.as_object().find("Health") != j.as_object().end())
+            manager->remote_account_service->status.health = j.at("Health").as_string();
+    }
+
+    if(remote_info.as_object().find("Roles") != remote_info.as_object().end())
+    {
+        json::value role_col_info;
+        string inner_uri;
+        if(remote_info.at("Roles").as_object().find("@odata.id") != remote_info.at("Roles").as_object().end())
+        {
+            inner_uri = remote_info.at("Roles").at("@odata.id").as_string();
+            // cout << "INNER URI : " << inner_uri << endl;
+            role_col_info = get_json_info(inner_uri, _host, _auth_token);
+            // cout << "받아라 Remote AccountService 안의 Role Collection INFO" << endl;
+            // cout << role_col_info << endl;
+
+            json::value array_member = json::value::array();
+            if(role_col_info.as_object().find("Members") != role_col_info.as_object().end())
+            {
+                array_member = role_col_info.at("Members");
+                for(int role_num=0; role_num<array_member.size(); role_num++)
+                {
+                    json::value role_info;
+                    string member_uri;
+                    if(array_member[role_num].as_object().find("@odata.id") != array_member[role_num].as_object().end())
+                    {
+                        member_uri = array_member[role_num].at("@odata.id").as_string();
+                        // cout << "MEMBER URI : " << member_uri << endl;
+                        role_info = get_json_info(member_uri, _host, _auth_token);
+                        // cout << "받아라 Remote AccountService 안의 Role Collection 안의 Role INFO" << endl;
+                        // cout << role_info << endl;
+
+                        // Role 만들기
+                        string last_token = get_current_object_name(member_uri, "/");
+                        string my_odata = _bmc_id + "/AccountService/Roles/" + last_token;
+                        // cout << "MY_odata : " << my_odata << endl;
+
+                        Role *rol = new Role(my_odata);
+
+                        if(role_info.as_object().find("Id") != role_info.as_object().end())
+                            rol->id = role_info.at("Id").as_string();
+
+                        if(role_info.as_object().find("IsPredefined") != role_info.as_object().end())
+                            rol->is_predefined = role_info.at("IsPredefined").as_bool();
+
+                        if(role_info.as_object().find("AssignedPrivileges") != role_info.as_object().end())
+                        {
+                            json::value v_privileges = json::value::array();
+                            v_privileges = role_info.at("AssignedPrivileges");
+
+                            for(int pre_num=0; pre_num<v_privileges.size(); pre_num++)
+                                rol->assigned_privileges.push_back(v_privileges[pre_num].as_string());
+                        }
+
+                        manager->remote_account_service->role_collection->add_member(rol);
+                    }
+                }
+            }
+        }
+    }
+
+    if(remote_info.as_object().find("Accounts") != remote_info.as_object().end())
+    {
+        json::value account_col_info;
+        string inner_uri;
+        if(remote_info.at("Accounts").as_object().find("@odata.id") != remote_info.at("Accounts").as_object().end())
+        {
+            inner_uri = remote_info.at("Accounts").at("@odata.id").as_string();
+            // cout << "INNER URI : " << inner_uri << endl;
+            account_col_info = get_json_info(inner_uri, _host, _auth_token);
+            // cout << "받아라 Remote AccountService 안의 Account Collection INFO" << endl;
+            // cout << account_col_info << endl;
+
+            json::value array_member = json::value::array();
+            if(account_col_info.as_object().find("Members") != account_col_info.as_object().end())
+            {
+                array_member = account_col_info.at("Members");
+                for(int account_num=0; account_num<array_member.size(); account_num++)
+                {
+                    json::value account_info;
+                    string member_uri;
+                    if(array_member[account_num].as_object().find("@odata.id") != array_member[account_num].as_object().end())
+                    {
+                        member_uri = array_member[account_num].at("@odata.id").as_string();
+                        // cout << "MEMBER URI : " << member_uri << endl;
+                        account_info = get_json_info(member_uri, _host, _auth_token);
+                        // cout << "받아라 Remote AccountService 안의 Account Collection 안의 Account INFO" << endl;
+                        // cout << account_info << endl;
+
+                        // Account 만들기
+                        string last_token = get_current_object_name(member_uri, "/");
+                        string my_odata = _bmc_id + "/AccountService/Accounts/" + last_token;
+                        // cout << "MY_odata : " << my_odata << endl;
+                        Account *acc = new Account(my_odata);
+
+                        if(account_info.as_object().find("Id") != account_info.as_object().end())
+                            acc->id = account_info.at("Id").as_string();
+
+                        if(account_info.as_object().find("Enabled") != account_info.as_object().end())
+                            acc->enabled = account_info.at("Enabled").as_bool();
+
+                        if(account_info.as_object().find("UserName") != account_info.as_object().end())
+                            acc->user_name = account_info.at("UserName").as_string();
+
+                        if(account_info.as_object().find("Password") != account_info.as_object().end())
+                            acc->password = account_info.at("Password").as_string();
+
+                        if(account_info.as_object().find("Locked") != account_info.as_object().end())
+                            acc->locked = account_info.at("Locked").as_bool();
+
+                        if(account_info.as_object().find("Links") != account_info.as_object().end())
+                        {
+                            json::value tmp1 = account_info.at("Links");//json::value::object();
+                            // tmp1 = account_info.at("Links");
+                            if(tmp1.as_object().find("Role") != tmp1.as_object().end())
+                            {
+                                json::value tmp2 = tmp1.at("Role");
+                                if(tmp2.as_object().find("@odata.id") != tmp2.as_object().end())
+                                {
+                                    string role_odata, role_id, new_odata;
+                                    role_odata = tmp2.at("@odata.id").as_string();
+                                    role_id = get_current_object_name(role_odata, "/");
+                                    new_odata = _bmc_id + "/AccountService/Roles/" + role_id;
+                                    if(record_is_exist(new_odata))
+                                    {
+                                        acc->role = (Role *)g_record[new_odata];
+                                        // cout << "롤 있어요" << endl;
+                                        // cout << new_odata << endl;
+                                    }
+                                    else
+                                    {
+                                        // cout << "롤 없어요" << endl;
+                                    }
+                                }
+                            }
+
+                        }
+
+                        manager->remote_account_service->account_collection->add_member(acc);
+                            
+                            // role_id는 실제 어카운트리소스에는 없고 role객체가 연결되어있으면 json에만 나타나는거네
+                            // role_id가 없으면 롤없는채로 두고 있으면 롤 연결해야할듯 이거 어카운트보다 롤 먼저
+                            // 처리해야할듯
+                            // Role부분인데 이걸 링크들어가서 롤들어가서 odata읽어서 할지
+                            // 롤아이디로 걍 연결시켜줘버릴지 롤 아이디가 제대로 안들어가있으면 문제될텐데
+                            // 그냥 롤 포인터 자체 연결시킴
+                    }
+
+
+                }
+                
+            }
+
+
+        }
+
+    }
+    
 }
 
 

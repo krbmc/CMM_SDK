@@ -52,9 +52,9 @@ json::value record_get_json(const string _uri)
     // case STORAGE_TYPE:
     //     j = ((Storage *)g_record[_uri])->get_json();
     //     break;
-    case STORAGE_CONTROLLER_TYPE:
-        j = ((StorageControllers *)g_record[_uri])->get_json();
-        break;
+    // case STORAGE_CONTROLLER_TYPE:
+    //     j = ((StorageControllers *)g_record[_uri])->get_json();
+    //     break;
     case BIOS_TYPE:
         j = ((Bios *)g_record[_uri])->get_json();
         break;
@@ -587,7 +587,10 @@ bool record_save_json(void)
 {
     for (auto it = g_record.begin(); it != g_record.end(); it++)
     {
-        log(info) << "uri : " << it->first << ", resource address : " << it->second << endl;
+        if (it->second == 0){
+            continue;
+        }
+        // log(info) << "uri : " << it->first << ", resource address : " << it->second << endl;
         it->second->save_json();
     }
     return true;
@@ -739,8 +742,8 @@ void dependency_injection(Resource *res)
                 case SYSTEM_TYPE:
                     if (res->odata.type == ODATA_NETWORK_INTERFACE_TYPE){
                         ((Systems *)g_record[parent_object_id])->network = (Collection *)res;
-                    }else if (res->odata.type == ODATA_STORAGE_COLLECTION_TYPE){
-                        ((Systems *)g_record[parent_object_id])->storage = (Collection *)res;
+                    // }else if (res->odata.type == ODATA_STORAGE_COLLECTION_TYPE){
+                    //     ((Systems *)g_record[parent_object_id])->storage = (Collection *)res;
                     }else if (res->odata.type == ODATA_PROCESSOR_COLLECTION_TYPE){
                         ((Systems *)g_record[parent_object_id])->processor = (Collection *)res;
                     }else if (res->odata.type == ODATA_MEMORY_COLLECTION_TYPE){
@@ -902,9 +905,9 @@ void dependency_injection(Resource *res)
             power list : power_control, voltages, power_supplies
         */
             switch (((List *)res)->member_type){
-                case STORAGE_CONTROLLER_TYPE:
-                    ((Storage *)g_record[parent_object_id])->controller = (List *)res;
-                    break;
+                // case STORAGE_CONTROLLER_TYPE:
+                //     ((Storage *)g_record[parent_object_id])->controller = (List *)res;
+                //     break;
                 case TEMPERATURE_TYPE:
                     ((Thermal *)g_record[parent_object_id])->temperatures = (List *)res;
                     break;
@@ -926,9 +929,9 @@ void dependency_injection(Resource *res)
             }
             break;
         }
-        case STORAGE_CONTROLLER_TYPE:
-            ((List *)g_record[parent_object_id])->add_member((StorageControllers *)res);
-            break;            
+        // case STORAGE_CONTROLLER_TYPE:
+        //     ((List *)g_record[parent_object_id])->add_member((StorageControllers *)res);
+        //     break;            
         case TEMPERATURE_TYPE:
             ((List *)g_record[parent_object_id])->add_member((Temperature *)res);
             break;            

@@ -95,6 +95,7 @@ int main(int _argc, char *_argv[])
     // Set server entry point
     log(info) << "Server entry point: " << SERVER_ENTRY_POINT;
     utility::string_t url = U(SERVER_ENTRY_POINT);
+    // cout << "!@#$URL?? : " << url << endl;
 
     // RESTful server start
     start_server(url, listen_config);
