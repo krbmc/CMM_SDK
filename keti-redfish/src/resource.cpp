@@ -12,16 +12,14 @@ bool init_resource(void)
 {
     g_service_root = new ServiceRoot();
     
-    // record_load_json();
+    record_load_json();
     log(info) << "record load json complete";
     
-    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
-    // cout << " 갑자기? " << endl;
     record_save_json();
-    // cout << " 갑자기?2 " << endl;
     log(info) << "record save json complete";
     
     return true;
@@ -113,20 +111,16 @@ json::value Resource::get_odata_id_json(void)
 bool Resource::save_json(void)
 {
     string json_content;
-    // cout << "어딘데 ? start" << endl;
-cout << this->odata.id << endl;
+
     json_content = record_get_json(this->odata.id).serialize();
 
-    // cout << "어딘데 ? 0" << endl;
-    // cout << this->odata.id << endl;
-    
     if (json_content == "null"){
         log(warning) << "Something Wrong in save json : " << this->odata.id << endl;
         return false;
     }
+
     // log(info) << "file " << this->odata.id << " : " << json_content;
     
-    // cout << "어딘데 ? 1" << endl;
     vector<string> tokens = string_split(this->odata.id, '/');
     string sub_path = "/";
     for (unsigned int i = 0; i < tokens.size() - 1; i++)
@@ -138,14 +132,12 @@ cout << this->odata.id << endl;
         
         mkdir(sub_path.c_str(), 0755);
     }
-    // cout << "어딘데 ? 2" << endl;
 
     // Save json file to path
     ofstream out(this->odata.id + ".json");
     out << json_content << endl;
     out.close();
     // log(info) << "save complete : " << this->odata.id + ".json" << endl << endl;
-    // cout << "어딘데 ? 3" << endl;
 
     return true;
 }
@@ -227,7 +219,7 @@ json::value Collection::get_json(void)
     
     j[U("Members")] = json::value::array();
     for (unsigned int i = 0; i < this->members.size(); i++){
-        j[U("Members")][i] = this->members[i]->get_odata_id_json();
+        j["Members"][i] = get_resource_odata_id_json(this->members[i], this->odata.id);
     }
     j[U("Members@odata.count")] = json::value::number(U(this->members.size()));
     return j;
@@ -260,8 +252,6 @@ json::value List::get_json(void)
     if (j.is_null())
         return j;
     
-    j["MemberType"] = json::value::number(this->member_type);
-    j[U(this->name)] = json::value::array();
     j["MemberType"] = json::value::number(this->member_type);
     for (unsigned int i = 0; i < this->members.size(); i++)
         switch (this->member_type)
@@ -403,6 +393,8 @@ json::value Account::get_json(void)
         k[U("Role")] = this->role->get_odata_id_json();
     }
     j[U("Links")] = k;
+    
+    j["Certificates"] = get_resource_odata_id_json(this->certificates, this->odata.id);
 
     return j;
 }
@@ -483,8 +475,10 @@ json::value AccountService::get_json(void)
     j[U("AccountLockoutDuration")] = json::value::number(U(this->account_lockout_duration));
     j[U("AccountLockoutCounterResetAfter")] = json::value::number(U(this->account_lockout_counter_reset_after));
     j[U("AccountLockoutCounterResetEnabled")] = json::value::boolean(U(this->account_lockout_counter_reset_enabled));
-    j[U("Accounts")] = this->account_collection->get_odata_id_json();
-    j[U("Roles")] = this->role_collection->get_odata_id_json();
+
+    j["Accounts"] = get_resource_odata_id_json(this->account_collection, this->odata.id);
+    j["Roles"] = get_resource_odata_id_json(this->role_collection, this->odata.id);
+
     return j;
 }
 
@@ -530,7 +524,9 @@ json::value SessionService::get_json(void)
     j[U("Status")] = k;
     j[U("ServiceEnabled")] = json::value::boolean(U(this->service_enabled));
     j[U("SessionTimeout")] = json::value::number(U(this->session_timeout));
-    j[U("Sessions")] = this->session_collection->get_odata_id_json();
+
+    j["Sessions"] = get_resource_odata_id_json(this->session_collection, this->odata.id);
+    
     return j;
 }
 
@@ -677,15 +673,15 @@ json::value LogService::get_json(void)
     k[U("Health")] = json::value::string(U(this->status.health));
     j[U("Status")] = k;
 
-    j[U("Entries")] = this->entry->get_odata_id_json();
+    j["Entries"] = get_resource_odata_id_json(this->entry, this->odata.id);
 
-    json::value j_act;
-    for(int i=0; i<this->actions.size(); i++)
-    {
-        string act = "#";
-        act = act + this->actions[i]->action_name;
-        j_act[U(act)] = this->actions[i]->get_json();
-    }
+    // json::value j_act;
+    // for(int i=0; i<this->actions.size(); i++)
+    // {
+    //     string act = "#";
+    //     act = act + this->actions[i]->action_name;
+    //     j_act[U(act)] = this->actions[i]->get_json();
+    // }
     // std::vector<Resource *>::iterator iter;
     // for(iter = this->actions->members.begin(); iter != this->actions->members.end(); iter++)
     // {
@@ -694,8 +690,7 @@ json::value LogService::get_json(void)
     //     // act = act + ((Actions *)*iter)->action_by + "." + ((Actions *)*iter)->action_what;
     //     j_act[U(act)] = ((Actions *)(*iter))->get_json();
     // }
-    j[U("Actions")] = j_act;
-
+    // j[U("Actions")] = j_act;
 
     return j;
 }
@@ -865,7 +860,7 @@ json::value EventService::get_json(void)
     j_sse[U("SubordinateResources")] = json::value::boolean(U(this->sse.subordinate_resources));
     j[U("SSEFilterPropertiesSupported")] = j_sse;
 
-    // j[U("Subscriptions")] = this->subscriptions->get_odata_id_json();
+    j["Subscriptions"] = get_resource_odata_id_json(this->subscriptions, this->odata.id);
 
     return j;
 }
@@ -924,8 +919,8 @@ json::value UpdateService::get_json(void)
     k[U("Health")] = json::value::string(U(this->status.health));
     j[U("Status")] = k;
 
-    j[U("FirmwareInventory")] = this->firmware_inventory->get_odata_id_json();
-    j[U("SoftwareInventory")] = this->software_inventory->get_odata_id_json();
+    j["FirmwareInventory"] = get_resource_odata_id_json(this->firmware_inventory, this->odata.id);
+    j["SoftwareInventory"] = get_resource_odata_id_json(this->software_inventory, this->odata.id);
 
     return j;
 }
@@ -1275,9 +1270,11 @@ bool Sensor::load_json(json::value &j)
 {
     json::value status, threshold;
     json::value upper_critical, upper_caution, upper_fatal, lower_caution, lower_critical, lower_fatal;
+    int step = 0;
 
     try{
         Resource::load_json(j);
+    
         this->id = j.at("Id").as_string();
         this->reading_type = j.at("ReadingType").as_string();
         this->reading_time = j.at("ReadingTime").as_string();
@@ -1290,25 +1287,39 @@ bool Sensor::load_json(json::value &j)
         this->physical_context = j.at("PhysicalContext").as_string();
         this->sensing_interval = j.at("SensingInterval").as_string();
 
+        step = 1;
         threshold = j.at("Thresholds");
         upper_critical = threshold.at("UpperCritical");
         this->thresh.upper_critical.reading = upper_critical.at("Reading").as_double();
         this->thresh.upper_critical.activation = upper_critical.at("Activation").as_string();
+        
+        step = 2;
         upper_caution = threshold.at("UpperCaution");
         this->thresh.upper_caution.reading = upper_caution.at("Reading").as_double();
         this->thresh.upper_caution.activation = upper_caution.at("Activation").as_string();
+        
+        step = 3;
         upper_fatal = threshold.at("UpperFatal");
+        
         this->thresh.upper_fatal.reading = upper_fatal.at("Reading").as_double();
         this->thresh.upper_fatal.activation = upper_fatal.at("Activation").as_string();
+        
+        step = 4;
         lower_critical = threshold.at("LowerCritical");
         this->thresh.lower_critical.reading = lower_critical.at("Reading").as_double();
         this->thresh.lower_critical.activation = lower_critical.at("Activation").as_string();
+        
+        step = 5;
         lower_caution = threshold.at("LowerCaution");
         this->thresh.lower_caution.reading = lower_caution.at("Reading").as_double();
         this->thresh.lower_caution.activation = lower_caution.at("Activation").as_string();
+        
+        step = 6;
         lower_fatal = threshold.at("LowerFatal");
         this->thresh.lower_fatal.reading = lower_fatal.at("Reading").as_double();
         this->thresh.lower_fatal.activation = lower_fatal.at("Activation").as_string();
+        
+        step = 7;
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
@@ -1316,7 +1327,7 @@ bool Sensor::load_json(json::value &j)
     }
     catch (json::json_exception &e)
     {
-        log(warning) << "read something failed in sensor : " << this->odata.id;
+        log(warning) << "read something failed in sensor : " << this->odata.id << " at step " << step;
         
         return true;
     }
@@ -1642,9 +1653,10 @@ json::value Chassis::get_json(void)
     j[U("Location")] = k;
 
     // TODO Thermal, Power 추가 필요
-    j[U("Thermal")] = this->thermal->get_odata_id_json();
-    j[U("Power")] = this->power->get_odata_id_json();
-    j[U("Sensors")] = this->sensors->get_odata_id_json();
+    j["Thermal"] = get_resource_odata_id_json(this->thermal, this->odata.id);
+    j["Power"] = get_resource_odata_id_json(this->power, this->odata.id);
+    j["Sensors"] = get_resource_odata_id_json(this->sensors, this->odata.id);
+
     return j;
 }
 
@@ -1760,9 +1772,9 @@ json::value Manager::get_json(void)
     j[U("UUID")] = json::value::string(U(this->uuid));
     j[U("PowerState")] = json::value::string(U(this->power_state));
 
-    // j[U("NetworkProtocol")] = this->network->get_odata_id_json();
-    j[U("EthernetInterfaces")] = this->ethernet->get_odata_id_json();
-    j[U("LogServices")] = this->log_service->get_odata_id_json();
+    j["NetworkProtocol"] = get_resource_odata_id_json(this->network, this->odata.id);
+    j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
+    j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
 
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
@@ -1889,7 +1901,8 @@ bool EthernetInterfaces::load_json(json::value &j)
 {
     json::value status;
     json::value name_servers, dhcp_v4, dhcp_v6, v_ipv4, v_ipv6, vlan; 
-    
+    int step = 0;
+
     try{
         Resource::load_json(j);
         this->id = j.at("Id").as_string();
@@ -1904,14 +1917,17 @@ bool EthernetInterfaces::load_json(json::value &j)
         this->hostname = j.at("HostName").as_string();
         this->fqdn = j.at("FQDN").as_string();
         
+        step = 1;
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
 
+        step = 2;
         name_servers = j.at("NameServers");
         for (auto item : name_servers.as_array())
             this->name_servers.push_back(item.as_string());
 
+        step = 3;
         dhcp_v4 = j.at("DHCPv4");
         this->dhcp_v4.dhcp_enabled = dhcp_v4.at("DHCPEnabled").as_bool();
         this->dhcp_v4.use_dns_servers = dhcp_v4.at("UseDNSServers").as_bool();
@@ -1920,6 +1936,7 @@ bool EthernetInterfaces::load_json(json::value &j)
         this->dhcp_v4.use_ntp_servers = dhcp_v4.at("UseNTPServers").as_bool();
         this->dhcp_v4.use_static_routes = dhcp_v4.at("UseStaticRoutes").as_bool();
 
+        step = 4;
         dhcp_v6 = j.at("DHCPv6");
         this->dhcp_v6.operating_mode = dhcp_v6.at("OperatingMode").as_string();
         this->dhcp_v6.use_dns_servers = dhcp_v6.at("UseDNSServers").as_bool();
@@ -1927,6 +1944,7 @@ bool EthernetInterfaces::load_json(json::value &j)
         this->dhcp_v6.use_ntp_servers = dhcp_v6.at("UseNTPServers").as_bool();
         this->dhcp_v6.use_rapid_commit = dhcp_v6.at("UseRapidCommit").as_bool();
 
+        step = 5;
         v_ipv4 = j.at("IPv4Addresses");
         for (auto item : v_ipv4.as_array()){
             IPv4_Address temp;
@@ -1936,6 +1954,7 @@ bool EthernetInterfaces::load_json(json::value &j)
             temp.gateway = v_ipv4.at("Gateway").as_string();
         }
         
+        step = 6;
         v_ipv6 = j.at("IPv6Addresses");
         for (auto item : v_ipv6.as_array()){
             IPv6_Address temp;
@@ -1947,7 +1966,8 @@ bool EthernetInterfaces::load_json(json::value &j)
     }
     catch (json::json_exception &e)
     {
-        log(warning) << "read something failed in ethernet interfaces" << endl;
+        log(warning) << "read something failed in ethernet_interfaces : " << this->odata.id << " at step " << step;
+        
         return true;
     }
 
@@ -1997,32 +2017,64 @@ json::value NetworkProtocol::get_json(void)
     j[U("NTP")]=ntp;
     return j;
 }
+
+bool NetworkProtocol::load_json(json::value &j)
+{
+    json::value status;
+    json::value obj, v_netservers;
+    
+    try{
+        Resource::load_json(j);
+        this->id = j.at("Id").as_string();
+        this->fqdn = j.at("FQDN").as_string();
+        this->hostname = j.at("HostName").as_string();
+        this->description = j.at("Description").as_string();
+        
+        status = j.at("Status");
+        this->status.state = status.at("State").as_string();
+        this->status.health = status.at("Health").as_string();
+
+        obj = j.at("SNMP");
+        this->snmp_enabled = obj.at("ProtocolEnabled").as_bool();
+        this->snmp_port = obj.at("Port").as_integer();
+
+        obj = j.at("IPMI");
+        this->ipmi_enabled = obj.at("ProtocolEnabled").as_bool();
+        this->ipmi_port = obj.at("Port").as_integer();                          
+
+        obj = j.at("KVMIP");
+        this->kvmip_enabled = obj.at("ProtocolEnabled").as_bool();
+        this->kvmip_port = obj.at("Port").as_integer();
+
+        obj = j.at("HTTP");
+        this->http_enabled = obj.at("ProtocolEnabled").as_bool();
+        this->http_port = obj.at("Port").as_integer();
+
+        obj = j.at("HTTPS");
+        this->https_enabled = obj.at("ProtocolEnabled").as_bool();
+        this->https_port = obj.at("Port").as_integer();
+         
+        obj = j.at("NTP");
+        this->snmp_enabled = obj.at("ProtocolEnabled").as_bool();
+        
+        if (obj.has_field("NTPServers")){
+            v_netservers = obj.at("NTPServers");
+            for (auto str : v_netservers.as_array())
+                this->v_netservers.push_back(str.as_string());
+        }else
+            log(warning) << "NTPServers field empty in networkProtocol load..";
+        
+    }
+    catch (json::json_exception &e)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 // Manager end
 
-// bool NetworkProtocol::load_json(json::value &j)
-// {
-//     json::value status;
-//     json::value http, https, ipmi, ssh, snmp, virtual_media, ssdp, telnet, kvmip, 
-//     try{
-//         Resource::load_json(j);
-//         this->id = j.at("Id").as_string();
-//         this->fqdn = j.at("FQDN").as_string();
-//         this->hostname = j.at("HostName").as_string();
-//         this->description = j.at("Description").as_string();
-        
-
-//         status = j.at("Status");
-//         this->status.state = status.at("State").as_string();
-//         this->status.health = status.at("Health").as_string();
-
-//     }
-//     catch (json::json_exception &e)
-//     {
-//         return false;
-//     }
-
-//     return true;
-// }
 
 // Task Service start
 json::value TaskService::get_json(void)
@@ -2038,7 +2090,8 @@ json::value TaskService::get_json(void)
     j[U("Status")] = k;
     j[U("ServiceEnabled")] = json::value::boolean(U(this->service_enabled));
     j[U("DateTime")] = json::value::string(U(this->datetime));
-    j[U("Tasks")] = this->task_collection->get_odata_id_json();
+
+    j["Tasks"] = get_resource_odata_id_json(this->task_collection, this->odata.id);
 
     return j;
 }
@@ -2191,12 +2244,13 @@ json::value Systems::get_json(void)
     j_boot[U("UefiTargetBootSourceOverride")] = json::value::string(U(this->boot.uefi_target_boot_source_override));
     j[U("Boot")] = j_boot;
 
-    j[U("Bios")] = this->bios->get_odata_id_json();
-    j[U("Processors")] = this->processor->get_odata_id_json();
-    j[U("Memory")] = this->memory->get_odata_id_json();
-    j[U("EthernetInterfaces")] = this->ethernet->get_odata_id_json();
-    j[U("SimpleStorage")] = this->simple_storage->get_odata_id_json();
-    j[U("LogServices")] = this->log_service->get_odata_id_json();
+    j["Bios"] = get_resource_odata_id_json(this->bios, this->odata.id);
+    j["Processors"] = get_resource_odata_id_json(this->processor, this->odata.id);
+    j["Memory"] = get_resource_odata_id_json(this->memory, this->odata.id);
+    j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
+    j["SimpleStorage"] = get_resource_odata_id_json(this->simple_storage, this->odata.id);
+    j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
+
     // json::value j_act;
     // for(int i=0; i<this->actions.size(); i++)
     // {
@@ -2762,6 +2816,34 @@ bool Certificate::load_json(json::value &j)
     return true;
 }
 
+json::value CertificateLocation::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
+    
+    j["Id"] = json::value::string(this->id);
+    j["Certificates"] = json::value::array();
+    for(int i=0; i<this->certificates.size(); i++)
+        j["Certificates"][i] = get_resource_odata_id_json(this->certificates[i], this->odata.id);
+
+    return j;
+}
+
+bool CertificateLocation::load_json(json::value &j)
+{
+    try{
+        Resource::load_json(j);
+        this->id = j.at("Id").as_string();
+    }
+    catch (json::json_exception &e)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 json::value CertificateService::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -2769,10 +2851,7 @@ json::value CertificateService::get_json(void)
         return j;
     
     j["Id"] = json::value::string(this->id);
-    
-    j["CertificateLocations"] = json::value::array();
-    for(int i=0; i<this->certificate_location->members.size(); i++)
-        j["CertificateLocations"][i] = this->certificate_location->members[i]->get_odata_id_json();
+    j["CertificateLocations"] = get_resource_odata_id_json(this->certificate_location, this->odata.id);
 
     return j;
 }
@@ -2819,13 +2898,18 @@ json::value ServiceRoot::get_json(void)
     j[U("Id")] = json::value::string(U(this->id));
     j[U("RedfishVersion")] = json::value::string(U(this->redfish_version));
     j[U("UUID")] = json::value::string(U(this->uuid));
-    j[U("Systems")] = this->system_collection->get_odata_id_json();
-    j[U("Chassis")] = this->chassis_collection->get_odata_id_json();
-    j[U("Managers")] = this->manager_collection->get_odata_id_json();
-    j[U("AccountService")] = this->account_service->get_odata_id_json();
-    j[U("SessionService")] = this->session_service->get_odata_id_json();
-    // j[U("Tasks")] = this->task->get_odata_id_json();
-    // j[U("EventService")] = this->event_service->get_odata_id_json();
+
+    j["Systems"] = get_resource_odata_id_json(this->system_collection, this->odata.id);
+    j["Chassis"] = get_resource_odata_id_json(this->chassis_collection, this->odata.id);
+    j["Managers"] = get_resource_odata_id_json(this->manager_collection, this->odata.id);
+    j["UpdateService"] = get_resource_odata_id_json(this->update_service, this->odata.id);
+
+    j["AccountService"] = get_resource_odata_id_json(this->account_service, this->odata.id);
+    j["SessionService"] = get_resource_odata_id_json(this->session_service, this->odata.id);
+    j["TaskService"] = get_resource_odata_id_json(this->task_service, this->odata.id);
+    j["EventService"] = get_resource_odata_id_json(this->event_service, this->odata.id);
+    j["CertificateService"] = get_resource_odata_id_json(this->certificate_service, this->odata.id);
+
     return j;
 }
 
@@ -2871,4 +2955,18 @@ const std::string currentDateTime(void)
     strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
 
     return buf;
+}
+
+/**
+ * @brief Resource null pointer check, return odata id json 
+ * @author 김
+ * @return if Resource is null, return json::value::null(). else return odata id json 
+ */
+json::value get_resource_odata_id_json(Resource *res, string loc)
+{
+    if (res == nullptr){
+        log(warning) << "null pointer error at " << loc;
+        return json::value::null();
+    }else
+        return res->get_odata_id_json();
 }

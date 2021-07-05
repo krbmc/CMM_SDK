@@ -121,6 +121,13 @@ unsigned int allocate_task_num(void)
     }
 }
 
+void insert_task_num(unsigned int num)
+{
+    task_numset.insert(num);
+    
+    return;
+}
+
 unsigned int allocate_account_num(void)
 {
     for(account_numset_num; account_numset_num <= UINT_MAX; account_numset_num++)
@@ -139,6 +146,14 @@ unsigned int allocate_account_num(void)
     }
 
 }
+
+void insert_account_num(unsigned int num)
+{
+    account_numset.insert(num);
+    
+    return;
+}
+
 // 꽉차면?
 
 /**
@@ -159,4 +174,14 @@ string get_current_object_name(string _uri, string delimiter)
 string get_parent_object_uri(string _uri, string delimiter)
 {
     return _uri.substr(0, _uri.rfind(delimiter));
+}
+
+/**
+ * @brief get string, check if it is number
+ * @author dyk
+ * @return if string is num, retrun 1. else return 0. 
+ */
+bool isNumber(const string str)
+{
+    return str.find_first_not_of("0123456789") == string::npos;
 }
