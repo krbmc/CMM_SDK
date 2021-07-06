@@ -104,14 +104,15 @@ json::value Resource::get_json(int type)
 json::value Resource::get_odata_id_json(void)
 {
     json::value j;
+    
     j[U("@odata.id")] = json::value::string(U(this->odata.id));
+    
     return j;
 }
 
 bool Resource::save_json(void)
 {
     string json_content;
-
     json_content = record_get_json(this->odata.id).serialize();
 
     if (json_content == "null"){
@@ -562,8 +563,8 @@ json::value Session::get_json(void)
     
     j[U("Id")] = json::value::string(U(this->id));
     // 연결된 account 없으면 session 소멸?
-    //j[U("UserName")] = json::value::string(U(this->account->user_name));
-    j[U("UserName")] = json::value::string("");
+    j[U("UserName")] = json::value::string(U(this->account->user_name));
+    // j[U("UserName")] = json::value::string("");
     j[U("AccountId")] = json::value::string(this->account_id);
     
     return j;
