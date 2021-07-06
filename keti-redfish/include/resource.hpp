@@ -101,11 +101,12 @@
 
 // doyoung
 #define ODATA_CERTIFICATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/CertificateService"
-#define ODATA_CERTIFICATE_LOCATION_ID ODATA_CERTIFICATE_SERVICE_ID "/CertificateLocations" 
-#define ODATA_CERTIFICATE_ID "/Certificates/"
-#define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate" // @@@@ 도영 추가
-#define ODATA_CERTIFICATE_LOCATION_TYPE "#CertificateLocation." ODATA_TYPE_VERSION ".CertificateLocation" // @@@@ 도영 추가 
 #define ODATA_CERTIFICATE_SERVICE_TYPE "#CertificateService." ODATA_TYPE_VERSION ".CertificateService" // @@@@ 도영 추가
+#define ODATA_CERTIFICATE_LOCATION_ID ODATA_CERTIFICATE_SERVICE_ID "/CertificateLocations" 
+#define ODATA_CERTIFICATE_LOCATION_TYPE "#CertificateLocation." ODATA_TYPE_VERSION ".CertificateLocation" // @@@@ 도영 추가 
+#define ODATA_CERTIFICATE_COLLECTION_TYPE "#CertificateCollection.CertificateCollection" // @@@@ 도영 추가
+#define ODATA_CERTIFICATE_ID "/Certificates"
+#define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate" // @@@@ 도영 추가
 
 #define NO_DATA_TYPE 0
 
@@ -222,6 +223,7 @@ enum RESOURCE_TYPE
     SOFTWARE_INVENTORY_TYPE,
     DESTINATION_TYPE,
     CERTIFICATE_TYPE,
+    CERTIFICATE_LOCATION_TYPE,
     CERTIFICATE_SERVICE_TYPE
 };
 
@@ -812,6 +814,8 @@ public:
     Role *role;
     string role_id;
 
+    Collection *certificates;
+
     Account(const string _odata_id) : Resource(ACCOUNT_TYPE, _odata_id, ODATA_ACCOUNT_TYPE)
     {
         this->id = "";
@@ -820,6 +824,7 @@ public:
         this->user_name = "";
         this->locked = false;
         this->role = nullptr;
+        this->certificates = nullptr;
 
         g_record[_odata_id] = this;
     }
@@ -889,6 +894,8 @@ public:
         this->account_lockout_duration = 0;
         this->account_lockout_counter_reset_after = 0;
         this->account_lockout_counter_reset_enabled = 0;
+        this->account_collection = nullptr;
+        this->role_collection = nullptr;
 
         // // Role collection configure
         // this->role_collection = new Collection(ODATA_ROLE_ID, ODATA_ROLE_COLLECTION_TYPE);
@@ -1034,20 +1041,21 @@ class LogService : public Resource
 
     Collection *entry;
     
-    vector<Actions *> actions;
+    // vector<Actions *> actions;
 
     LogService(const string _odata_id) : Resource(LOG_SERVICE_TYPE, _odata_id, ODATA_LOG_SERVICE_TYPE)
     {
-        // this->id = "";
-        // this->description = "This Log contains entries related to the operation of the host Computer System";
-        // this->max_number_of_records = 1000;
-        // this->overwrite_policy = "WrapsWhenFull";
-        // this->datetime = currentDateTime();
-        // this->datetime_local_offset = "+06:00";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // this->log_entry_type = "Event";
-        // this->service_enabled = true;
+        this->id = "";
+        this->description = "This Log contains entries related to the operation of the host Computer System";
+        this->max_number_of_records = 1000;
+        this->overwrite_policy = "WrapsWhenFull";
+        this->datetime = currentDateTime();
+        this->datetime_local_offset = "+06:00";
+        this->status.state = STATUS_STATE_ENABLED;
+        this->status.health = STATUS_HEALTH_OK;
+        this->log_entry_type = "Event";
+        this->service_enabled = true;
+        this->entry = nullptr;
 
         // this->entry = new Collection(_odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
         // this->entry->name = "Log Entry Collection";
@@ -1055,7 +1063,6 @@ class LogService : public Resource
 
         // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
         // actions.push_back(act);
-
         // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
         // this->actions->name = "LogService Actions Collection";
         // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
@@ -1172,13 +1179,11 @@ class EventService : public Resource
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
 
+        this->subscriptions = nullptr;
+
         // this->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
         // this->subscriptions->name = "Subscription Collection";
 
-        // EventDestination *_test = new EventDestination(this->subscriptions->odata.id + "/1", "Subscriber 1");
-
-
-        this->subscriptions = nullptr;
         g_record[ODATA_EVENT_SERVICE_ID] = this;
 
     };
@@ -1264,6 +1269,9 @@ class UpdateService : public Resource
 
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
+
+        this->firmware_inventory = nullptr;
+        this->software_inventory = nullptr;
 
         // this->firmware_inventory = new Collection(_odata_id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
         // this->firmware_inventory->name = "Firmware Inventory Collection";
@@ -1351,22 +1359,41 @@ class Certificate : public Resource
     bool load_json(json::value &j);
 };
 
+class CertificateLocation : public Resource
+{
+    public:
+    string id;
+    vector<Certificate *> certificates;
+
+    CertificateLocation() : Resource(CERTIFICATE_LOCATION_TYPE, ODATA_CERTIFICATE_LOCATION_ID, ODATA_CERTIFICATE_LOCATION_TYPE)
+    {
+        this->id = "CertificateLocations";
+        this->name = "certificate Locations";
+
+        g_record[ODATA_CERTIFICATE_LOCATION_ID] = this;
+    };
+    ~CertificateLocation()
+    {
+        g_record.erase(this->odata.id);
+    };
+
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
+
 // Actions 구현 필요. ( GenerateCSR, ReplaceCertificate )
 class CertificateService : public Resource
 {
     public:
     string id;
-    Collection *certificate_location;
+    CertificateLocation *certificate_location;
     
     CertificateService() : Resource(CERTIFICATE_SERVICE_TYPE, ODATA_CERTIFICATE_SERVICE_ID, ODATA_CERTIFICATE_SERVICE_TYPE)
     {
         this->id = "CertificateService";
         this->name = "Certificate Service";
         
-        this->certificate_location = new Collection(ODATA_CERTIFICATE_LOCATION_ID, ODATA_CERTIFICATE_LOCATION_TYPE);
-        this->certificate_location->name = "Certificate Locations";
-
-        g_record[ODATA_CERTIFICATE_SERVICE_ID] = this;
+        g_record[this->odata.id] = this;
     }
     ~CertificateService()
     {
@@ -1620,23 +1647,11 @@ public:
         // this->datetime = currentDateTime();
         // this->datetime_offset = "+06:00";
 
-        // this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
-        // this->log_service->name = "Log Service Collection";
-        // string res_id = _odata_id + "/LogServices";
-        // res_id = res_id + "/Log1";
-        // LogService *logservice = new LogService(res_id, "Log Service 1~");
-        // this->log_service->add_member(logservice);
-        // res_id = res_id + "/Entries";
-        // res_id = res_id + "/0";
-        // LogEntry *log = new LogEntry(res_id, "Log Entry 0~");
-        // logservice->entry->add_member(log);
-
         this->ethernet = nullptr;
-        this->network = nullptr;
         this->log_service = nullptr;
         this->remote_account_service = nullptr;
-
-        // Actions 일단 주석
+        this->network = nullptr;
+        
         // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
         // actions.push_back(act);
 
@@ -1644,11 +1659,6 @@ public:
         // this->actions->name = "Managers Actions Collection";
         // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
         // this->actions->add_member(act);
-
-        // cout << "!!!! MANAGER MODULE ID : " << get_last_str(_odata_id, "/") << endl;
-        // if(get_current_object_name(_odata_id, "/") != CMM_ID)
-        //     remote_account_service = new AccountService(_odata_id + "/AccountService");
-
 
         g_record[_odata_id] = this;
     }
@@ -1739,12 +1749,11 @@ public:
         this->service_enabled = true;
         this->datetime = currentDateTime();
 
+        this->task_collection = nullptr;
+
         // this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
         // task_collection->name = "Task Collection";
 
-        // Task *_test = new Task(this->task_collection->odata.id + "/test", "Test Task");
-
-        this->task_collection = nullptr;
         g_record[ODATA_TASK_SERVICE_ID] = this;
     };
     ~TaskService()
@@ -1782,6 +1791,8 @@ public:
         this->status.health = STATUS_HEALTH_OK;
         this->service_enabled = true;
         this->session_timeout = 86400; // 30sec to 86400sec
+        
+        this->session_collection = nullptr;
 
         // AccountCollection configuration
         // this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
@@ -1819,7 +1830,8 @@ public:
     {
         this->name = "User Session";
         this->id = "";
-        
+        this->account = nullptr;
+
         g_record[_odata_id] = this;
     }
     Session(const string _odata_id, const string _session_id, Account *_account) : Session(_odata_id)
@@ -2037,6 +2049,8 @@ public:
     Thermal(const string _odata_id) : Resource(THERMAL_TYPE, _odata_id, ODATA_THERMAL_TYPE)
     {
         this->id = "Thermal";
+        this->temperatures = nullptr;
+        this->fans = nullptr;
 
         // // Temperatures configuration
         // this->temperatures = new List(this->odata.id + "/Temperatures", TEMPERATURE_TYPE);
@@ -2144,18 +2158,18 @@ class PowerSupply : public Resource
         // this->status.state = STATUS_STATE_ENABLED;
         // this->status.health = STATUS_HEALTH_OK;
         
-        // this->power_supply_type = "AC";
-        // this->line_input_voltage_type = "ACWideRange";
-        // this->line_input_voltage = 120;
-        // this->power_capacity_watts = 800;
-        // this->last_power_output_watts = 325;
+        this->power_supply_type = "AC";
+        this->line_input_voltage_type = "ACWideRange";
+        this->line_input_voltage = 120;
+        this->power_capacity_watts = 800;
+        this->last_power_output_watts = 325;
 
-        // this->model = "";
-        // this->manufacturer = "";
-        // this->firmware_version = "";
-        // this->serial_number = "";
-        // this->part_number = "";
-        // this->spare_part_number = "";
+        this->model = "";
+        this->manufacturer = "";
+        this->firmware_version = "";
+        this->serial_number = "";
+        this->part_number = "";
+        this->spare_part_number = "";
 
         // InputRange input;
         // input.input_type = "AC";
@@ -2248,6 +2262,9 @@ class Power : public Resource
     Power(const string _odata_id) : Resource(POWER_TYPE, _odata_id, ODATA_POWER_TYPE)
     {
         this->id = "Power";
+        this->power_control = nullptr;
+        this->voltages = nullptr;
+        this->power_supplies = nullptr;
 
         // this->power_control = new List(this->odata.id + "/PowerControl", POWER_CONTROL_TYPE);
         // this->power_control->name = "PowerControl";
@@ -2441,8 +2458,7 @@ class Storage : public Resource
         this->status.health = STATUS_HEALTH_OK;
         this->status.state = STATUS_STATE_ENABLED;
 
-        this->controller = new List(this->odata.id + "/StorageControllers", STORAGE_CONTROLLER_TYPE);
-        this->controller->name = "StorageControllers";
+        this->controller = nullptr;
 
         g_record[_odata_id] = this;
 
@@ -2658,25 +2674,22 @@ class Systems : public Resource
     string bios_version;
 
     Status status;
+    string uuid;
+    Boot boot;
+    // Ipmifru *fru_this;
     // Location location;
     // Thermal *thermal;
     // Resource *power;
-    string uuid;
-    Boot boot;
-    // Actions actions;
-    // Ipmifru *fru_this;
-
     // ProcessorSummary *ps; // 구조체로 바꿔야할듯 현재리소슨데
+    // MemorySummary ms;
+    Bios *bios; // resource Bios
+    
     // Collection *network; // resource NetworkInterfaces // 일단 없음
     // Collection *storage; // resource Storages
     Collection *processor; // resource Processors
-    Bios *bios; // resource Bios
     Collection *memory; // resource Memory
-    // MemorySummary ms;
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
-    // Collection *actions;
-    vector<Actions *> actions;
     Collection *simple_storage;
 
 
@@ -2714,11 +2727,9 @@ class Systems : public Resource
         this->ethernet = nullptr;
         this->log_service = nullptr;
         this->simple_storage = nullptr;
-        // null로 넣어놓음
 
-        // Actions
-        // Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
-        // actions.push_back(act);
+        // this->bios = 0;
+        // null로 넣는법
 
         // this->id = _systems_id;
         // // this->sku = "";
@@ -2856,61 +2867,15 @@ public:
         this->power = nullptr;
         this->sensors = nullptr;
 
-        // this->height_mm = 0;
-        // this->width_mm = 0;
-        // this->depth_mm = 0;
-        // this->weight_kg = 0;
-
-        // Thermal configuration
-        // this->thermal = new Thermal(this->odata.id + "/Thermal");
-        // this->thermal->name = "EdgeServer Chassis Thermal";
-
-        // ostringstream os;
-        // os << this->thermal->fans->odata.id << "/" << "0";
-        // Fan *f = new Fan(os.str(), "0~~");
-        // this->thermal->fans->add_member(f);
-
-        // Power configuration
-        // this->power = new Power(this->odata.id + "/Power");
-        // this->power->name = "EdgeServer Chassis Power";
-
-        // ostringstream s;
-        // s << this->power->power_control->odata.id << "/" << "0";
-        // // cout << "IN CHASSIS" << endl;
-        // // cout << "1st// " << s.str() << endl;
-        // PowerControl *pc = new PowerControl(s.str(), "0~~");
-        // this->power->power_control->add_member(pc);
-
-        // s.str("");
-        // s << this->power->voltages->odata.id << "/" << "0";
-        // Voltage *volt = new Voltage(s.str(), "0~~");
-        // this->power->voltages->add_member(volt);
-
-        // s.str("");
-        // s << this->power->power_supplies->odata.id << "/" << "0";
-        // PowerSupply *ps = new PowerSupply(s.str(), "0~~");
-        // this->power->power_supplies->add_member(ps);
-
-        // Sensor configuration
-        // this->sensors = new Collection(this->odata.id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
-        // this->sensors->name = "Sensor Collection";
-        // s.str("");
-        // s << this->sensors->odata.id << "/" << "Sensor1";
-        // Sensor *sen = new Sensor(s.str(), "Sensor Number 1~~");
-        // this->sensors->add_member(sen);
-
-
-
-        // cout << "2nd// " << s.str() << endl;
-        // cout << "OUT CHASSIS" << endl;
-
+        this->thermal = nullptr;
+        this->power = nullptr;
+        this->sensors = nullptr;
 
         g_record[_odata_id] = this;
     }
     Chassis(const string _odata_id, const string _chassis_id) : Chassis(_odata_id)
     {
         this->id = _chassis_id;
-        // ((Collection *)g_record[ODATA_CHASSIS_ID])->add_member(this);
     };
     ~Chassis()
     {
@@ -3062,8 +3027,6 @@ public:
         // StorageControllers *stocon = new StorageControllers(res_id, "0~");
         // sto->controller->add_member(stocon);
 
-        
-        
         /**
          * @brief CMM Chassis Init
          */
@@ -3244,21 +3207,14 @@ public:
         /**
          * @brief Certificate init
          * @authors 김
+         * @details
+         * CertificateService -> CertificateLocation
+         * CertificateLocation은 각 resource가 가지고 있는 certificate 위치를 가지고 있음 (ex. /redfish/v1/AccountService/Accounts/10/Certificates/1) 
          */
+        
+        // CertificateService, CertificateLocation 
         certificate_service = new CertificateService();
-
-        // test data
-        // string temp_odata_id = ODATA_ACCOUNT_ID;
-        // temp_odata_id += "/10";
-        // temp_odata_id += ODATA_CERTIFICATE_ID;
-        // temp_odata_id += "10";
-
-        // string temp_cert_string = "------BEGIN CERTIFICATE-----\nMIIFsTCC [**truncated example**] GXG5zljlu\n-----ENDCERTIFICATE-----";
-        // string temp_cert_type = "PEM";    
-        
-        // Certificate *test_cert = new Certificate(temp_odata_id, temp_cert_string, temp_cert_type);
-        
-        // certificate_service->certificate_location->add_member(test_cert);
+        certificate_service->certificate_location = new CertificateLocation();
         
         /**
          * @authors 강
@@ -3343,6 +3299,17 @@ public:
         string acc_id = to_string(allocate_account_num());
         acc_odata = acc_odata + "/" + acc_id;
 
+        // account certificate configure
+        string certificate_collection_id = acc_odata;
+        certificate_collection_id += ODATA_CERTIFICATE_ID;
+        
+        string temp_cert_id = certificate_collection_id + "/1";
+        string temp_cert_string = "------BEGIN CERTIFICATE-----\nMIIFsTCC [**truncated example**] GXG5zljlu\n-----ENDCERTIFICATE-----";
+        string temp_cert_type = "PEM";
+
+        Certificate *cert = new Certificate(temp_cert_id, temp_cert_string, temp_cert_type);
+        certificate_service->certificate_location->certificates.push_back(cert);
+
         // Root account configure
         Account *_root = new Account(acc_odata, acc_id, "Administrator");
         // _root->id = "root";
@@ -3351,6 +3318,8 @@ public:
         _root->password = "ketilinux";
         _root->enabled = true;
         _root->locked = false;
+        _root->certificates = new Collection(certificate_collection_id, ODATA_CERTIFICATE_COLLECTION_TYPE);
+        _root->certificates->add_member(cert);
         account_service->account_collection->add_member(_root);
         
 
@@ -3377,5 +3346,6 @@ bool init_resource(void);
 bool is_session_valid(const string _token_id);
 // void init_record_bmc(void);
 void dependency_injection(Resource *res);
+json::value get_resource_odata_id_json(Resource *res, string loc);
 
 #endif

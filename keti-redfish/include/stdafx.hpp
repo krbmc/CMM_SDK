@@ -64,9 +64,12 @@ bool comp(const string &s1, const string &s2);
 void timer(boost::asio::deadline_timer* _timer, unsigned int *_remain_expires_time);
 string generate_token(const int len);
 unsigned int allocate_task_num(void);
+void insert_task_num(unsigned int num);
 unsigned int allocate_account_num(void);
+void insert_account_num(unsigned int num);
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
+bool isNumber(const string str);
 
 /**
  * @brief Function of record
