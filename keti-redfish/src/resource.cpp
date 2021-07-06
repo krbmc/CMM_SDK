@@ -106,7 +106,22 @@ json::value Resource::get_json(int type)
 json::value Resource::get_odata_id_json(void)
 {
     json::value j;
-    j[U("@odata.id")] = json::value::string(U(this->odata.id));
+    if(this == nullptr)
+    {
+        log(error) << "null pointer";
+        return j;
+    }
+    try{
+        j[U("@odata.id")] = json::value::string(U(this->odata.id));
+    }
+    catch (json::json_exception &e)
+    {
+        log(warning) << this->odata.id << "error invoked!";
+    }
+    catch (exception &std_e)
+    {
+        log(warning) << this << "error invoked!";
+    }
     return j;
 }
 
@@ -114,7 +129,7 @@ bool Resource::save_json(void)
 {
     string json_content;
     // cout << "어딘데 ? start" << endl;
-cout << this->odata.id << endl;
+// cout << this->odata.id << endl;
     json_content = record_get_json(this->odata.id).serialize();
 
     // cout << "어딘데 ? 0" << endl;
@@ -566,8 +581,8 @@ json::value Session::get_json(void)
     
     j[U("Id")] = json::value::string(U(this->id));
     // 연결된 account 없으면 session 소멸?
-    //j[U("UserName")] = json::value::string(U(this->account->user_name));
-    j[U("UserName")] = json::value::string("");
+    j[U("UserName")] = json::value::string(U(this->account->user_name));
+    // j[U("UserName")] = json::value::string("");
     j[U("AccountId")] = json::value::string(this->account_id);
     
     return j;

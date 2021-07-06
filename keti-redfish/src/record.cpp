@@ -741,7 +741,7 @@ void dependency_injection(Resource *res)
                     break;
                 case SYSTEM_TYPE:
                     if (res->odata.type == ODATA_NETWORK_INTERFACE_TYPE){
-                        ((Systems *)g_record[parent_object_id])->network = (Collection *)res;
+                    //     ((Systems *)g_record[parent_object_id])->network = (Collection *)res;
                     // }else if (res->odata.type == ODATA_STORAGE_COLLECTION_TYPE){
                     //     ((Systems *)g_record[parent_object_id])->storage = (Collection *)res;
                     }else if (res->odata.type == ODATA_PROCESSOR_COLLECTION_TYPE){
