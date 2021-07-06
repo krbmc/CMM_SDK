@@ -1290,6 +1290,7 @@ m_Request work_before_request_process(string _method, string _host, string _uri,
     task_odata = task_odata + "/" + to_string(msg.task_number);
     cout << "task_data in wbrp func!! : " << task_odata << endl;
     Task *task = new Task(task_odata, "Task-" + to_string(msg.task_number));
+    ((Collection *)g_record[ODATA_TASK_ID])->add_member(task);
     task->start_time = msg.request_datetime;
     task->set_payload(_header, _method, _jv, _uri);
     record_save_json();
@@ -1501,7 +1502,96 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
                 return _msg;
             }
 
-            
+            cout << "바뀌기전~~ " << endl;
+            cout << record_get_json(uri) << endl;
+            cout << " $$$$$$$ " << endl;
+
+            if(_jv.as_object().find("Description") != _jv.as_object().end())
+                ((NetworkProtocol *)g_record[uri])->description = _jv.at("Description").as_string();
+
+            if(_jv.as_object().find("SNMP") != _jv.as_object().end())
+            {
+                json::value j = json::value::object();
+                j = _jv.at("SNMP");
+                
+                if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->snmp_enabled = j.at("ProtocolEnabled").as_bool();
+                if(j.as_object().find("Port") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->snmp_port = j.at("Port").as_integer();
+            }
+
+            if(_jv.as_object().find("IPMI") != _jv.as_object().end())
+            {
+                json::value j = json::value::object();
+                j = _jv.at("IPMI");
+                
+                if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->ipmi_enabled = j.at("ProtocolEnabled").as_bool();
+                if(j.as_object().find("Port") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->ipmi_port = j.at("Port").as_integer();
+            }
+
+            if(_jv.as_object().find("KVMIP") != _jv.as_object().end())
+            {
+                json::value j = json::value::object();
+                j = _jv.at("KVMIP");
+                
+                if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->kvmip_enabled = j.at("ProtocolEnabled").as_bool();
+                if(j.as_object().find("Port") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->kvmip_port = j.at("Port").as_integer();
+            }
+
+            if(_jv.as_object().find("HTTP") != _jv.as_object().end())
+            {
+                json::value j = json::value::object();
+                j = _jv.at("HTTP");
+                
+                if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->http_enabled = j.at("ProtocolEnabled").as_bool();
+                if(j.as_object().find("Port") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->http_port = j.at("Port").as_integer();
+            }
+
+            if(_jv.as_object().find("HTTPS") != _jv.as_object().end())
+            {
+                json::value j = json::value::object();
+                j = _jv.at("HTTPS");
+                
+                if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->https_enabled = j.at("ProtocolEnabled").as_bool();
+                if(j.as_object().find("Port") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->https_port = j.at("Port").as_integer();
+            }
+
+            if(_jv.as_object().find("NTP") != _jv.as_object().end())
+            {
+                json::value j = json::value::object();
+                j = _jv.at("NTP");
+                
+                if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->ntp_enabled = j.at("ProtocolEnabled").as_bool();
+                if(j.as_object().find("Port") != j.as_object().end())
+                    ((NetworkProtocol *)g_record[uri])->ntp_port = j.at("Port").as_integer();
+            }
+
+            // NTPServers 는 여러개가 들어가있는 형식인데 어떻게 수정해야하지?
+            // request에서 json에 두 공간에서 받아야할듯 a,b입력란이라고 하면
+            // a에서 받은 ntpservers가 존재하면 b검사하고 b에도 입력한게 있으면 그걸로 수정
+            // a에서 받은 ntpservers가 존재하지않으면 걍 추가 이런식으로??
+
+            cout << "바꾼후~~ " << endl;
+            cout << record_get_json(uri) << endl;
+
+            response_json = record_get_json(uri);
+            response.set_status_code(status_codes::OK);
+            response.set_body(response_json);
+            _msg.result.result_datetime = currentDateTime();
+            _msg.result.result_response = response;
+            _msg.result.result_status = WORK_SUCCESS;
+
+            _request.reply(response);
+            return _msg;
         }
 
         int len = uri_tokens.size();
@@ -1708,6 +1798,209 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
 
 
     }
+    else if(uri_part == ODATA_SYSTEM_ID)
+    {
+        string cmm_system = ODATA_SYSTEM_ID;
+        cmm_system = cmm_system + "/" + CMM_ID;
+
+        if(uri == cmm_system)
+        {
+            cout << "바뀌기전~~ " << endl;
+            cout << record_get_json(uri) << endl;
+            cout << " $$$$$$$ " << endl;
+            // log(trace) << "바뀌기전~~ ";
+            // log(debug) << record_get_json(uri);
+            // log(info) << " $$$$$$$ ";
+
+            if(_jv.as_object().find("Description") != _jv.as_object().end())
+                ((Systems *)g_record[uri])->description = _jv.at("Description").as_string();
+
+            if(_jv.as_object().find("HostName") != _jv.as_object().end())
+                ((Systems *)g_record[uri])->hostname = _jv.at("HostName").as_string();
+
+            if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
+                ((Systems *)g_record[uri])->asset_tag = _jv.at("AssetTag").as_string();
+
+            if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
+            {
+                string led = _jv.at("IndicatorLED").as_string();
+                if(led == "Off")
+                    ((Systems *)g_record[uri])->indicator_led = LED_OFF;
+                else if(led == "Blinking")
+                    ((Systems *)g_record[uri])->indicator_led = LED_BLINKING;
+                else if(led == "Lit")
+                    ((Systems *)g_record[uri])->indicator_led = LED_LIT;
+            }
+
+            if(_jv.as_object().find("Boot") != _jv.as_object().end())
+            {
+                json::value j = json::value::object();
+                j = _jv.at("Boot");
+
+                if(j.as_object().find("BootSourceOverrideEnabled") != j.as_object().end())
+                    ((Systems *)g_record[uri])->boot.boot_source_override_enabled = j.at("BootSourceOverrideEnabled").as_string();
+
+                if(j.as_object().find("BootSourceOverrideTarget") != j.as_object().end())
+                    ((Systems *)g_record[uri])->boot.boot_source_override_target = j.at("BootSourceOverrideTarget").as_string();
+
+                if(j.as_object().find("BootSourceOverrideMode") != j.as_object().end())
+                    ((Systems *)g_record[uri])->boot.boot_source_override_mode = j.at("BootSourceOverrideMode").as_string();
+
+                if(j.as_object().find("UefiTargetBootSourceOverride") != j.as_object().end())
+                    ((Systems *)g_record[uri])->boot.uefi_target_boot_source_override = j.at("UefiTargetBootSourceOverride").as_string();
+            }
+
+
+            cout << "바꾼후~~ " << endl;
+            cout << record_get_json(uri) << endl;
+            // log(warning) << "바꾼후~~ ";
+            // log(error) << record_get_json(uri);
+            // log(fatal) << "FATAL!";
+
+            response_json = record_get_json(uri);
+            response.set_status_code(status_codes::OK);
+            response.set_body(response_json);
+            _msg.result.result_datetime = currentDateTime();
+            _msg.result.result_response = response;
+            _msg.result.result_status = WORK_SUCCESS;
+
+            _request.reply(response);
+            return _msg;
+                
+        }
+        else
+        {
+            _msg = reply_error(_request, _msg, "URI Input Error in Systems part", status_codes::BadRequest);
+            return _msg;
+        }// 맨아래 reply_error로 통합가능
+    }
+    else if(uri_part == ODATA_CHASSIS_ID)
+    {
+        string cmm_chassis = ODATA_CHASSIS_ID;
+        cmm_chassis = cmm_chassis + "/" + CMM_ID;
+
+        if(uri == cmm_chassis)
+        {
+            cout << "바뀌기전~~ " << endl;
+            cout << record_get_json(uri) << endl;
+            cout << " $$$$$$$ " << endl;
+
+            if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
+                ((Chassis *)g_record[uri])->asset_tag = _jv.at("AssetTag").as_string();
+
+            if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
+            {
+                string led = _jv.at("IndicatorLED").as_string();
+                if(led == "Off")
+                    ((Chassis *)g_record[uri])->indicator_led = LED_OFF;
+                else if(led == "Blinking")
+                    ((Chassis *)g_record[uri])->indicator_led = LED_BLINKING;
+                else if(led == "Lit")
+                    ((Chassis *)g_record[uri])->indicator_led = LED_LIT;
+            }
+
+            if(_jv.as_object().find("Location") != _jv.as_object().end())
+            {
+                json::value j;
+                j = _jv.at("Location");
+
+                if(j.as_object().find("PostalAddress") != j.as_object().end())
+                {
+                    json::value k;
+                    k = j.at("PostalAddress");
+
+                    if(k.as_object().find("Country") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.postal_address.country = k.at("Country").as_string();
+                    if(k.as_object().find("Territory") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.postal_address.territory = k.at("Territory").as_string();
+                    if(k.as_object().find("City") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.postal_address.city = k.at("City").as_string();
+                    if(k.as_object().find("Street") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.postal_address.street = k.at("Street").as_string();
+                    if(k.as_object().find("HouseNumber") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.postal_address.house_number = k.at("HouseNumber").as_string();
+                    if(k.as_object().find("Name") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.postal_address.name = k.at("Name").as_string();
+                    if(k.as_object().find("PostalCode") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.postal_address.postal_code = k.at("PostalCode").as_string();
+                }
+
+                if(j.as_object().find("Placement") != j.as_object().end())
+                {
+                    json::value k;
+                    k = j.at("Placement");
+
+                    if(k.as_object().find("Row") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.placement.row = k.at("Row").as_string();
+                    if(k.as_object().find("Rack") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.placement.rack = k.at("Rack").as_string();
+                    if(k.as_object().find("RackOffsetUnits") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.placement.rack_offset_units = k.at("RackOffsetUnits").as_string();
+                    if(k.as_object().find("RackOffset") != k.as_object().end())
+                        ((Chassis *)g_record[uri])->location.placement.rack_offset = k.at("RackOffset").as_integer();
+                }
+            }
+
+            cout << "바꾼후~~ " << endl;
+            cout << record_get_json(uri) << endl;
+
+            response_json = record_get_json(uri);
+            response.set_status_code(status_codes::OK);
+            response.set_body(response_json);
+            _msg.result.result_datetime = currentDateTime();
+            _msg.result.result_response = response;
+            _msg.result.result_status = WORK_SUCCESS;
+
+            _request.reply(response);
+            return _msg;
+        }
+
+        // int len = uri_tokens.size();
+        string minus_one;
+        minus_one = get_parent_object_uri(uri, "/");
+        cout << "MINUS_ONE INFO : " << minus_one << endl;
+
+        if(minus_one == cmm_chassis + "/Power/PowerControl")
+        {
+            if(!record_is_exist(uri))
+            {
+                // 해당 파워컨트롤 레코드 없음
+                _msg = reply_error(_request, _msg, "No PowerControl", status_codes::BadRequest);
+                return _msg;
+            }
+
+            cout << "바뀌기전~~ " << endl;
+            cout << record_get_json(uri) << endl;
+            cout << " $$$$$$$ " << endl;
+
+            if(_jv.as_object().find("PowerLimit") != _jv.as_object().end())
+            {
+                json::value j;
+                j = _jv.at("PowerLimit");
+
+                if(j.as_object().find("CorrectionInMs") != j.as_object().end())
+                    ((PowerControl *)g_record[uri])->power_limit.correction_in_ms = j.at("CorrectionInMs").as_integer();
+                if(j.as_object().find("LimitException") != j.as_object().end())
+                    ((PowerControl *)g_record[uri])->power_limit.limit_exception = j.at("LimitException").as_string();
+                if(j.as_object().find("LimitInWatts") != j.as_object().end())
+                    ((PowerControl *)g_record[uri])->power_limit.limit_in_watts = j.at("LimitInWatts").as_double();
+            }
+
+            cout << "바꾼후~~ " << endl;
+            cout << record_get_json(uri) << endl;
+
+            response_json = record_get_json(uri);
+            response.set_status_code(status_codes::OK);
+            response.set_body(response_json);
+            _msg.result.result_datetime = currentDateTime();
+            _msg.result.result_response = response;
+            _msg.result.result_status = WORK_SUCCESS;
+
+            _request.reply(response);
+            return _msg;
+        }
+        // 아래에서 reply_error
+    }
     else
     {
         _msg = reply_error(_request, _msg, "URI Input Error in Whole part", status_codes::BadRequest);
@@ -1753,7 +2046,7 @@ m_Request make_account(http_request _request, m_Request _msg, json::value _jv)
         // _msg.result.result_datetime = currentDateTime();
         // _msg.result.result_status = WORK_FAIL;
         // _msg.result.result_response = res;
-        // return _msg;
+        return _msg;
     }// password 길이가 짧으면 BadRequest
 
     // Collection col = *((Collection *)g_record[ODATA_ACCOUNT_ID]); // 이건 왜 터졌지?
@@ -1892,6 +2185,7 @@ m_Request make_session(http_request _request, m_Request _msg, json::value _jv)
     string token = generate_token(16);
     odata_id = odata_id + '/' + token;
     Session *session = new Session(odata_id, token, account);
+    ((Collection *)g_record[ODATA_SESSION_ID])->add_member(session);
     session->start();
     record_save_json();
 
@@ -2015,12 +2309,13 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
     // role_id로 하기엔 role을 생성할 수도 있는 거여서 나중에 role안에 privileges에 권한 확인하는걸로 바꿔야 할 수도있음
     // + 현재 로그인이 관리자로되어있어서 위에서 role관련 수행했는데 성공하고 아래 유저네임 패스워드에서 에러잡혀서
     // 수행을 하지 않으면 response에는 BadRequest 인데 role은 바뀐게 적용되고있음 기억해 둬야함 .. 리멤버
+    // 로직 수정해야겠는데? ex) jv에 롤있는데 관리자권한이 아니라든가 위에 리멤버라든가 
 
     
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_uri) << endl;
-    cout << "세션으로봄" << endl;
+    cout << "세션에 연결된 계정정보" << endl;
     cout << record_get_json(session->account->odata.id) << endl;
 
     http_response response;

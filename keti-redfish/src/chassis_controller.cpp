@@ -180,6 +180,8 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     // 여기에서 한번더 하위로 만드는 리소스가 로그서비스이기 때문에 로그서비스(아직 처리안함) 할때 엔트리컬렉션 만들어주면됨
 
     system->bios = new Bios(system->odata.id + "/Bios", "Bios");
+    // 이게 없어서 광란의 세그먼테이션 폴트 났었음
+    // 이런 포인터변수들 잘 만들어주자
     
 
     // System 멤버변수 넣어주기
@@ -190,6 +192,7 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     }
     // else
     // cout << "System Id is X" << endl;
+    // >>>> ID는 무시해줘야할듯 
 
     if(system_info.as_object().find("SystemType") != system_info.as_object().end())
     {
@@ -355,6 +358,9 @@ void add_system(string _bmc_id, string _host, string _auth_token)
             bios_info = get_json_info(inner_uri, _host, _auth_token);
             cout << "받아라 Bios INFO" << endl;
             cout << bios_info << endl;
+
+            // 여기에서 system->bios = new Bios ~~~ 해줘야하는데 현재 json에 오는 데이터가 없어서 현재 위에 별도로
+            // 만들었음 (포인터변수라 터짐)
         }
         else
         {
@@ -951,8 +957,8 @@ void add_chassis(string _bmc_id, string _host, string _auth_token)
     json::value chassis_info;
     chassis_info = response.extract_json().get();
 
-    cout<<"일단 CHASSIS INFO "<<endl;
-    cout<<chassis_info<<endl;
+    // cout<<"일단 CHASSIS INFO "<<endl;
+    // cout<<chassis_info<<endl;
 
     // Chassis Resource 생성
     Chassis *chassis = new Chassis(_bmc_id, "BMC Chassis");
@@ -1426,6 +1432,7 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
 
     manager->log_service = new Collection(manager->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
     manager->log_service->name = "Manager Log Service Collection";
+    // 로그엔트리 컬렉션만들어야함
 
     manager->remote_account_service = new AccountService(manager->odata.id + "/AccountService");
     manager->remote_account_service->account_collection = new Collection(manager->remote_account_service->odata.id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
@@ -1529,10 +1536,10 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
         if(manager_info.at("NetworkProtocol").as_object().find("@odata.id") != manager_info.at("NetworkProtocol").as_object().end())
         {
             inner_uri = manager_info.at("NetworkProtocol").at("@odata.id").as_string();
-            // cout << "INNER URI : " << inner_uri << endl;
+            cout << "INNER URI : " << inner_uri << endl;
             network_info = get_json_info(inner_uri, _host, _auth_token);
-            // cout << "받아라 NetworkProtocol INFO" << endl;
-            // cout << network_info << endl;
+            cout << "받아라 NetworkProtocol INFO" << endl;
+            cout << network_info << endl;
 
             // NetworkProtocol 만들기
 
@@ -1670,10 +1677,10 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
                     if(array_member[i].as_object().find("@odata.id") != array_member[i].as_object().end())
                     {
                         member_uri = array_member[i].at("@odata.id").as_string();
-                        cout << "MEMBER URI : " << member_uri << endl;
+                        // cout << "MEMBER URI : " << member_uri << endl;
                         ethernet_info = get_json_info(member_uri, _host, _auth_token);
-                        cout << "받아라 EthernetInterfaces Collection 안의 EthernetInterfaces INFO" << endl;
-                        cout << ethernet_info << endl;
+                        // cout << "받아라 EthernetInterfaces Collection 안의 EthernetInterfaces INFO" << endl;
+                        // cout << ethernet_info << endl;
 
                         // EthernetInterfaces 만들기
                         

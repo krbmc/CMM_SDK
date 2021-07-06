@@ -777,7 +777,7 @@ public:
     {
         this->id = "";
         this->is_predefined = false;
-        assigned_privileges.push_back("test");
+        // assigned_privileges.push_back("test");
         // test용인거 같은데 나중에 빼줘야할듯 add_bmc하면 중복되네
 
         // ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
@@ -951,6 +951,9 @@ public:
         // _root->locked = false;
         // this->account_collection->add_member(_root);
 
+        this->account_collection = nullptr;
+        this->role_collection = nullptr;
+
         g_record[ODATA_ACCOUNT_SERVICE_ID] = this;
     }
     AccountService(const string _odata_id) : Resource(ACCOUNT_SERVICE_TYPE, _odata_id, ODATA_ACCOUNT_SERVICE_TYPE)
@@ -960,6 +963,9 @@ public:
 
         // this->role_collection = new Collection(_odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
         // this->role_collection->name = "Remote Roles Collection";
+
+        this->account_collection = nullptr;
+        this->role_collection = nullptr;
 
         g_record[_odata_id] = this;
         // 매니저에 들어가는 리모트어카운트서비스의 생성자에 해당하게됨
@@ -994,14 +1000,14 @@ class LogEntry : public Resource
 
     LogEntry(const string _odata_id) : Resource(LOG_ENTRY_TYPE, _odata_id, ODATA_LOG_ENRTY_TYPE)
     {
-        this->id = "";
-        this->entry_type = "Event";
-        this->severity = "OK";
-        this->created = currentDateTime();
-        this->sensor_number = 1;
-        this->message = "Temperature threshold exceeded";
-        this->message_id = "Contoso.1.0.TempAssert";
-        this->message_args.push_back("42");
+        // this->id = "";
+        // this->entry_type = "Event";
+        // this->severity = "OK";
+        // this->created = currentDateTime();
+        // this->sensor_number = 1;
+        // this->message = "Temperature threshold exceeded";
+        // this->message_id = "Contoso.1.0.TempAssert";
+        // this->message_args.push_back("42");
 
         g_record[_odata_id] = this;
 
@@ -1062,6 +1068,8 @@ class LogService : public Resource
         // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
         // this->actions->add_member(act);
 
+        this->entry = nullptr;
+
         g_record[_odata_id] = this;
 
     }
@@ -1118,7 +1126,7 @@ class EventDestination : public Resource
     EventDestination(const string _odata_id, const string _dest_id) : EventDestination(_odata_id)
     {
         this->id = _dest_id;
-        ((Collection *)g_record[ODATA_EVENT_DESTINATION_ID])->add_member(this);
+        // ((Collection *)g_record[ODATA_EVENT_DESTINATION_ID])->add_member(this);
     };
     ~EventDestination()
     {
@@ -1274,6 +1282,9 @@ class UpdateService : public Resource
         // this->actions->name = "UpdateService Actions Collection";
         // Actions *act = new Actions(_odata_id + "/Actions/UpdateService.SimpleUpdate");
 
+        this->firmware_inventory = nullptr;
+        this->software_inventory = nullptr;
+
         g_record[_odata_id] = this;
     }
     UpdateService(const string _odata_id, const string _update_id) : UpdateService(_odata_id)
@@ -1424,28 +1435,28 @@ class NetworkProtocol : public Resource
 
     NetworkProtocol(const string _odata_id) : Resource(NETWORK_PROTOCOL_TYPE, _odata_id, ODATA_NETWORK_PROTOCOL_TYPE)
     {
-        this->id = "";
-        this->fqdn = "web483-bmc.dmtf.org";
-        this->description = "Manager Network Service";
-        this->hostname = "web483-bmc";
+        // this->id = "";
+        // this->fqdn = "web483-bmc.dmtf.org";
+        // this->description = "Manager Network Service";
+        // this->hostname = "web483-bmc";
 
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
 
-        this->http_enabled = true;
-        this->http_port = 80;
-        this->https_enabled = true;
-        this->https_port = 443;
+        // this->http_enabled = true;
+        // this->http_port = 80;
+        // this->https_enabled = true;
+        // this->https_port = 443;
 
-        this->ipmi_enabled = true;
-        this->ipmi_port = 623;
-        this->snmp_enabled = true;
-        this->snmp_port = 161;
+        // this->ipmi_enabled = true;
+        // this->ipmi_port = 623;
+        // this->snmp_enabled = true;
+        // this->snmp_port = 161;
 
-        this->kvmip_enabled = true;
-        this->kvmip_port = 5288;
-        this->ntp_enabled = true;
-        this->ntp_port = 77;
+        // this->kvmip_enabled = true;
+        // this->kvmip_port = 5288;
+        // this->ntp_enabled = true;
+        // this->ntp_port = 77;
 
         g_record[_odata_id] = this;
     }
@@ -1613,28 +1624,28 @@ public:
     
     Manager(const string _odata_id) : Resource(MANAGER_TYPE, _odata_id, ODATA_MANAGER_TYPE)
     {
-        this->name = "";
-        // this->id = _manager_id;
-        this->manager_type = "CMM";
-        this->description = "CMM Manager";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->firmware_version = "Manager Firmware Version";
-        this->uuid = "Manager UUID";
-        this->model = "Manager Model";
-        this->power_state = "On";
+        // this->name = "";
+        // // this->id = _manager_id;
+        // this->manager_type = "CMM";
+        // this->description = "CMM Manager";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
+        // this->firmware_version = "Manager Firmware Version";
+        // this->uuid = "Manager UUID";
+        // this->model = "Manager Model";
+        // this->power_state = "On";
 
         // this->network = new NetworkProtocol(this->odata.id + "/NetworkProtocol", "NetworkProtocol");
 
-        string oodata = _odata_id;
+        // string oodata = _odata_id;
         // cout << "oodata : " << oodata << endl;
-        oodata = oodata + "/EthernetInterfaces";
+        // oodata = oodata + "/EthernetInterfaces";
         // cout << "oodata2 : " << oodata << endl;
         // this->ethernet = new Collection(oodata, ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         // 여기에 이더넷 4개 만드는거 걍 넣어놓기 -> 서비스루트에서 이닛할때로 만듬.
 
-        this->datetime = currentDateTime();
-        this->datetime_offset = "+06:00";
+        // this->datetime = currentDateTime();
+        // this->datetime_offset = "+06:00";
 
         this->ethernet = nullptr;
         this->log_service = nullptr;
@@ -1698,7 +1709,7 @@ class Task : public Resource
     }
     Task(const string _odata_id, const string _task_id) : Task(_odata_id)
     {
-        ((Collection *)g_record[ODATA_TASK_ID])->add_member(this);
+        // ((Collection *)g_record[ODATA_TASK_ID])->add_member(this);
         this->id = _task_id;
     };
     ~Task()
@@ -1787,6 +1798,8 @@ public:
         // this->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
         // session_collection->name = "Session Collection";
 
+        this->session_collection = nullptr;
+
         g_record[ODATA_SESSION_SERVICE_ID] = this;
     };
     ~SessionService()
@@ -1828,7 +1841,7 @@ public:
         this->account_id = _account->odata.id;
         this->_remain_expires_time = ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout;
         cout << "\t\t\t\t\t\t\\t" << _account->odata.id << "kk" << endl;
-        ((Collection *)g_record[ODATA_SESSION_ID])->add_member(this);
+        // ((Collection *)g_record[ODATA_SESSION_ID])->add_member(this);
     };
     ~Session()
     {
@@ -1864,22 +1877,22 @@ public:
     // Class constructor, destructor oveloading
     Temperature(const string _odata_id) : Resource(TEMPERATURE_TYPE, _odata_id, ODATA_THERMAL_TYPE)
     {
-        this->member_id = "";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->member_id = "";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
 
-        this->sensor_num = 0;
-        this->reading_celsius = 0;
-        this->upper_threshold_non_critical = 0;
-        this->upper_threshold_critical = 0;
-        this->upper_threshold_fatal = 0;
-        this->lower_threshold_non_critical = 0;
-        this->lower_threshold_critical = 0;
-        this->lower_threshold_fatal = 0;
-        this->min_reading_range_temp = 0;
-        this->max_reading_range_temp = 0;
-        this->physical_context = "CPU";
-        this->thread = false;
+        // this->sensor_num = 0;
+        // this->reading_celsius = 0;
+        // this->upper_threshold_non_critical = 0;
+        // this->upper_threshold_critical = 0;
+        // this->upper_threshold_fatal = 0;
+        // this->lower_threshold_non_critical = 0;
+        // this->lower_threshold_critical = 0;
+        // this->lower_threshold_fatal = 0;
+        // this->min_reading_range_temp = 0;
+        // this->max_reading_range_temp = 0;
+        // this->physical_context = "CPU";
+        // this->thread = false;
 
         g_record[_odata_id] = this;
     }
@@ -1926,27 +1939,27 @@ class Sensor : public Resource
 
     Sensor(const string _odata_id) : Resource(SENSOR_TYPE, _odata_id, ODATA_SENSOR_TYPE)
     {
-        this->id = "";
-        this->reading_type = "Such as Temperature";
-        this->reading_time = "Reading Time";
-        this->reading = 30.6;
+        // this->id = "";
+        // this->reading_type = "Such as Temperature";
+        // this->reading_time = "Reading Time";
+        // this->reading = 30.6;
 
-        this->reading_units = "C";
-        this->reading_range_min = 0;
-        this->reading_range_max = 70;
-        this->accuracy = 0.25;
-        this->precision = 1;
-        this->sensing_interval = "PT3S ???";
-        this->physical_context = "Chassis";
-        this->thresh.upper_caution.activation = "Increasing";
-        this->thresh.upper_caution.reading = 35;
-        this->thresh.upper_critical.activation = "Increasing";
-        this->thresh.upper_critical.reading = 40;
-        this->thresh.lower_caution.activation = "Increasing";
-        this->thresh.lower_caution.reading = 10;
+        // this->reading_units = "C";
+        // this->reading_range_min = 0;
+        // this->reading_range_max = 70;
+        // this->accuracy = 0.25;
+        // this->precision = 1;
+        // this->sensing_interval = "PT3S ???";
+        // this->physical_context = "Chassis";
+        // this->thresh.upper_caution.activation = "Increasing";
+        // this->thresh.upper_caution.reading = 35;
+        // this->thresh.upper_critical.activation = "Increasing";
+        // this->thresh.upper_critical.reading = 40;
+        // this->thresh.lower_caution.activation = "Increasing";
+        // this->thresh.lower_caution.reading = 10;
 
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
 
         g_record[_odata_id] = this;
     }
@@ -1987,24 +2000,24 @@ public:
     // Class constructor, destructor oveloading
     Fan(const string _odata_id) : Resource(FAN_TYPE, _odata_id)
     {
-        this->member_id = "";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->member_id = "";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
 
-        this->sensor_num = 0;
-        this->reading = 0;
-        this->reading_units = "RPM";
+        // this->sensor_num = 0;
+        // this->reading = 0;
+        // this->reading_units = "RPM";
 
-        this->lower_threshold_fatal = 0;
-        this->lower_threshold_critical = 0;
-        this->lower_threshold_non_critical = 0;
-        this->upper_threshold_fatal = 0;
-        this->upper_threshold_critical = 0;
-        this->upper_threshold_non_critical = 0;
+        // this->lower_threshold_fatal = 0;
+        // this->lower_threshold_critical = 0;
+        // this->lower_threshold_non_critical = 0;
+        // this->upper_threshold_fatal = 0;
+        // this->upper_threshold_critical = 0;
+        // this->upper_threshold_non_critical = 0;
 
-        this->min_reading_range = 0;
-        this->max_reading_range = 0;
-        this->physical_context = "CPU";
+        // this->min_reading_range = 0;
+        // this->max_reading_range = 0;
+        // this->physical_context = "CPU";
 
         g_record[_odata_id] = this;
     }
@@ -2047,6 +2060,9 @@ public:
         // this->fans = new List(this->odata.id + "/Fans", FAN_TYPE);
         // this->fans->name = "Chassis Fans";
 
+        this->temperatures = nullptr;
+        this->fans = nullptr;
+
         g_record[_odata_id] = this;
     };
     ~Thermal()
@@ -2083,21 +2099,21 @@ class Voltage : public Resource
 
     Voltage(const string _odata_id) : Resource(VOLTAGE_TYPE, _odata_id, ODATA_POWER_TYPE)
     {
-        this->member_id = "";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->member_id = "";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
 
-        this->sensor_num = 11;
-        this->reading_volts = 12;
-        this->upper_threshold_non_critical = 12.5;
-        this->upper_threshold_critical = 13;
-        this->upper_threshold_fatal = 15;
-        this->lower_threshold_non_critical = 11.5;
-        this->lower_threshold_critical = 11;
-        this->lower_threshold_fatal = 10;
-        this->min_reading_range = 0;
-        this->max_reading_range = 20;
-        this->physical_context = "VoltageRegulator";
+        // this->sensor_num = 11;
+        // this->reading_volts = 12;
+        // this->upper_threshold_non_critical = 12.5;
+        // this->upper_threshold_critical = 13;
+        // this->upper_threshold_fatal = 15;
+        // this->lower_threshold_non_critical = 11.5;
+        // this->lower_threshold_critical = 11;
+        // this->lower_threshold_fatal = 10;
+        // this->min_reading_range = 0;
+        // this->max_reading_range = 20;
+        // this->physical_context = "VoltageRegulator";
 
         g_record[_odata_id] = this;
 
@@ -2138,9 +2154,9 @@ class PowerSupply : public Resource
 
     PowerSupply(const string _odata_id) : Resource(POWER_SUPPLY_TYPE, _odata_id, ODATA_POWER_TYPE)
     {
-        this->member_id = "";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
+        // this->member_id = "";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
         
         this->power_supply_type = "AC";
         this->line_input_voltage_type = "ACWideRange";
@@ -2201,23 +2217,23 @@ class PowerControl : public Resource
 
     PowerControl(const string _odata_id) : Resource(POWER_CONTROL_TYPE, _odata_id, ODATA_POWER_TYPE)
     {
-        this->member_id = "";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->power_consumed_watts = 0;
-        this->power_requested_watts = 0;
-        this->power_available_watts = 0;
-        this->power_capacity_watts = 0;
-        this->power_allocated_watts = 0;
+        // this->member_id = "";
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
+        // this->power_consumed_watts = 0;
+        // this->power_requested_watts = 0;
+        // this->power_available_watts = 0;
+        // this->power_capacity_watts = 0;
+        // this->power_allocated_watts = 0;
 
-        this->power_limit.limit_in_watts = 0;
-        this->power_limit.limit_exception = "LogEventOnly";
-        this->power_limit.correction_in_ms = 0;
+        // this->power_limit.limit_in_watts = 0;
+        // this->power_limit.limit_exception = "LogEventOnly";
+        // this->power_limit.correction_in_ms = 0;
 
-        this->power_metrics.interval_in_min = 0;
-        this->power_metrics.min_consumed_watts = 0;
-        this->power_metrics.max_consumed_watts = 0;
-        this->power_metrics.avg_consumed_watts = 0;
+        // this->power_metrics.interval_in_min = 0;
+        // this->power_metrics.min_consumed_watts = 0;
+        // this->power_metrics.max_consumed_watts = 0;
+        // this->power_metrics.avg_consumed_watts = 0;
 
         g_record[_odata_id] = this;
     }
@@ -2259,6 +2275,10 @@ class Power : public Resource
         // this->power_supplies = new List(this->odata.id + "/PowerSupplies", POWER_SUPPLY_TYPE);
         // this->power_supplies->name = "PowerSupplies";
 
+        this->power_control = nullptr;
+        this->voltages = nullptr;
+        this->power_supplies = nullptr;
+
         g_record[_odata_id] = this;
     };
     ~Power()
@@ -2288,17 +2308,30 @@ class Bios : public Resource
 
     Bios(const string _odata_id) : Resource(BIOS_TYPE, _odata_id, ODATA_BIOS_TYPE)
     {
+
         this->id = "";
-        this->attribute_registry = "Attribute registry";
-        this->attribute.boot_mode = "Uefi";
-        this->attribute.embedded_sata = "Raid";
-        this->attribute.nic_boot1 = "NetworkBoot";
-        this->attribute.nic_boot2 = "Disabled";
-        this->attribute.power_profile = "MaxPerf";
+        this->attribute_registry = "";
+        this->attribute.boot_mode = "";
+        this->attribute.embedded_sata = "";
+        this->attribute.nic_boot1 = "";
+        this->attribute.nic_boot2 = "";
+        this->attribute.power_profile = "";
         this->attribute.proc_core_disable = 0;
-        this->attribute.proc_hyper_threading = "Enabled";
-        this->attribute.proc_turbo_mode = "Enabled";
-        this->attribute.usb_control = "UsbEnabled";
+        this->attribute.proc_hyper_threading = "";
+        this->attribute.proc_turbo_mode = "";
+        this->attribute.usb_control = "";
+
+        // this->id = "";
+        // this->attribute_registry = "Attribute registry";
+        // this->attribute.boot_mode = "Uefi";
+        // this->attribute.embedded_sata = "Raid";
+        // this->attribute.nic_boot1 = "NetworkBoot";
+        // this->attribute.nic_boot2 = "Disabled";
+        // this->attribute.power_profile = "MaxPerf";
+        // this->attribute.proc_core_disable = 0;
+        // this->attribute.proc_hyper_threading = "Enabled";
+        // this->attribute.proc_turbo_mode = "Enabled";
+        // this->attribute.usb_control = "UsbEnabled";
 
         g_record[_odata_id] = this;    
     }
@@ -2633,7 +2666,7 @@ class Systems : public Resource
     string part_number;
     string description;
     string hostname;
-    vector<string> hosting_roles;
+    // vector<string> hosting_roles;
     // string submodel;
     string asset_tag;
     string power_state;
@@ -2662,31 +2695,32 @@ class Systems : public Resource
 
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
-        // this->id = _systems_id;
+        this->id = "";
         // this->sku = "";
-        this->system_type = "null";
-        this->asset_tag = "null";
-        this->manufacturer = "null";
-        this->model = "null";
-        this->serial_number = "null";
-        this->part_number = "null";
-        this->description = "null";
-        this->uuid = "null";
-        this->hostname = "null";       
-        this->hosting_roles.push_back("null");
-        // this->indicator_led = LED_OFF;
-        this->power_state = "null";
-        this->bios_version = "null";
+        this->system_type = "";
+        this->asset_tag = "";
+        this->manufacturer = "";
+        this->model = "";
+        this->serial_number = "";
+        this->part_number = "";
+        this->description = "";
+        this->uuid = "";
+        this->hostname = "";       
+        // this->hosting_roles.push_back("null");
+        this->indicator_led = LED_OFF;
+        this->power_state = "";
+        this->bios_version = "";
         
-        this->status.state = "null";
-        this->status.health = "null";
+        this->status.state = "";
+        this->status.health = "";
           
-        // this->actions
-        this->boot.boot_source_override_enabled = "null";
-        this->boot.boot_source_override_target = "null";
-        this->boot.boot_source_override_mode = "null";
-        this->boot.uefi_target_boot_source_override = "null";
+        // Boot
+        this->boot.boot_source_override_enabled = "";
+        this->boot.boot_source_override_target = "";
+        this->boot.boot_source_override_mode = "";
+        this->boot.uefi_target_boot_source_override = "";
 
+        // pointer
         this->bios = nullptr;
         this->processor = nullptr;
         this->memory = nullptr;
@@ -2748,8 +2782,7 @@ class Systems : public Resource
         // 일단은 포인터변수들 중에 컬렉션만 만들고 나머지 포인터 변수에 해당하는 멤버변수들은 system을 초기화하는
         // 부분에서 별도로 생성 >> 에서 컬렉션도 밖에서 별도생성으로 바꿈
 
-        // Actions *act = new Actions(_odata_id + "/Actions/ComputerSystem.Reset", "Reset");
-        // actions.push_back(act);
+        
 
         g_record[_odata_id] = this;
     }
@@ -2804,30 +2837,35 @@ public:
     // TODO Contains, ManagedBy 추가 필요
     Chassis(const string _odata_id) : Resource(CHASSIS_TYPE, _odata_id, ODATA_CHASSIS_TYPE)
     {
-        this->name = "";
-        // this->id = _chassis_id;
-        this->chassis_type = "";
-        this->manufacturer = "";
-        this->model = "";
-        // this->sku = "";
-        this->serial_number = "";
-        this->part_number = "";
-        this->asset_tag = "";
-        this->power_state = POWER_STATE_ON;
-        this->indicator_led = LED_OFF;
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->location.postal_address.country = "";
-        this->location.postal_address.territory = "";
-        this->location.postal_address.city = "";
-        this->location.postal_address.street = "";
-        this->location.postal_address.house_number = "";
-        this->location.postal_address.name = "";
-        this->location.postal_address.postal_code = "";
-        this->location.placement.row = "";
-        this->location.placement.rack = "";
-        this->location.placement.rack_offset_units = "";
-        this->location.placement.rack_offset = 0;
+        // this->name = "";
+        // // this->id = _chassis_id;
+        // this->chassis_type = "";
+        // this->manufacturer = "";
+        // this->model = "";
+        // // this->sku = "";
+        // this->serial_number = "";
+        // this->part_number = "";
+        // this->asset_tag = "";
+        // this->power_state = POWER_STATE_ON;
+        // this->indicator_led = LED_OFF;
+        // this->status.state = STATUS_STATE_ENABLED;
+        // this->status.health = STATUS_HEALTH_OK;
+        // this->location.postal_address.country = "";
+        // this->location.postal_address.territory = "";
+        // this->location.postal_address.city = "";
+        // this->location.postal_address.street = "";
+        // this->location.postal_address.house_number = "";
+        // this->location.postal_address.name = "";
+        // this->location.postal_address.postal_code = "";
+        // this->location.placement.row = "";
+        // this->location.placement.rack = "";
+        // this->location.placement.rack_offset_units = "";
+        // this->location.placement.rack_offset = 0;
+
+        // pointer
+        this->thermal = nullptr;
+        this->power = nullptr;
+        this->sensors = nullptr;
 
         this->thermal = nullptr;
         this->power = nullptr;
@@ -2887,7 +2925,7 @@ public:
         // CMM ID와 주소 등록
         module_id_table.insert({CMM_ID, CMM_ADDRESS});
         
-        // Collection Generate
+        // Collection Generate in ServiceRoot
         system_collection = new Collection(ODATA_SYSTEM_ID, ODATA_SYSTEM_COLLECTION_TYPE);
         system_collection->name = "Computer System Collection";
 
@@ -2902,8 +2940,12 @@ public:
 
         
         /**
-         * @brief CMM System init
+         * @brief CMM Resource Init
          * @authors 강
+         */
+
+        /**
+         * @brief CMM System init
          */
         odata_id = ODATA_SYSTEM_ID;
         odata_id = odata_id + "/" + CMM_ID;
@@ -2913,10 +2955,10 @@ public:
         system->name = "CMM Computer System";
 
         /**
-         * @todo 여기에 system 멤버변수값 넣어주기
+         * @todo 여기에 system 일반멤버변수값 넣어주기
          */
 
-        // Collection Generate in systems
+        // Collection Generate in Systems
         system->processor = new Collection(odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
         system->processor->name = "Computer System Processor Collection";
 
@@ -2986,7 +3028,7 @@ public:
         // sto->controller->add_member(stocon);
 
         /**
-         * @brief CMM Chassis init
+         * @brief CMM Chassis Init
          */
         
         odata_id = ODATA_CHASSIS_ID;
@@ -3013,7 +3055,7 @@ public:
         }
         // 이거 순서 바뀐거같은데 temp[0]이 maxvalue인듯
 
-        // Collection Generate in chassis
+        // Collection Generate in Chassis
         chassis->sensors = new Collection(odata_id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
         chassis->sensors->name = "Chassis Sensor Collection";
 
@@ -3109,8 +3151,7 @@ public:
 
         
         /**
-         * @brief CMM Manager init
-         * @authors 강
+         * @brief CMM Manager Init
          */
         odata_id = ODATA_MANAGER_ID;
         odata_id = odata_id + "/" + CMM_ID;
@@ -3127,7 +3168,7 @@ public:
          * @todo manager 멤버변수값 넣어주기
          */
 
-        // Collection Generate in manager
+        // Collection Generate in Manager
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         manager->ethernet->name = "Manager Ethernet Interface Collection";
 
@@ -3188,7 +3229,7 @@ public:
         event_service->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
         event_service->subscriptions->name = "Subscription Collection";
         EventDestination *ev_dest = new EventDestination(event_service->subscriptions->odata.id + "/1", "Subscriber 1");
-        // 생성자에 collection에 add되는거 있음
+        event_service->subscriptions->add_member(ev_dest);
 
         // UpdateService configuration
         string str_up = ODATA_UPDATE_SERVICE_ID;
@@ -3303,7 +3344,7 @@ public:
 
 bool init_resource(void);
 bool is_session_valid(const string _token_id);
-void init_record_bmc(void);
+// void init_record_bmc(void);
 void dependency_injection(Resource *res);
 json::value get_resource_odata_id_json(Resource *res, string loc);
 
