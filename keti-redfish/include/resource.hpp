@@ -2284,8 +2284,7 @@ class Bios : public Resource
     string id;
     string attribute_registry;
     Attribute attribute;
-    //Action 있더라 근데 액션에 바이오스 패스워드 어딨지?
-
+    
     Bios(const string _odata_id) : Resource(BIOS_TYPE, _odata_id, ODATA_BIOS_TYPE)
     {
         this->id = "";
@@ -2313,7 +2312,8 @@ class Bios : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
+    // 현 시스템의 password를 바꾸는? actions
+    bool ChangePassword(string new_password, string old_password, string password_name);
 };
 
 class SimpleStorage : public Resource
@@ -2659,7 +2659,6 @@ class Systems : public Resource
     Collection *log_service; // resource LogService
     Collection *simple_storage;
 
-
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
         // this->id = _systems_id;
@@ -2681,7 +2680,6 @@ class Systems : public Resource
         this->status.state = "null";
         this->status.health = "null";
           
-        // this->actions
         this->boot.boot_source_override_enabled = "null";
         this->boot.boot_source_override_target = "null";
         this->boot.boot_source_override_mode = "null";
