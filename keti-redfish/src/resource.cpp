@@ -11,7 +11,7 @@ extern ServiceRoot *g_service_root;
 bool init_resource(void)
 {
     record_load_json();
-    log(info) << "record load json complete";
+    // log(info) << "record load json complete";
     
     g_service_root = new ServiceRoot();
     

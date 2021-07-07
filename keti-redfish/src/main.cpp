@@ -61,7 +61,10 @@ int main(int _argc, char *_argv[])
 
     pplx::create_task([]{
         sleep(3);
-        ((Chassis *)g_service_root->chassis_collection->members[0])->led_lit(LED_GREEN);
+        string cmm_chassis = ODATA_CHASSIS_ID;
+        cmm_chassis = cmm_chassis + "/" + CMM_ID;
+        ((Chassis *)g_record[cmm_chassis])->led_lit(LED_GREEN);
+        // ((Chassis *)g_service_root->chassis_collection->members[0])->led_lit(LED_GREEN);
     });
 
     http_listener_config listen_config;

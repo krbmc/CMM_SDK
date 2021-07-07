@@ -2,8 +2,8 @@
 ## Execute file
 set(
     OUTPUT
-#    keti-redfish
-   keti-redfish1024
+   keti-redfish
+#   keti-redfish1024
 )
 ## Source file
 set(

@@ -71,6 +71,8 @@ string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
 
+char *get_popen_string(char *command);
+
 /**
  * @brief Function of record
  */

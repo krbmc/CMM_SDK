@@ -67,6 +67,7 @@
         "variant": "cpp",
         "bit": "cpp",
         "*.ipp": "cpp",
-        "*.dat": "cpp"
+        "*.dat": "cpp",
+        "valarray": "cpp"
     }
 }

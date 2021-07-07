@@ -182,6 +182,8 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     system->bios = new Bios(system->odata.id + "/Bios", "Bios");
     // 이게 없어서 광란의 세그먼테이션 폴트 났었음
     // 이런 포인터변수들 잘 만들어주자
+
+    ((Collection *)g_record[ODATA_SYSTEM_ID]) -> add_member(system);
     
 
     // System 멤버변수 넣어주기
@@ -984,6 +986,8 @@ void add_chassis(string _bmc_id, string _host, string _auth_token)
     chassis->sensors->name = "Chassis Sensor Collection";
     // 센서 파워는 나중에 쓰임
 
+    ((Collection *)g_record[ODATA_CHASSIS_ID]) -> add_member(chassis);
+
 
     // Chassis 멤버변수 넣어주기
     if(chassis_info.as_object().find("Id") != chassis_info.as_object().end())
@@ -1440,6 +1444,8 @@ void add_manager(string _bmc_id, string _host, string _auth_token)
 
     manager->remote_account_service->role_collection = new Collection(manager->remote_account_service->odata.id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
     manager->remote_account_service->role_collection->name = "Remote Roles Collection";
+
+    ((Collection *)g_record[ODATA_MANAGER_ID]) -> add_member(manager);
 
     // Manager 멤버변수 넣어주기
     if(manager_info.as_object().find("Id") != manager_info.as_object().end())

@@ -185,3 +185,19 @@ bool isNumber(const string str)
 {
     return str.find_first_not_of("0123456789") == string::npos;
 }
+
+char *get_popen_string(char *command)
+{
+    FILE *fp = popen(command, "r");
+    char *temp = (char *)malloc(sizeof(char)*256);
+    //char *temp = new char[256];
+    if(fp != NULL)
+    {
+        while(fgets(temp, 256, fp) != NULL)
+        {
+        }
+        pclose(fp);
+    }
+    temp[strlen(temp)-1] = '\0';
+    return temp;
+}
