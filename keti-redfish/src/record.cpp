@@ -695,6 +695,9 @@ void dependency_injection(Resource *res)
         case EVENT_SERVICE_TYPE:
             ((ServiceRoot *)g_record[parent_object_id])->event_service = (EventService *)res;
             break;
+        case UPDATE_SERVICE_TYPE:
+            ((ServiceRoot *)g_record[parent_object_id])->update_service = (UpdateService *)res;
+            break;
         case COLLECTION_TYPE:{
         /*  == Collection location == 
             service root collection : systems, chassis, manager, update
@@ -717,8 +720,6 @@ void dependency_injection(Resource *res)
                         ((ServiceRoot *)g_record[parent_object_id])->chassis_collection = (Collection *)res;
                     }else if (res->odata.type == ODATA_MANAGER_COLLECTION_TYPE){
                         ((ServiceRoot *)g_record[parent_object_id])->manager_collection = (Collection *)res;
-                    }else if (res->odata.type == ODATA_UPDATE_SERVICE_COLLECTION_TYPE){
-                        ((ServiceRoot *)g_record[parent_object_id])->update_service = (Collection *)res;
                     }else{
                         log(warning) << "\t\t dy : what is this in service root? : " << id << " type : " << res->odata.type;
                     }
@@ -825,9 +826,6 @@ void dependency_injection(Resource *res)
             break;
         case MANAGER_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Manager *)res);
-            break;
-        case UPDATE_SERVICE_TYPE:
-            ((Collection *)g_record[parent_object_id])->add_member((UpdateService *)res);
             break;
         // case NETWORK_INTERFACE_TYPE:
         // case STORAGE_TYPE:

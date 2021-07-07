@@ -10,14 +10,14 @@ extern ServiceRoot *g_service_root;
  */
 bool init_resource(void)
 {
-    g_service_root = new ServiceRoot();
-    
     record_load_json();
     // log(info) << "record load json complete";
     
-    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    cout << "\t\t dy : add new bmc complete" << endl;
+    g_service_root = new ServiceRoot();
+    
+    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // cout << "\t\t dy : add new bmc complete" << endl;
     
     record_save_json();
     log(info) << "record save json complete";
@@ -25,40 +25,509 @@ bool init_resource(void)
     return true;
 }
 
-// void init_record_bmc(void) 
-// {
-//     string odata_id = ODATA_SYSTEM_ID;
-//     odata_id = odata_id + "/2";
-//     Systems *system = new Systems(odata_id, "2~");
-//     system->name = "EdgeServer BMC 2 System";
-//     /* System 정보 넣기 필요 */
+void init_system(Collection *system_collection, string _id)
+{
+    string odata_id = system_collection->odata.id + "/" + _id;
+    
+    Systems *system = new Systems(odata_id, _id);
+    system->name = "CMM Computer System";
 
-//     odata_id = ODATA_CHASSIS_ID;
-//     odata_id = odata_id + "/2";
-//     Chassis *chassis = new Chassis(odata_id, "2~");
-//     chassis->name = "EdgeServer BMC 2 Chassis";
-//     chassis->chassis_type = "Blade";
-//     /* Chassis 정보 넣기 필요
-//     서비스루트 만들때처럼 temperature 5개 만드는건 안했음아직*/
+    /**
+     * @todo 여기에 system 일반멤버변수값 넣어주기
+     */
 
-//     odata_id = ODATA_MANAGER_ID;
-//     odata_id = odata_id + "/2";
-//     Manager *manager = new Manager(odata_id, "2~");
-//     manager->name = "EdgeServer BMC 2 Manager";
-//     manager->manager_type = "Blade";
-//     manager->firmware_version = "v1";
-//     /* Manager 정보 넣기 필요 */ 
+    if (!record_is_exist(odata_id + "/Processors")){
+        system->processor = new Collection(odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
+        system->processor->name = "Computer System Processor Collection";
+    
+        init_processor(system->processor, "CPU1");
+    }
+    if (!record_is_exist(odata_id + "/Memory")){
+        system->memory = new Collection(odata_id + "/Memory", ODATA_MEMORY_COLLECTION_TYPE);
+        system->memory->name = "Computer System Memory Collection";
 
-//     /**
-//      * @todo 현재
-//      * /redfish/v1/Systems/2
-//      * /redfish/v1/Managers/2
-//      * /redfish/v1/Chassis/2 3개만 해놧는데
-//      * /redfish/v1/Systems/2/~~~~ 뒤에 붙는거까지 다 정보요청해서 읽고 레코드화 json화 해야함.
-//      */
+        init_memory(system->memory, "DIMM1");
+    }
+    if (!record_is_exist(odata_id + "/EthernetInterfaces")){
+        system->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+        system->ethernet->name = "Computer System Ethernet Interface Collection";
+    
+        init_ethernet(system->ethernet, "0");
+    }
+    if (!record_is_exist(odata_id + "/LogServices")){
+        system->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        system->log_service->name = "Computer System Log Service Collection";
+    
+        init_log_service(system->log_service, "Log1");
+    }
+    if (!record_is_exist(odata_id + "/SimpleStorage")){
+        system->simple_storage = new Collection(odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
+        system->simple_storage->name = "Computer System Simple Storage Collection";
+    
+        init_simple_storage(system->simple_storage, "0");
+    }
+    if (!record_is_exist(odata_id + "/Bios")){
+        system->bios = new Bios(odata_id + "/Bios", "Bios");
+        system->bios->name = "BIOS Configuration Current Settings";        
+    }
+
+    system_collection->add_member(system);
+    return;
+}
+
+void init_processor(Collection *processor_collection, string _id)
+{
+    string odata_id = processor_collection->odata.id + "/" + _id;
+
+    Processors *processor = new Processors(odata_id, _id);
+
+    /**
+     * @todo 여기에 processor 일반멤버변수값 넣어주기
+     */
+
+    processor_collection->add_member(processor);
+    return;
+}
+
+void init_memory(Collection *memory_collection, string _id)
+{
+    string odata_id = memory_collection->odata.id + "/" + _id;
+
+    Memory *memory = new Memory(odata_id, _id);
+    /**
+     * @todo 여기에 memory 일반멤버변수값 넣어주기
+     */
+
+    memory_collection->add_member(memory);
+    return;
+}
+
+void init_ethernet(Collection *ethernet_collection, string _id)
+{
+    string odata_id = ethernet_collection->odata.id + "/" + _id;
+
+    EthernetInterfaces *ethernet = new EthernetInterfaces(odata_id, _id);
+    /**
+     * @todo 여기에 ethernet 일반멤버변수값 넣어주기
+     */
+
+    ethernet_collection->add_member(ethernet);
+    return;
+}
+
+void init_log_service(Collection *log_service_collection, string _id)
+{
+    string odata_id = log_service_collection->odata.id + "/" + _id;
+
+    LogService *log_service = new LogService(odata_id, _id);
+    /**
+     * @todo 여기에 log_service 일반멤버변수값 넣어주기
+     */
+
+    if (!record_is_exist(odata_id + "/Entries")){
+        log_service->entry = new Collection(odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
+        log_service->entry->name = "Computer System Log Entry Collection";
+
+        init_log_entry(log_service->entry, "0");
+    }
+    
+    log_service_collection->add_member(log_service);
+    return;
+}
+
+void init_log_entry(Collection *log_entry_collection, string _id)
+{
+    string odata_id = log_entry_collection->odata.id + "/" + _id;
+
+    LogEntry *log_entry = new LogEntry(odata_id, _id);
+    /**
+     * @todo 여기에 log_entry 일반멤버변수값 넣어주기
+     */
+
+    log_entry_collection->add_member(log_entry);
+    return;
+}
+
+void init_simple_storage(Collection *simple_storage_collection, string _id)
+{
+    string odata_id = simple_storage_collection->odata.id + "/" + _id;
+
+    SimpleStorage *simple_storage = new SimpleStorage(odata_id, _id);
+    /**
+     * @todo 여기에 simple_storage 일반멤버변수값 넣어주기
+     */
+
+    simple_storage_collection->add_member(simple_storage);
+    return;
+}
+
+void init_chassis(Collection *chassis_collection, string _id)
+{
+    string odata_id = chassis_collection->odata.id + "/" + _id;
+    
+    Chassis *chassis = new Chassis(odata_id, _id);
+    chassis->name = "CMM Chassis";
+
+    /**
+     * @todo 여기에 chassis 일반멤버변수값 넣어주기
+     */
+    chassis->chassis_type = "Enclosure";
+    chassis->manufacturer = "KETI";
+    chassis->indicator_led = LED_OFF;
+    chassis->led_off(LED_YELLOW);
+    chassis->led_off(LED_RED);
+    chassis->led_blinking(LED_GREEN);
+
+    if (!record_is_exist(odata_id + "/Sensors")){
+        chassis->sensors = new Collection(odata_id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
+        chassis->sensors->name = "Computer Sensor Collection";
+    
+        init_sensor(chassis->sensors, "CabinetTemp");
+    }
+    if (!record_is_exist(odata_id + "/Thermal")){
+        chassis->thermal = new Thermal(odata_id + "/Thermal");
+        chassis->thermal->name = "CMM Chassis Thermal";
+
+        init_thermal(chassis->thermal);
+    }
+    if (!record_is_exist(odata_id + "/Power")){
+        chassis->power = new Power(odata_id + "/Power");
+        chassis->power->name = "CMM Chassis Power";        
+        
+        init_power(chassis->power);
+    }
+
+    chassis_collection->add_member(chassis);
+    return;
+}
+
+void init_sensor(Collection *sensor_collection, string _id)
+{
+    string odata_id = sensor_collection->odata.id + "/" + _id;
+
+    Sensor *sensor = new Sensor(odata_id, _id);
+    /**
+     * @todo 여기에 sensor 일반멤버변수값 넣어주기
+     */
+
+    sensor_collection->add_member(sensor);
+    return;
+}
+
+void init_thermal(Thermal *thermal)
+{
+    string odata_id = thermal->odata.id;
+
+    /**
+     * @todo 여기에 thermal 일반멤버변수값 넣어주기
+     */
+
+    if (!record_is_exist(odata_id + "/Temperatures")){
+        thermal->temperatures = new List(odata_id + "/Temperatures", TEMPERATURE_TYPE);
+        thermal->temperatures->name = "Chassis Temperatures";
+
+        double temp[2] = {0};
+        if (get_intake_temperature_config(temp)) {
+            log(info) << "Chassis temperature min value = " << temp[0];
+            log(info) << "Chassis temperature max value = " << temp[1];
+        }
+        // 이거 순서 바뀐거같은데 temp[0]이 maxvalue인듯
+
+        for (uint8_t i = 0; i < 4; i++)
+        {
+            /**
+             * @todo 여기에 temperatures 일반멤버변수값 넣어주기
+             */
+            ostringstream s;
+            s << thermal->temperatures->odata.id << "/" << to_string(i);
+            Temperature *intake_temperature = new Temperature(s.str(), to_string(i));
+            intake_temperature->name = "Chassis Intake Temperature";
+            intake_temperature->physical_context = "Intake";
+            intake_temperature->min_reading_range_temp = temp[0];
+            intake_temperature->max_reading_range_temp = temp[1];
+            intake_temperature->upper_threshold_non_critical = round(temp[1] * 0.6);
+            intake_temperature->upper_threshold_critical = round(temp[1] * 0.7);
+            intake_temperature->upper_threshold_fatal = round(temp[1] * 0.85);
+            intake_temperature->read(i, INTAKE_CONTEXT);
+            thermal->temperatures->add_member(intake_temperature);
+        }
+
+        ostringstream s;
+        s << thermal->temperatures->odata.id << "/" << to_string(thermal->temperatures->members.size());
+        Temperature *cpu_temperature = new Temperature(s.str(), to_string(thermal->temperatures->members.size()));
+        cpu_temperature->name = "Chassis Manager CPU Temperature";
+        cpu_temperature->physical_context = "CPU";
+        cpu_temperature->min_reading_range_temp = 0;
+        cpu_temperature->max_reading_range_temp = 100;
+        cpu_temperature->upper_threshold_non_critical = round(cpu_temperature->max_reading_range_temp * 0.7);
+        cpu_temperature->upper_threshold_critical = round(cpu_temperature->max_reading_range_temp * 0.75);
+        cpu_temperature->upper_threshold_fatal = round(cpu_temperature->max_reading_range_temp * 0.8);
+        cpu_temperature->read(thermal->temperatures->members.size(), CPU_CONTEXT);
+        thermal->temperatures->add_member(cpu_temperature);
+    }
+    if (!record_is_exist(odata_id + "/Fans")){
+        thermal->fans = new List(odata_id + "/Fans", FAN_TYPE);
+        thermal->fans->name = "Chassis Fans";
+
+        ostringstream os;
+        os << thermal->fans->odata.id << "/0";// << "0";
+        Fan *chassis_f = new Fan(os.str(), "0~~");
+        thermal->fans->add_member(chassis_f);
+    }
+    return;
+}
+
+void init_power(Power *power)
+{
+    string odata_id = power->odata.id;
+    ostringstream os;
+        
+    /**
+     * @todo 여기에 power 일반멤버변수값 넣어주기
+     */
+
+    if (!record_is_exist(odata_id + "/PowerControl")){
+        power->power_control = new List(odata_id + "/PowerControl", POWER_CONTROL_TYPE);
+        power->power_control->name = "Chassis PowerControl";
+
+        os.str("");
+        os << power->power_control->odata.id << "/0";
+        PowerControl *chassis_pc = new PowerControl(os.str(), "0~~");
+        power->power_control->add_member(chassis_pc);
+    }
+    if (!record_is_exist(odata_id + "/Voltages")){
+        power->voltages = new List(odata_id + "/Voltages", VOLTAGE_TYPE);
+        power->voltages->name = "Chassis Voltages";
+
+        os.str("");
+        os << power->voltages->odata.id << "/0";
+        Voltage *chassis_volt = new Voltage(os.str(), "0~~");
+        power->voltages->add_member(chassis_volt);
+    }
+    if (!record_is_exist(odata_id + "/PowerSupplies")){
+        power->power_supplies = new List(odata_id + "/PowerSupplies", POWER_SUPPLY_TYPE);
+        power->power_supplies->name = "Chassis PowerSupplies";
+
+        os.str("");
+        os << power->power_supplies->odata.id << "/0";
+        PowerSupply *chassis_ps = new PowerSupply(os.str(), "0~~");
+        power->power_supplies->add_member(chassis_ps);
+    }
+    return;
+}
+
+void init_manager(Collection *manager_collection, string _id)
+{
+    string odata_id = manager_collection->odata.id + "/" + _id;
+    
+    Manager *manager = new Manager(odata_id, _id);
+        
+    manager->name = "CMM Manager";
+    manager->manager_type = "Enclosure";
+    manager->firmware_version = "v1";
+    /**
+     * @todo 여기에 manager 일반멤버변수값 넣어주기
+     */
     
     
-// }
+    if (!record_is_exist(odata_id + "/EthernetInterfaces")){
+        manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
+        manager->ethernet->name = "Manager Ethernet Interface Collection";
+
+        for(uint8_t i = 0; i<4; i++){
+            init_ethernet(manager->ethernet, to_string(i));
+        }
+    }
+
+    if (!record_is_exist(odata_id + "/LogServices")){
+        manager->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        manager->log_service->name = "Manager Log Service Collection";
+
+        init_log_service(manager->log_service, "Log1");
+    }
+    manager_collection->add_member(manager);
+    return;
+}
+
+void init_update_service(UpdateService *update_service)
+{
+    string odata_id = update_service->odata.id;
+    
+    /**
+     * @todo 여기에 update_service 일반멤버변수값 넣어주기
+     */
+    
+    
+    if (!record_is_exist(odata_id + "/FirmwareInventory")){
+        update_service->firmware_inventory = new Collection(odata_id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
+        update_service->firmware_inventory->name = "Firmware Inventory Collection";
+        
+        init_software_inventory(update_service->firmware_inventory, "CMM");
+    }
+
+    if (!record_is_exist(odata_id + "/SoftwareInventory")){
+        update_service->software_inventory = new Collection(odata_id + "/SoftwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
+        update_service->software_inventory->name = "Software Inventory Collection";
+    
+        init_software_inventory(update_service->software_inventory, "CMM");
+    }
+    return;
+}
+
+void init_software_inventory(Collection *software_inventory_collection, string _id)
+{
+    string odata_id = software_inventory_collection->odata.id + "/" + _id;
+
+    SoftwareInventory *software_inventory = new SoftwareInventory(odata_id, _id);
+    /**
+     * @todo 여기에 software_inventory 일반멤버변수값 넣어주기
+     */
+
+    software_inventory_collection->add_member(software_inventory);
+    return;
+}
+
+void init_task_service(TaskService *task_service)
+{
+    string odata_id = task_service->odata.id;
+    
+    /**
+     * @todo 여기에 task_service 일반멤버변수값 넣어주기
+     */
+    
+    if (!record_is_exist(odata_id + "/Tasks")){
+        task_service->task_collection = new Collection(odata_id + "/Tasks", ODATA_TASK_COLLECTION_TYPE);
+        task_service->task_collection->name = "Task Collection";
+    }
+    return;
+}
+
+void init_event_service(EventService *event_service)
+{
+    string odata_id = event_service->odata.id;
+    
+    /**
+     * @todo 여기에 event_service 일반멤버변수값 넣어주기
+     */
+    
+    if (!record_is_exist(odata_id + "/Subscriptions")){
+        event_service->subscriptions = new Collection(odata_id + "/Subscriptions", ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
+        event_service->subscriptions->name = "Subscription Collection";
+        
+        init_event_destination(event_service->subscriptions, "1");
+    }
+    return;
+}
+
+void init_event_destination(Collection *event_destination_collection, string _id)
+{
+    string odata_id = event_destination_collection->odata.id + "/" + _id;
+
+    EventDestination *event_destination = new EventDestination(odata_id, _id);
+
+    /**
+     * @todo 여기에 event_destination 일반멤버변수값 넣어주기
+     */
+
+    event_destination_collection->add_member(event_destination);
+    return;
+}
+
+void init_account_service(AccountService *account_service)
+{
+    string odata_id = account_service->odata.id;
+    
+    /**
+     * @todo 여기에 account_service 일반멤버변수값 넣어주기
+     */
+    
+    if (!record_is_exist(odata_id + "/Roles")){
+        account_service->role_collection = new Collection(odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
+        account_service->role_collection->name = "Roles Collection";
+        
+        string role_odata = account_service->role_collection->odata.id;
+        // Administrator role configuration
+        Role *_administrator = new Role(role_odata + "/Administrator", "Administrator");
+        _administrator->id = "Administrator";
+        _administrator->name = "User Role";
+        _administrator->is_predefined = true;
+        _administrator->assigned_privileges.push_back("Login");
+        _administrator->assigned_privileges.push_back("ConfigureManager");
+        _administrator->assigned_privileges.push_back("ConfigureUsers");
+        _administrator->assigned_privileges.push_back("ConfigureSelf");
+        _administrator->assigned_privileges.push_back("ConfigureComponents");
+        account_service->role_collection->add_member(_administrator);
+
+        // Operator role configuration
+        Role *_operator = new Role(role_odata + "/Operator", "Operator");
+        _operator->id = "Operator";
+        _operator->name = "User Role";
+        _operator->is_predefined = true;
+        _operator->assigned_privileges.push_back("Login");
+        _operator->assigned_privileges.push_back("ConfigureSelf");
+        _operator->assigned_privileges.push_back("ConfigureComponents");
+        account_service->role_collection->add_member(_operator);
+
+        // ReadOnly role configuration
+        Role *_read_only = new Role(role_odata + "/ReadOnly", "ReadOnly");
+        _read_only->id = "ReadOnly";
+        _read_only->name = "User Role";
+        _read_only->is_predefined = true;
+        _read_only->assigned_privileges.push_back("Login");
+        _read_only->assigned_privileges.push_back("ConfigureSelf");
+        account_service->role_collection->add_member(_read_only);
+    }
+
+    if (!record_is_exist(odata_id + "/Accounts")){
+        account_service->account_collection = new Collection(odata_id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
+        account_service->account_collection->name = "Accounts Collection";
+
+        // accountservice - account
+        string acc_odata = account_service->account_collection->odata.id;
+        string acc_id = to_string(allocate_account_num());
+        acc_odata = acc_odata + "/" + acc_id;
+
+        // account certificate configure
+        string certificate_collection_id = acc_odata;
+        certificate_collection_id += ODATA_CERTIFICATE_ID;
+        
+        string temp_cert_id = certificate_collection_id + "/1";
+        string temp_cert_string = "------BEGIN CERTIFICATE-----\nMIIFsTCC [**truncated example**] GXG5zljlu\n-----ENDCERTIFICATE-----";
+        string temp_cert_type = "PEM";
+
+        Certificate *cert = new Certificate(temp_cert_id, temp_cert_string, temp_cert_type);
+        ((CertificateLocation *)g_record[ODATA_CERTIFICATE_LOCATION_ID])->certificates.push_back(cert);
+
+        // Root account configure
+        Account *_root = new Account(acc_odata, acc_id, "Administrator");
+        // _root->id = "root";
+        _root->name = "User Account";
+        _root->user_name = "root";
+        _root->password = "ketilinux";
+        _root->enabled = true;
+        _root->locked = false;
+        _root->certificates = new Collection(certificate_collection_id, ODATA_CERTIFICATE_COLLECTION_TYPE);
+        _root->certificates->add_member(cert);
+        account_service->account_collection->add_member(_root);
+    }
+    return;
+}
+
+void init_session_service(SessionService *session_service)
+{
+    string odata_id = session_service->odata.id;
+    
+    /**
+     * @todo 여기에 session_service 일반멤버변수값 넣어주기
+     */
+    
+    if (!record_is_exist(odata_id + "/Sessions")){
+        session_service->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
+        session_service->session_collection->name = "Session Collection";
+    }
+    return;
+}
+
 
 // Resource start
 json::value Resource::get_json(void)
@@ -104,22 +573,9 @@ json::value Resource::get_json(int type)
 json::value Resource::get_odata_id_json(void)
 {
     json::value j;
-    if(this == nullptr)
-    {
-        log(error) << "null pointer";
-        return j;
-    }
-    try{
-        j[U("@odata.id")] = json::value::string(U(this->odata.id));
-    }
-    catch (json::json_exception &e)
-    {
-        log(warning) << this->odata.id << "error invoked!";
-    }
-    catch (exception &std_e)
-    {
-        log(warning) << this << "error invoked!";
-    }
+    
+    j[U("@odata.id")] = json::value::string(U(this->odata.id));
+    
     return j;
 }
 
