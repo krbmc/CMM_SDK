@@ -146,18 +146,18 @@ void do_task_cmm_get(http_request _request)
     // cout << "t_list result->resnum : " << t_manager->list_request.front().result.res_number << endl;
     // cout << "t_list result->datetime : " << t_manager->list_request.front().result.result_datetime << endl;
 
-    if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
-    {
-        c_manager = new Task_Manager();
-        c_manager->task_type = TASK_TYPE_COMPLETED;
-        task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
-    }
-    else
-        c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
-    // complete 카테고리 c_manager에 연결
+    // if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
+    // {
+    //     c_manager = new Task_Manager();
+    //     c_manager->task_type = TASK_TYPE_COMPLETED;
+    //     task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
+    // }
+    // else
+    //     c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
+    // // complete 카테고리 c_manager에 연결
 
 
-    work_after_request_process(t_manager, c_manager, msg);
+    c_manager = work_after_request_process(t_manager, msg);
 
 
     /* After Move 테스트용 출력 */
@@ -370,16 +370,17 @@ void do_task_bmc_get(http_request _request)
     //     }
     // }
 
-    if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
-    {
-        c_manager = new Task_Manager();
-        c_manager->task_type = TASK_TYPE_COMPLETED;
-        task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
-    }
-    else
-        c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
+    // if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
+    // {
+    //     c_manager = new Task_Manager();
+    //     c_manager->task_type = TASK_TYPE_COMPLETED;
+    //     task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
+    // }
+    // else
+    //     c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
 
-    work_after_request_process(t_manager, c_manager, msg);
+    // work_after_request_process(t_manager, c_manager, msg);
+    c_manager = work_after_request_process(t_manager, msg);
 
 
     // completed로 연결
@@ -502,6 +503,8 @@ void do_task_cmm_post(http_request _request)
     Task_Manager *c_manager; // 컴플리트 매니저
 
     cout << "!@#$ CMM POST TASK ~~~~" << endl;
+    cout << "Task size : " << task_map.size() << endl;
+    log(error) << "Task size : " << task_map.size();
 
     t_manager = category(uri_tokens);
     if(!t_manager)
@@ -515,6 +518,9 @@ void do_task_cmm_post(http_request _request)
 
     // Make m_Request
     m_Request msg;
+
+    cout << "After T" << endl;
+    cout << "Task size : " << task_map.size() << endl;
 
     msg = work_before_request_process("POST", CMM_ADDRESS, uri, jv, _request.headers());
     
@@ -753,16 +759,33 @@ void do_task_cmm_post(http_request _request)
     //     }
     // }
 
-    if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
-    {
-        c_manager = new Task_Manager();
-        c_manager->task_type = TASK_TYPE_COMPLETED;
-        task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
-    }
-    else
-        c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
+    // c_manager = wwww(t_manager, msg);
+    // cout << "After C" << endl;
+    // cout << "Task size : " << task_map.size() << endl;
+    // cout << "c_manager info" << endl;
 
-    work_after_request_process(t_manager, c_manager, msg);
+    // m_Request test_m1, test_m2;
+    // test_m1 = c_manager->list_request.front();
+    // test_m2 = task_map.find(TASK_TYPE_COMPLETED)->second->list_request.front();
+    // cout << "c_list tasknum : " << test_m1.task_number << " / " << test_m2.task_number << endl;
+    // cout << "c_list host : " << test_m1.host << " / " << test_m2.host << endl;
+    // cout << "c_list uri : " << test_m1.uri << " / " << test_m2.uri << endl;
+    // cout << "c_list method : " << test_m1.method << " / " << test_m2.method << endl;
+    // cout << "c_list datetime : " << test_m1.request_datetime << " / " << test_m2.request_datetime << endl;
+    // cout << "c_list result->resnum : " << test_m1.result.res_number << " / " << test_m2.result.res_number << endl;
+    // cout << "c_list result->datetime : " << test_m1.result.result_datetime << " / " << test_m2.result.result_datetime << endl;
+
+    // if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
+    // {
+    //     c_manager = new Task_Manager();
+    //     c_manager->task_type = TASK_TYPE_COMPLETED;
+    //     task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
+    // }
+    // else
+    //     c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
+
+    c_manager = work_after_request_process(t_manager, msg);
+    
 
     // msg.result = msg_res;
 
@@ -886,16 +909,17 @@ void do_task_bmc_post(http_request _request)
     //     }
     // }
 
-    if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
-    {
-        c_manager = new Task_Manager();
-        c_manager->task_type = TASK_TYPE_COMPLETED;
-        task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
-    }
-    else
-        c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
+    // if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
+    // {
+    //     c_manager = new Task_Manager();
+    //     c_manager->task_type = TASK_TYPE_COMPLETED;
+    //     task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
+    // }
+    // else
+    //     c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
 
-    work_after_request_process(t_manager, c_manager, msg);
+    // work_after_request_process(t_manager, c_manager, msg);
+    c_manager = work_after_request_process(t_manager, msg);
 
 
     // completed로 연결
@@ -936,208 +960,29 @@ void do_task_cmm_patch(http_request _request)
         return ;
     }
 
-    // string uri_part;
-    // for(int i=0; i<uri_tokens.size(); i++)
-    // {
-    //     if(i == 3)
-    //         break;
-
-    //     uri_part += "/";
-    //     uri_part += uri_tokens[i];
-    // }
-    // // uri_part에는 /redfish/v1/something 까지만 (treat_uri_cmm_patch로 들어감)
-
     m_Request msg;
     msg = work_before_request_process("PATCH", CMM_ADDRESS, uri, jv, _request.headers());
 
     t_manager->list_request.push_back(msg);
 
-    http_response response;
-    json::value response_json;
+    // http_response response;
+    // json::value response_json;
 
+    // 요청처리
     msg = treat_uri_cmm_patch(_request, msg, jv);
 
-    // 함수화중... operate
-    /// 요청 처리
-    // if(uri_part == ODATA_ACCOUNT_SERVICE_ID)
+
+    // if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
     // {
-    //     // /redfish/v1/AccountService 처리
-    //     if(uri == ODATA_ACCOUNT_SERVICE_ID)
-    //     {
-    //         cout << "바뀌기전~~ " << endl;
-    //         cout << record_get_json(ODATA_ACCOUNT_SERVICE_ID) << endl;
-
-    //         cout << " $$$$$$$ " << endl;
-
-    //         if(jv.as_object().find("ServiceEnabled") != jv.as_object().end())
-    //             ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->service_enabled = jv.at("ServiceEnabled").as_bool();
-
-    //         if(jv.as_object().find("AuthFailureLoggingThreshold") != jv.as_object().end())
-    //             ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->auth_failure_logging_threshold = jv.at("AuthFailureLoggingThreshold").as_integer();
-
-    //         if(jv.as_object().find("MinPasswordLength") != jv.as_object().end())
-    //             ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->min_password_length = jv.at("MinPasswordLength").as_integer();
-
-    //         if(jv.as_object().find("AccountLockoutThreshold") != jv.as_object().end())
-    //             ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->account_lockout_threshold = jv.at("AccountLockoutThreshold").as_integer();
-
-    //         if(jv.as_object().find("AccountLockoutDuration") != jv.as_object().end())
-    //             ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->account_lockout_duration = jv.at("AccountLockoutDuration").as_integer();
-
-    //         if(jv.as_object().find("AccountLockoutCounterResetAfter") != jv.as_object().end())
-    //             ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->account_lockout_counter_reset_after = jv.at("AccountLockoutCounterResetAfter").as_integer();
-
-    //         if(jv.as_object().find("AccountLockoutCounterResetEnabled") != jv.as_object().end())
-    //             ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->account_lockout_counter_reset_enabled = jv.at("AccountLockoutCounterResetEnabled").as_bool();
-
-    //         cout << "바꾼후~~ " << endl;
-    //         cout << record_get_json(ODATA_ACCOUNT_SERVICE_ID) << endl;
-
-    //         response_json = record_get_json(ODATA_ACCOUNT_SERVICE_ID);
-    //         response.set_status_code(status_codes::OK);
-    //         response.set_body(response_json);
-    //         msg.result.result_datetime = currentDateTime();
-    //         msg.result.result_response = response;
-    //         msg.result.result_status = WORK_SUCCESS;
-
-    //         _request.reply(response);
-
-    //         //response담아주고
-
-    //     }
-    //     else
-    //     {
-    //         // /redfish/v1/AccountService/~~~ 관련처리부
-    //         int len = uri_tokens.size();
-    //         string minus_one; // 하나뺀거
-            
-    //         for(int i=0; i<len-1; i++)
-    //         {
-    //             minus_one += "/";
-    //             minus_one += uri_tokens[i];
-    //         }
-    //         cout << "MINUS_ONE INFO : " << minus_one << endl;
-
-    //         // /redfish/v1/AccountService/Accounts/[Account_id]
-    //         if(minus_one == ODATA_ACCOUNT_ID)
-    //         {
-    //             msg = modify_account(_request, msg, jv, uri);
-    //         }
-    //         // /redfish/v1/AccountService/Roles/[Role_id]
-    //         else if(minus_one == ODATA_ROLE_ID)
-    //         {
-    //             //솰라솰라
-    //             cout << "ROLE POSITION" << endl;
-    //         }
-    //         else
-    //         {
-    //             // 에러에러
-    //             cout << "ERROR POSITION" << endl;
-    //         }
-    //     }
-    // }
-    // else if(uri_part == ODATA_SESSION_SERVICE_ID)
-    // {
-    //     // /redfish/v1/SessionService 처리
-    //     if(uri == ODATA_SESSION_SERVICE_ID)
-    //     {
-    //         cout << "바뀌기전~~ " << endl;
-    //         cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
-
-    //         cout << " $$$$$$$ " << endl;
-
-    //         unsigned int change_timeout;
-    //         if(jv.as_object().find("SessionTimeout") != jv.as_object().end())
-    //         {
-    //             change_timeout = jv.at("SessionTimeout").as_integer();
-    //             ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout = change_timeout;
-    //         }
-    //         // 타임아웃 시간 변경이 관리자가 할거 같긴한데 일단 권한검사는 추가안함
-
-    //         Collection *col = (Collection *)g_record[ODATA_SESSION_ID];
-    //         std::vector<Resource *>::iterator iter;
-    //         for(iter=col->members.begin(); iter!=col->members.end(); iter++)
-    //         {
-    //             if(((Session *)(*iter))->_remain_expires_time > change_timeout)
-    //                 ((Session *)(*iter))->_remain_expires_time = change_timeout;
-    //         }
-    //         // 타임아웃 시간을 변경한 것이 현재 만들어져있는 세션들에게도 적용되면 이 코드 적용
-
-    //         cout << "바꾼후~~ " << endl;
-    //         cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
-
-    //         response_json = record_get_json(ODATA_SESSION_SERVICE_ID);
-    //         response.set_status_code(status_codes::OK);
-    //         response.set_body(response_json);
-    //         msg.result.result_datetime = currentDateTime();
-    //         msg.result.result_response = response;
-    //         msg.result.result_status = WORK_SUCCESS;
-
-    //         _request.reply(response);
-
-    //     }
-    // }
-    // else if(uri_part == ODATA_MANAGER_ID)
-    // {
-    //     if(uri_tokens.size() == 3)
-    //     {
-    //         // 얘는 걍 불가능 바로 아웃
-    //         // /redfish/v1/Managers/ 까지임
-    //     }
-    //     else
-    //     // uri_tokens 길이 4이상
-    //     {
-    //         // 여길 들어오면 걍 /redfish/v1/Managers/cmm-id 까지 붙어 들어온거네 (핸들러에서 cmm_id검사는하니깐)
-
-    //         string uri_spread = uri_part;
-    //         uri_spread = uri_spread + uri_tokens[3];
-            
-    //         string cmm_manager = ODATA_MANAGER_ID;
-    //         cmm_manager = cmm_manager + "/" + CMM_ID;
-
-    //         // /redfish/v1/Managers/cmm-id 그 자체에해당
-    //         if(uri == cmm_manager)
-    //         {
-    //             // 매니저 자체 정보수정 자리
-    //         }
-    //         else
-    //         {
-    //             uri_spread = uri_spread + "/" + uri_tokens[4];
-    //             if(uri_spread == cmm_manager + "/EthernetInterfaces")
-    //             {
-    //                 // /redfish/v1/Managers/cmm-id/EthernetInterfaces.. 에 해당
-                    
-    //             }
-
-    //         }
-            
-            
-            
-
-    //     }
-
-       
-    //     // uri_part가 /redfish/v1/Managers 까지고
-    //     // 여기서 /redfish/v1/Managers/1 (cmm이니까)붙이고
-    //     // /redfish/v1/Managers/1/EthernetInterfaces 까지 붙는걸로 가야할듯 다들 매니저 붙으면 cmm_id까지는 붙을거고
-    //     // 그다음꺼 하나만 더 붙여서 판단 ㄱㄱ
+    //     c_manager = new Task_Manager();
+    //     c_manager->task_type = TASK_TYPE_COMPLETED;
+    //     task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
     // }
     // else
-    // {
-    //     // uri_part가 해당하는게 없음 out
-    // }
+    //     c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
 
-
-    if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
-    {
-        c_manager = new Task_Manager();
-        c_manager->task_type = TASK_TYPE_COMPLETED;
-        task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
-    }
-    else
-        c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
-
-    work_after_request_process(t_manager, c_manager, msg);
+    // work_after_request_process(t_manager, c_manager, msg);
+    c_manager = work_after_request_process(t_manager, msg);
 
     cout << "*****************************     Out CMM PATCH     *****************************" << endl;
 }
@@ -1145,6 +990,83 @@ void do_task_cmm_patch(http_request _request)
 void do_task_bmc_patch(http_request _request)
 {
     //bmc~~
+    string uri = _request.request_uri().to_string();
+    json::value jv = _request.extract_json().get();
+    vector<string> uri_tokens = string_split(uri, '/');
+    string new_uri; // [BMC_id] 빼고 다시 만든 uri
+    for(int i=0; i<uri_tokens.size(); i++)
+    {
+        if(i == 3)
+            continue;
+        new_uri += "/";
+        new_uri += uri_tokens[i];
+    }
+
+    cout << "!@#$ BMC PATCH TASK ~~~ " << endl;
+    cout << "BMC_uri = " << uri << endl;
+    cout << "BMC_new_uri : " << new_uri << endl;
+    cout << "BMC_jv = " << jv << endl;
+    cout << "ss : " << task_map.size() << endl;
+
+    Task_Manager *t_manager; // 작업 매니저
+    Task_Manager *c_manager; // 컴플리트 매니저
+
+    t_manager = category(uri_tokens);
+    if(!t_manager)
+    {
+        json::value rp;
+        rp[U("Error")] = json::value::string(U("Wrong Task Category. Please Check the URI."));
+        _request.reply(status_codes::BadRequest, rp);
+        return ;
+    }
+
+    // Make m_Request
+    m_Request msg;
+
+    msg = work_before_request_process("PATCH", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
+
+    // connect to Task_manager
+    t_manager->list_request.push_back(msg);
+
+    http_client client(msg.host);
+    http_request req(methods::PATCH);
+    req.set_request_uri(new_uri);
+    req.set_body(jv);
+
+    http_response response;
+    json::value response_json;
+
+
+    // Send Request
+    try
+    {
+        /* code */
+        pplx::task<http_response> responseTask = client.request(req);
+        response = responseTask.get();
+        response_json = response.extract_json().get();
+        cout << "rserser : " << response.status_code() << endl;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
+    cout << "********************* In pplx Task **********************" << endl;
+    cout << response_json << endl;
+    cout << "********************* Out pplx Task **********************" << endl;
+
+    // Make m_Response
+    m_Response msg_res;
+    msg_res.result_datetime = currentDateTime();
+    msg_res.result_response = response;
+    msg_res.res_number = msg.task_number;
+    // msg_res.result_status = WORK_SUCCESS; // 응답 response의 상태에 따라 다르게 해야할텐데
+    msg.result = msg_res;
+
+    // work_after_request_process(t_manager, c_manager, msg);
+    c_manager = work_after_request_process(t_manager, msg);
+
+    _request.reply(U(response.status_code()), response_json);
 }
 
 
@@ -1300,8 +1222,20 @@ m_Request work_before_request_process(string _method, string _host, string _uri,
     return msg;
 }
 
-void work_after_request_process(Task_Manager* _t, Task_Manager* _c, m_Request _msg)
+Task_Manager* work_after_request_process(Task_Manager* _t, m_Request _msg)
 {
+
+    Task_Manager *complete;
+
+    if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
+    {
+        complete = new Task_Manager();
+        complete->task_type = TASK_TYPE_COMPLETED;
+        task_map.insert(make_pair(TASK_TYPE_COMPLETED, complete));
+    }
+    else
+        complete = task_map.find(TASK_TYPE_COMPLETED)->second;
+
     std::list<m_Request>::iterator iter;
     for(iter=_t->list_request.begin(); iter!=_t->list_request.end(); iter++)
     {
@@ -1313,7 +1247,7 @@ void work_after_request_process(Task_Manager* _t, Task_Manager* _c, m_Request _m
     }
     // 해당하는 카테고리task매니저인 _t의 request list에서 해당하는 request를 지우고
 
-    _c->list_request.push_back(_msg);
+    complete->list_request.push_back(_msg);
     // 해당 request msg는 completed로 이동
 
     string task_odata = ODATA_TASK_ID;
@@ -1323,6 +1257,7 @@ void work_after_request_process(Task_Manager* _t, Task_Manager* _c, m_Request _m
     record_save_json();
     // request의 리소스 task 정보 추가,변경
 
+    return complete;
 }
 
 m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value _jv)

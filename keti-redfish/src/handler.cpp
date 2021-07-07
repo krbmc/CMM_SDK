@@ -542,6 +542,31 @@ void Handler::handle_post(http_request _request)
             return ;
         }
 
+        // if(uri_tokens.size() == 1 && uri_tokens[0] == "Command")
+        // {
+        //     // string path받아서 명령어처리
+        //     json::value command_info;
+        //     command_info = _request.extract_json().get();
+
+        //     if(command_info.as_object().find("Cmd") == command_info.as_object().end()
+        //     || command_info.as_object().find("Path") == command_info.as_object().end())
+        //     {
+        //         _request.reply(status_codes::BadRequest);
+        //         return ;
+        //     }
+
+        //     string cmd, path;
+        //     cmd = command_info.at("Cmd").as_string();
+        //     path = command_info.at("Path").as_string();
+
+        //     // char *boo = path.c_str();
+
+        //     // get_popen_string(path.c_str());
+
+        //     // system(path)
+
+        // }
+
         if(uri_tokens.size() >= 4)
         {
             if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")

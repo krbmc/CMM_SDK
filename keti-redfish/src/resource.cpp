@@ -13,11 +13,11 @@ bool init_resource(void)
     g_service_root = new ServiceRoot();
     
     record_load_json();
-    log(info) << "record load json complete";
+    // log(info) << "record load json complete";
     
-    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    // cout << "\t\t dy : add new bmc complete" << endl;
+    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    cout << "\t\t dy : add new bmc complete" << endl;
     
     record_save_json();
     log(info) << "record save json complete";
