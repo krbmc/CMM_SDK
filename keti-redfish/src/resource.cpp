@@ -11,14 +11,45 @@ extern ServiceRoot *g_service_root;
 bool init_resource(void)
 {
     record_load_json();
-    // log(info) << "record load json complete";
+    log(info) << "record load json complete";
     
-    g_service_root = new ServiceRoot();
+    if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
+        g_service_root = new ServiceRoot();
     
     // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // add_new_bmc("2", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
+    // // generateCSR test
+    // json::value rsp;
+    // json::value body, odata;
+    // odata["@odata.id"] = json::value::string("/redfish/v1/AccountService/Accounts/1/Certificates/1");
+    // body["CertificateCollection"] = odata;
+    // body["Country"] = json::value::string("CN");
+    // body["City"] = json::value::string("SH");
+    // body["CommonName"] = json::value::string("XCC-7260-SN");
+    // body["State"] = json::value::string("SH");
+    // body["Organization"] = json::value::string("Lenovo");
+
+    // CertificateService *cert_service = (CertificateService *)g_record["/redfish/v1/CertificateService"];
+    // rsp = cert_service->GenerateCSR(body);
+    // log(info) << "generateCSR : " << rsp;
+    
+    // // rekey&renew test
+    // Certificate *cert = (Certificate *)g_record["/redfish/v1/AccountService/Accounts/1/Certificates/1"];
+    // rsp = cert->Renew();
+    // log(info) << "renew : " << rsp;
+
+    // // replace certificate test
+    // json::value re_body;
+    // odata["@odata.id"] = json::value::string("/redfish/v1/AccountService/Accounts/1/Certificates/1");
+    // re_body["CertificateUri"] = odata;
+    // re_body["CertificateString"] = json::value::string(file2str("/conf/ssl/cert.pem"));
+    // re_body["CertificateType"] = json::value::string("PEM");
+    // cert_service->ReplaceCertificate(re_body);
+    
+    // init_record();
     record_save_json();
     log(info) << "record save json complete";
     
@@ -68,7 +99,8 @@ void init_system(Collection *system_collection, string _id)
     }
     if (!record_is_exist(odata_id + "/Bios")){
         system->bios = new Bios(odata_id + "/Bios", "Bios");
-        system->bios->name = "BIOS Configuration Current Settings";        
+        
+        init_bios(system->bios);
     }
 
     system_collection->add_member(system);
@@ -161,22 +193,67 @@ void init_simple_storage(Collection *simple_storage_collection, string _id)
     return;
 }
 
+void init_bios(Bios *bios)
+{
+    /**
+     * @todo 여기에 bios 일반멤버변수값 넣어주기
+     */
+    bios->id = "BIOS";
+    bios->name = "BIOS Configuration Current Settings";        
+    bios->attribute_registry = "Attribute registry";
+    bios->attribute.boot_mode = "Uefi";
+    bios->attribute.embedded_sata = "Raid";
+    bios->attribute.nic_boot1 = "NetworkBoot";
+    bios->attribute.nic_boot2 = "Disabled";
+    bios->attribute.power_profile = "MaxPerf";
+    bios->attribute.proc_core_disable = 0;
+    bios->attribute.proc_hyper_threading = "Enabled";
+    bios->attribute.proc_turbo_mode = "Enabled";
+    bios->attribute.usb_control = "UsbEnabled";
+
+    return;
+}
+
 void init_chassis(Collection *chassis_collection, string _id)
 {
     string odata_id = chassis_collection->odata.id + "/" + _id;
-    
-    Chassis *chassis = new Chassis(odata_id, _id);
-    chassis->name = "CMM Chassis";
+    Chassis *chassis;
 
+    if (!record_is_exist(odata_id))
+        chassis = new Chassis(odata_id, _id);
+    
     /**
      * @todo 여기에 chassis 일반멤버변수값 넣어주기
      */
+    chassis->name = "CMM Chassis";
     chassis->chassis_type = "Enclosure";
     chassis->manufacturer = "KETI";
+    chassis->model = "";
+    chassis->serial_number = "";
+    chassis->part_number = "";
+    chassis->asset_tag = "";
+    chassis->power_state = POWER_STATE_ON;
+    
     chassis->indicator_led = LED_OFF;
     chassis->led_off(LED_YELLOW);
     chassis->led_off(LED_RED);
     chassis->led_blinking(LED_GREEN);
+    
+    chassis->status.state = STATUS_STATE_ENABLED;
+    chassis->status.health = STATUS_HEALTH_OK;
+    
+    chassis->location.postal_address.country = "";
+    chassis->location.postal_address.territory = "";
+    chassis->location.postal_address.city = "";
+    chassis->location.postal_address.street = "";
+    chassis->location.postal_address.house_number = "";
+    chassis->location.postal_address.name = "";
+    chassis->location.postal_address.postal_code = "";
+   
+    chassis->location.placement.row = "";
+    chassis->location.placement.rack = "";
+    chassis->location.placement.rack_offset_units = "";
+    chassis->location.placement.rack_offset = 0;
 
     if (!record_is_exist(odata_id + "/Sensors")){
         chassis->sensors = new Collection(odata_id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
@@ -204,8 +281,10 @@ void init_chassis(Collection *chassis_collection, string _id)
 void init_sensor(Collection *sensor_collection, string _id)
 {
     string odata_id = sensor_collection->odata.id + "/" + _id;
-
-    Sensor *sensor = new Sensor(odata_id, _id);
+    Sensor *sensor;
+    
+    if (!record_is_exist(odata_id))
+        sensor = new Sensor(odata_id, _id);
     /**
      * @todo 여기에 sensor 일반멤버변수값 넣어주기
      */
@@ -319,8 +398,10 @@ void init_power(Power *power)
 void init_manager(Collection *manager_collection, string _id)
 {
     string odata_id = manager_collection->odata.id + "/" + _id;
+    Manager *manager;
     
-    Manager *manager = new Manager(odata_id, _id);
+    if (!record_is_exist(odata_id))
+        manager = new Manager(odata_id, _id);
         
     manager->name = "CMM Manager";
     manager->manager_type = "Enclosure";
@@ -377,8 +458,10 @@ void init_update_service(UpdateService *update_service)
 void init_software_inventory(Collection *software_inventory_collection, string _id)
 {
     string odata_id = software_inventory_collection->odata.id + "/" + _id;
-
-    SoftwareInventory *software_inventory = new SoftwareInventory(odata_id, _id);
+    SoftwareInventory *software_inventory;
+    
+    if (!record_is_exist(odata_id))
+        software_inventory = new SoftwareInventory(odata_id, _id);
     /**
      * @todo 여기에 software_inventory 일반멤버변수값 넣어주기
      */
@@ -422,8 +505,10 @@ void init_event_service(EventService *event_service)
 void init_event_destination(Collection *event_destination_collection, string _id)
 {
     string odata_id = event_destination_collection->odata.id + "/" + _id;
+    EventDestination *event_destination;
 
-    EventDestination *event_destination = new EventDestination(odata_id, _id);
+    if (!record_is_exist(odata_id))
+        event_destination = new EventDestination(odata_id, _id);
 
     /**
      * @todo 여기에 event_destination 일반멤버변수값 넣어주기
@@ -600,6 +685,8 @@ bool Resource::save_json(void)
         else
             sub_path = sub_path + '/' + tokens[i];
         
+        if (!access(sub_path.c_str(), F_OK))
+            continue;
         mkdir(sub_path.c_str(), 0755);
     }
 
@@ -814,26 +901,26 @@ bool List::load_json(json::value &j)
 // List end
 
 // Actions start
-json::value Actions::get_json(void)
-{
-    json::value j;
+// json::value Actions::get_json(void)
+// {
+//     json::value j;
     
-    string act = "#";
-    act = act + this->action_by + this->action_what;
+//     string act = "#";
+//     act = act + this->action_by + this->action_what;
 
-    json::value k = json::value::object();
-    k[U("target")] = json::value::string(U(this->target));
-    if(this->act_type == "Reset")
-    {
-        k[U("ResetType@Redfish.AllowableValues")] = json::value::array();
-        for(int i=0; i<this->action_info.size(); i++)
-            k[U("ResetType@Redfish.AllowableValues")][i] = json::value::string(this->action_info[i]);
-    }
+//     json::value k = json::value::object();
+//     k[U("target")] = json::value::string(U(this->target));
+//     if(this->act_type == "Reset")
+//     {
+//         k[U("ResetType@Redfish.AllowableValues")] = json::value::array();
+//         for(int i=0; i<this->action_info.size(); i++)
+//             k[U("ResetType@Redfish.AllowableValues")][i] = json::value::string(this->action_info[i]);
+//     }
     
-    //j[U(act)] = k;
-    return k;
-    // return j;
-}
+//     //j[U(act)] = k;
+//     return k;
+//     // return j;
+// }
 
 // Actions end
 
@@ -1145,22 +1232,7 @@ json::value LogService::get_json(void)
 
     j["Entries"] = get_resource_odata_id_json(this->entry, this->odata.id);
 
-    // json::value j_act;
-    // for(int i=0; i<this->actions.size(); i++)
-    // {
-    //     string act = "#";
-    //     act = act + this->actions[i]->action_name;
-    //     j_act[U(act)] = this->actions[i]->get_json();
-    // }
-    // std::vector<Resource *>::iterator iter;
-    // for(iter = this->actions->members.begin(); iter != this->actions->members.end(); iter++)
-    // {
-    //     string act = "#";
-    //     act = act + ((Actions *)(*iter))->action_name;
-    //     // act = act + ((Actions *)*iter)->action_by + "." + ((Actions *)*iter)->action_what;
-    //     j_act[U(act)] = ((Actions *)(*iter))->get_json();
-    // }
-    // j[U("Actions")] = j_act;
+    j["Actions"] = get_action_info(this->actions);
 
     return j;
 }
@@ -1186,6 +1258,48 @@ bool LogService::load_json(json::value &j)
     }
     catch (json::json_exception &e)
     {
+        return false;
+    }
+
+    return true;
+}
+
+bool LogService::ClearLog()
+{
+    try
+    {
+        if (this->entry == nullptr){
+            log(info) << "Cannot find any logEntry in " << this->odata.id;
+            return false;
+        }
+        
+        //#1 all logentry delete in g_record and memory
+        vector<Resource *> temp;
+            
+        for (int i = 0; i < this->entry->members.size(); i++){
+            temp.push_back(this->entry->members[i]);
+        }
+        temp.push_back(this->entry);
+    
+        this->entry->members.clear();
+        this->entry = nullptr;
+        
+        for(auto item : temp)
+            delete(item);
+        temp.clear();
+        
+        //#2 all logentry json file delete in LogService folder
+        fs::path target_dir(this->odata.id);
+    
+        for (const auto& entry : fs::directory_iterator(target_dir)){
+            if (fs::exists(entry.path())){
+                fs::remove_all(entry.path());
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        log(warning) << e.what();
         return false;
     }
 
@@ -1415,6 +1529,28 @@ bool UpdateService::load_json(json::value &j)
         return false;
     }
 
+    return true;
+}
+
+// image uri로 target update? 
+bool UpdateService::SimpleUpdate(json::value body)
+{
+    string image_uri; // <bmc ip>/<path and image file name>
+    string transfer_protocol;
+    json::value j_targets;
+    vector<string> targets;
+
+    // #1 get request body
+    get_value_from_json_key(body, "ImageURI", image_uri);
+    get_value_from_json_key(body, "TransferProtocol", transfer_protocol);
+    get_value_from_json_key(body, "Targets", j_targets);
+    for (auto target : j_targets.as_array()){
+        targets.push_back(target.as_string());
+    }
+
+    // #2 target update and restart?
+    // available? keti-redfish / keti-rest / keti-edge
+    
     return true;
 }
 
@@ -2114,6 +2250,7 @@ json::value Chassis::get_json(void)
     l[U("Name")] = json::value::string(U(this->location.postal_address.name));
     l[U("PostalCode")] = json::value::string(U(this->location.postal_address.postal_code));
     k[U("PostalAddress")] = l;
+
     l = json::value::object();
     l[U("Row")] = json::value::string(U(this->location.placement.row));
     l[U("Rack")] = json::value::string(U(this->location.placement.rack));
@@ -2187,6 +2324,38 @@ bool Chassis::load_json(json::value &j)
 
 }
 
+// bool Chassis::ResetChassis(string _reset_type)
+// {
+//     if (_reset_type == "ForceOff"){
+
+//     }
+//     if (_reset_type == "ForceOn"){
+
+//     }
+//     if (_reset_type == "ForceRestart"){
+
+//     }
+//     if (_reset_type == "GracefulRestart"){
+
+//     }
+//     if (_reset_type == "GracefulShutdown"){
+
+//     }
+//     if (_reset_type == "Nmi"){
+
+//     }
+//     if (_reset_type == "On"){
+//         this->power_state = POWER_STATE_ON;
+//     }
+//     if (_reset_type == "PowerCycle"){
+
+//     }
+//     if (_reset_type == "PushPowerButton"){
+
+//     }
+    
+// }
+
 pplx::task<void> Chassis::led_off(uint8_t _led_index)
 {
     uint8_t *indicator_led = &this->indicator_led;
@@ -2251,15 +2420,7 @@ json::value Manager::get_json(void)
     k[U("Health")] = json::value::string(U(this->status.health));
     j[U("Status")] = k;
 
-    // json::value j_act;
-    // for(int i=0; i<this->actions.size(); i++)
-    // {
-    //     string act = "#";
-    //     act = act + this->actions[i]->action_name;
-    //     j_act[U(act)] = this->actions[i]->get_json();
-    // }
-    
-    // j[U("Actions")] = j_act;
+    j["Actions"] = get_action_info(this->actions);
 
     return j;
 }
@@ -2504,36 +2665,36 @@ bool NetworkProtocol::load_json(json::value &j)
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
 
+        //test
         obj = j.at("SNMP");
-        this->snmp_enabled = obj.at("ProtocolEnabled").as_bool();
-        this->snmp_port = obj.at("Port").as_integer();
-
+        get_value_from_json_key(obj, "ProtocolEnabled", this->snmp_enabled);
+        get_value_from_json_key(obj, "port", this->snmp_port);
+        
         obj = j.at("IPMI");
-        this->ipmi_enabled = obj.at("ProtocolEnabled").as_bool();
-        this->ipmi_port = obj.at("Port").as_integer();                          
-
+        get_value_from_json_key(obj, "ProtocolEnabled", this->ipmi_enabled);
+        get_value_from_json_key(obj, "port", this->ipmi_port);
+        
         obj = j.at("KVMIP");
-        this->kvmip_enabled = obj.at("ProtocolEnabled").as_bool();
-        this->kvmip_port = obj.at("Port").as_integer();
-
-        obj = j.at("HTTP");
-        this->http_enabled = obj.at("ProtocolEnabled").as_bool();
-        this->http_port = obj.at("Port").as_integer();
-
+        get_value_from_json_key(obj, "ProtocolEnabled", this->kvmip_enabled);
+        get_value_from_json_key(obj, "port", this->kvmip_port);
+        
+        obj = j.at("HTTP"); 
+        get_value_from_json_key(obj, "ProtocolEnabled", this->http_enabled);
+        get_value_from_json_key(obj, "port", this->http_port);
+        
         obj = j.at("HTTPS");
-        this->https_enabled = obj.at("ProtocolEnabled").as_bool();
-        this->https_port = obj.at("Port").as_integer();
+        get_value_from_json_key(obj, "ProtocolEnabled", this->https_enabled);
+        get_value_from_json_key(obj, "port", this->https_port);
          
         obj = j.at("NTP");
-        this->snmp_enabled = obj.at("ProtocolEnabled").as_bool();
+        get_value_from_json_key(obj, "ProtocolEnabled", this->ntp_enabled);
         
-        if (obj.has_field("NTPServers")){
-            v_netservers = obj.at("NTPServers");
+        get_value_from_json_key(obj, "NTPServers", v_netservers);
+        if (v_netservers != json::value::null()){
             for (auto str : v_netservers.as_array())
                 this->v_netservers.push_back(str.as_string());
         }else
             log(warning) << "NTPServers field empty in networkProtocol load..";
-        
     }
     catch (json::json_exception &e)
     {
@@ -2721,14 +2882,7 @@ json::value Systems::get_json(void)
     j["SimpleStorage"] = get_resource_odata_id_json(this->simple_storage, this->odata.id);
     j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
 
-    // json::value j_act;
-    // for(int i=0; i<this->actions.size(); i++)
-    // {
-    //     string act = "#";
-    //     act = act + this->actions[i]->action_name;
-    //     j_act[U(act)] = this->actions[i]->get_json();
-    // }
-    // j[U("Actions")] = j_act;
+    j["Actions"] = get_action_info(this->actions);
     
     return j;
 }
@@ -2778,6 +2932,30 @@ bool Systems::load_json(json::value &j)
     }
 
     return true;    
+}
+
+bool Systems::Reset(json::value body)
+{
+    string reset_type;
+
+    get_value_from_json_key(body, "ResetType", reset_type);
+
+    if (reset_type == "On"){
+    }
+    if (reset_type == "ForceOff"){
+    }
+    if (reset_type == "GracefulShutdown"){
+    }
+    if (reset_type == "GracefulRestart"){
+    }
+    if (reset_type == "ForceRestart"){
+    }
+    if (reset_type == "Nmi"){
+    }
+    if (reset_type == "ForceOn"){
+    }
+
+    return true;
 }
 // System end
 
@@ -3090,7 +3268,8 @@ json::value Bios::get_json(void)
     k[U("UsbControl")] = json::value::string(U(this->attribute.usb_control));
     j[U("Attributes")] = k;
 
-
+    j["Actions"] = get_action_info(this->actions);
+    
     return j;
 }
 
@@ -3119,6 +3298,32 @@ bool Bios::load_json(json::value &j)
     }
 
     return true;
+}
+
+bool Bios::ResetBios()
+{
+    try
+    {
+        init_bios(this);
+    }
+    catch (exception &e)
+    {
+        log(warning) << "Reset Bios Failed..";;
+        return false;
+    }
+    return true;
+}
+
+bool Bios::ChangePassword(string new_password, string old_password, string password_name)
+{
+    // BMC password change..
+    // # request = [module_id]/acccountService/accounts/[account_num]
+    // #1 get module id.. ex) 1, 500..
+    string module_id;
+    module_id = ((Systems *)g_record[get_parent_object_uri(this->odata.id, "/")])->id;
+    
+    // #2 get parameter
+    // #3 change password
 }
 
 json::value Memory::get_json(void)
@@ -3243,6 +3448,7 @@ json::value Certificate::get_json(void)
     for(int i = 0; i < this->keyUsage.size(); i++)
         j["KeyUsage"][i] = json::value::string(this->keyUsage[i]);
     
+    j["Actions"] = get_action_info(this->actions);
     return j;
 }
 
@@ -3286,6 +3492,61 @@ bool Certificate::load_json(json::value &j)
     return true;
 }
 
+// Rekey와 Renew.. CSR갱신만 하고 Certificate replace는 하지 않는 것인가..?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+json::value Certificate::Rekey(json::value body)
+{
+    // #1 generateCSR with new key and return 
+    json::value rsp;
+    int key_bit_length;
+    fs::path key("/conf/ssl/cert.key");
+    fs::path conf("/conf/ssl/cert.cnf");
+    fs::path csr("/conf/ssl/cert.csr");
+    
+    //not implemented..
+    string key_curve_id;
+    string key_pair_algorithm;
+    string challenge_password;
+       
+    get_value_from_json_key(body, "KeyBitLength", key_bit_length);
+    
+    if (fs::exists(key))
+    {
+        fs::remove(key);
+        log(info) << "[...] remove old ssl key";
+    }
+
+    generate_ssl_private_key(key, to_string(key_bit_length));
+
+    rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+
+    return rsp;
+}
+
+json::value Certificate::Renew(void)
+{
+    // #1 generateCSR with exists information 
+    json::value rsp;
+    fs::path key("/conf/ssl/cert.key");
+    fs::path conf("/conf/ssl/cert.cnf");
+    fs::path csr("/conf/ssl/cert.csr");
+    
+    if (!(fs::exists(conf)))
+    {
+        log(warning) << "[...] ssl config file doesn't exists.. failed to renew";
+        return json::value::null();
+    }
+
+    if (!(fs::exists(key)))
+    {
+        log(warning) << "[...] ssl key file doesn't exists.. failed to renew";
+        return json::value::null();
+    }
+
+    rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+    
+    return rsp;
+}
+
 json::value CertificateLocation::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -3322,6 +3583,7 @@ json::value CertificateService::get_json(void)
     
     j["Id"] = json::value::string(this->id);
     j["CertificateLocations"] = get_resource_odata_id_json(this->certificate_location, this->odata.id);
+    j["Actions"] = get_action_info(this->actions);
 
     return j;
 }
@@ -3338,6 +3600,247 @@ bool CertificateService::load_json(json::value &j)
     }
 
     return true;
+}
+
+json::value CertificateService::GenerateCSR(json::value body)
+{
+    string cmds;
+    json::value rsp;
+    // required
+    string certificate_odata_id;
+    string country;
+    string city;
+    string common_name;
+    string state;
+    string organization;
+    string organization_unit;
+    
+    // optional
+
+    // optional (not implemented..)
+    vector<string> alternative_names;
+    vector<string> key_usage;
+    string challenge_password; // pass phrase
+    string contact_person;
+    string email;
+    string given_name;
+    string initials;
+    string key_curve_id; // ahffk
+    string key_pair_algorithm; // rsa only!
+    string surname;
+    string unstructured_name;
+
+    log(info) << "[...]generateCSR start";
+    certificate_odata_id = body.at("CertificateCollection").at("@odata.id").as_string();
+    get_value_from_json_key(body, "Country", country);
+    get_value_from_json_key(body, "City", city);
+    get_value_from_json_key(body, "CommonName", common_name);
+    get_value_from_json_key(body, "State", state);
+    get_value_from_json_key(body, "Organization", organization);
+    get_value_from_json_key(body, "Organization", organization_unit);
+    
+    // #1 key, conf(inform), csr path declare 
+    fs::path key("/conf/ssl/cert.key");
+    fs::path conf("/conf/ssl/cert.cnf");
+    fs::path csr("/conf/ssl/cert.csr");
+    string key_length = "1024";
+
+    // #2 이미 존재한다면, 삭제
+    remove_if_exists(conf);
+    remove_if_exists(key);
+    
+    // #3 ssl key (개인키) 생성
+    generate_ssl_private_key(key, key_length);
+    
+    // #4 ssl config file 생성
+    log(info) << "[...]ssl config save";
+    char cert_text[14][200];
+
+    sprintf(cert_text[0], "[ req ]\n");	
+    sprintf(cert_text[1], "default_bits\t= %s\n", key_length.c_str());
+    sprintf(cert_text[2], "default_md\t= sha256\n");	
+    sprintf(cert_text[3], "default_keyfile\t=%s\n", key.c_str());
+    sprintf(cert_text[4], "prompt\t = no\n");
+    sprintf(cert_text[5], "encrypt_key\t= no\n\n");
+    sprintf(cert_text[6], "# base request\ndistinguished_name = req_distinguished_name\n");
+    sprintf(cert_text[7], "\n# distinguished_name\n[ req_distinguished_name ]\n");	
+    sprintf(cert_text[8], "countryName\t= \"%s\"\n", country.c_str());
+    sprintf(cert_text[9], "stateOrProvinceName\t= \"%s\"\n", state.c_str());
+    sprintf(cert_text[10], "localityName\t=\"%s\"\n", city.c_str());
+    sprintf(cert_text[11], "organizationName\t=\"%s\"\n", organization.c_str());	
+    sprintf(cert_text[12], "organizationalUnitName\t=\"%s\"\n", organization_unit.c_str());	
+    sprintf(cert_text[13], "commonName\t=\"%s\"\n", common_name.c_str());
+    
+    ofstream cert_conf(conf);
+    for (int i = 0; i < 14; i++)
+        cert_conf << cert_text[i];
+    cert_conf.close();
+
+    // #5 CSR 생성 && return request
+    rsp = generate_CSR_return_result(conf, key, csr, certificate_odata_id);
+
+    return rsp;
+}
+
+/**
+ * @brief generate new ssl private key
+ * @author dyk
+ */
+void generate_ssl_private_key(fs::path key, string key_length)
+{
+    string cmds = "openssl genrsa -out " + key.string() + " " + key_length;
+    system(cmds.c_str());
+    log(info) << "[###]generate private key";
+}
+
+/**
+ * @brief generate Certificate Signing Request with absolute path of conf, key, csr 
+ * @author dyk
+ * @return json information about this request // can be changed 
+ */
+json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id)
+{
+    json::value rsp;
+    string cmds = "openssl req -config " + conf.string() + " -new -key " + key.string() + " -out " + csr.string() + " -verbose";
+    
+    if (!std::system(cmds.c_str())){
+        if (fs::exists(csr) && fs::exists(key) && fs::exists(conf)){
+            log(info) << "[###]CSR is generated";
+        
+            json::value odata_id;
+            
+            odata_id["@odata.id"] = json::value::string(target_id);
+            rsp["CertificateCollection"] = odata_id;
+            
+            rsp["CSRString"] = json::value::string(file2str(csr.string()));
+        }
+    }else{
+        log(warning) << "[Error] Failed to Generate CSR";
+        json::value msg;
+        msg["Message"] = json::value::string("Requeset Failed.");
+        rsp["Failed"] = msg;
+    }
+
+    return rsp;
+}
+
+/**
+ * @brief read .csr, .pem file and get CSRString
+ * @author dyk
+ * @return CSRString 
+ */
+string file2str(string file_path)
+{
+    auto csr_str = ostringstream{};
+    ifstream read_csr(file_path);
+    if (!read_csr.is_open()){
+        log(warning) << "Could not open the file : " << file_path;
+        return "";
+    }
+    csr_str << read_csr.rdbuf();
+    read_csr.close();
+
+    return csr_str.str();
+}
+
+bool CertificateService::ReplaceCertificate(json::value body)
+{
+    // #1 body로부터 CSR string 및 CSR Type 입력받기.
+    log(info) << "[...]Replace Certificate Start";
+    string target_odata_id = body.at("CertificateUri").at("@odata.id").as_string();
+    Certificate *replacedCert = (Certificate *)g_record[target_odata_id];
+
+    get_value_from_json_key(body, "CertificateString", replacedCert->certificateString);
+    get_value_from_json_key(body, "CertificateType", replacedCert->certificateType);
+    
+    // #2 pem 파일 입력받은 certificate로 교체
+    // 존재하면 교체. 존재하지 않는다면 생성.
+    fs::path cert_file(target_odata_id + ".pem");
+    if (fs::exists(cert_file)){
+        // backup 필요??
+        fs::remove(cert_file);
+        log(info) << "[...]Original Certificate is removed..";
+    }
+    
+    ofstream cert(cert_file.string());
+    cert << replacedCert->certificateString;
+    cert.close();
+    
+    // #3 수정된 certificate 정보 읽어서 g_record 수정
+    update_cert_with_pem(cert_file, replacedCert);
+    log(info) << "[...]Certificate is replaced..";
+    
+    return true;
+}
+
+// 다른 field도 읽어야함
+void update_cert_with_pem(fs::path cert, Certificate *certificate)
+{
+    string cmds;
+    // get dates
+    log(info) << cert.string();
+    cmds = "openssl x509 -in " + cert.string() + " -noout -startdate";
+    string notbefore(get_popen_string(const_cast<char*>(cmds.c_str())));
+    notbefore.erase(0, 10);
+    log(info) << "startdate : " << notbefore;
+    certificate->validNotBefore = notbefore;
+
+    cmds = "openssl x509 -in " + cert.string() + " -noout -enddate"; 
+    string notafter(get_popen_string(const_cast<char*>(cmds.c_str())));
+    notafter.erase(0, 9);
+    log(info) << "enddate : " << notafter;
+    certificate->validNotAfter = notafter;
+    
+    // get issuer
+    vector<string> issuerV;
+    cmds = "openssl x509 -in " + cert.string() + " -noout -issuer"; 
+    string issuer(get_popen_string(const_cast<char*>(cmds.c_str())));
+    issuer.erase(0, 7);
+    issuerV = string_split(issuer, ',');
+    for (auto item : issuerV){
+        vector<string> itemV;
+        itemV = string_split(item, ' ');
+        if (itemV[0] == "C")
+            certificate->issuer.country = itemV[2];
+        if (itemV[0] == "ST")
+            certificate->issuer.state = itemV[2];
+        if (itemV[0] == "L")
+            certificate->issuer.city = itemV[2];
+        if (itemV[0] == "O")
+            certificate->issuer.organization = itemV[2];
+        if (itemV[0] == "OU")
+            certificate->issuer.organizationUnit = itemV[2];
+        if (itemV[0] == "CN")
+            certificate->issuer.commonName = itemV[2];
+        if (itemV[0] == "emailAddress")
+            certificate->issuer.email = itemV[2];
+    }
+        
+    // get subject
+    vector<string> subjectV;
+    cmds = "openssl x509 -in " + cert.string() + " -noout -subject"; 
+    string subject(get_popen_string(const_cast<char*>(cmds.c_str())));
+    subject.erase(0, 8);
+    subjectV = string_split(subject, ',');
+    for (auto item : subjectV){
+        vector<string> itemV;
+        itemV = string_split(item, ' ');
+        if (itemV[0] == "C")
+            certificate->subject.country = itemV[2];
+        if (itemV[0] == "ST")
+            certificate->subject.state = itemV[2];
+        if (itemV[0] == "L")
+            certificate->subject.city = itemV[2];
+        if (itemV[0] == "O")
+            certificate->subject.organization = itemV[2];
+        if (itemV[0] == "OU")
+            certificate->subject.organizationUnit = itemV[2];
+        if (itemV[0] == "CN")
+            certificate->subject.commonName = itemV[2];
+        if (itemV[0] == "emailAddress")
+            certificate->subject.email = itemV[2];
+    }return;
+    
 }
 // dy : certificate end
 
@@ -3372,8 +3875,8 @@ json::value ServiceRoot::get_json(void)
     j["Systems"] = get_resource_odata_id_json(this->system_collection, this->odata.id);
     j["Chassis"] = get_resource_odata_id_json(this->chassis_collection, this->odata.id);
     j["Managers"] = get_resource_odata_id_json(this->manager_collection, this->odata.id);
-    j["UpdateService"] = get_resource_odata_id_json(this->update_service, this->odata.id);
 
+    j["UpdateService"] = get_resource_odata_id_json(this->update_service, this->odata.id);
     j["AccountService"] = get_resource_odata_id_json(this->account_service, this->odata.id);
     j["SessionService"] = get_resource_odata_id_json(this->session_service, this->odata.id);
     j["TaskService"] = get_resource_odata_id_json(this->task_service, this->odata.id);
@@ -3439,4 +3942,27 @@ json::value get_resource_odata_id_json(Resource *res, string loc)
         return json::value::null();
     }else
         return res->get_odata_id_json();
+}
+
+json::value get_action_info(unordered_map<string, Actions> act)
+{
+    json::value actions;
+    for(auto item : act){
+        json::value act_obj;
+        act_obj["target"] = json::value::string(item.second.target);
+        
+        if (!item.second.parameters.empty()){
+            for(auto parameter : item.second.parameters){
+                if (!parameter.allowable_values.empty()){
+                    act_obj[parameter.name + "@Redfish.AllowableValues"] = json::value::array();
+                    for(int i = 0; i < parameter.allowable_values.size(); i++){
+                        act_obj[parameter.name + "@Redfish.AllowableValues"][i] = json::value::string(parameter.allowable_values[i]);
+                    }
+                }
+            }
+        }
+        actions[item.second.name] = act_obj;
+    }
+    
+    return actions;
 }

@@ -201,3 +201,88 @@ char *get_popen_string(char *command)
     temp[strlen(temp)-1] = '\0';
     return temp;
 }
+
+/**
+ * @brief in body, find value with key and return value. if value doesn't exist... return init value
+ * @author dyk
+ * @return value that matches request type
+ */
+bool get_value_from_json_key(json::value body, string key, int& value)
+{
+    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
+    if (body.has_field(key)){
+        value = body.at(key).as_integer();
+    }
+    else{
+        value = 0;
+        log(warning) << "error with parsing " << key << " to int";
+        return false;
+    }
+    return true;
+}
+bool get_value_from_json_key(json::value body, string key, string& value)
+{
+    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
+    if (body.has_field(key)){
+        value = body.at(key).as_string();
+    }
+    else{
+        value = "";
+        log(warning) << "error with parsing " << key << " to string";
+        return false;
+    }
+    return true;
+}
+bool get_value_from_json_key(json::value body, string key, json::value& value)
+{
+    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
+    if (body.has_field(key)){
+        value = body.at(key);
+    }
+    else{
+        value = json::value::null();
+        log(warning) << "error with parsing " << key << " to json::value";
+        return false;
+    }
+    return true;
+}
+bool get_value_from_json_key(json::value body, string key, double& value)
+{
+    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
+    if (body.has_field(key)){
+        value = body.at(key).as_double();
+    }
+    else{
+        value = 0.0;
+        log(warning) << "error with parsing " << key << " to double";
+        return false;
+    }
+    return true;
+}
+bool get_value_from_json_key(json::value body, string key, bool& value)
+{
+    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
+    if (body.has_field(key)){
+        value = body.at(key).as_bool();
+    }
+    else{
+        value = false;
+        log(warning) << "error with parsing " << key << " to bool";
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief if file is exists, remove. 
+ * @author dyk
+ */
+void remove_if_exists(fs::path file)
+{
+    if (fs::exists(file))
+    {
+        fs::remove(file);
+        log(info) << "[###] remove old file : " << file.string();
+    }
+    return;
+}
