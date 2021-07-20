@@ -78,15 +78,25 @@ string make_path(vector<string> tokens);
 bool comp(const string &s1, const string &s2);
 void timer(boost::asio::deadline_timer* _timer, unsigned int *_remain_expires_time);
 string generate_token(const int len);
+
 unsigned int allocate_task_num(void);
 void insert_task_num(unsigned int num);
+void delete_task_num(unsigned int num);
 unsigned int allocate_account_num(void);
 void insert_account_num(unsigned int num);
+void delete_account_num(unsigned int num);
+unsigned int allocate_session_num(void);
+void insert_session_num(unsigned int num);
+void delete_session_num(unsigned int num);
+
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
 
+
 char *get_popen_string(char *command);
+string get_extracted_bmc_id_uri(string _uri);
+bool check_role_privileges(string _pre);
 
 /**
  * @brief Function of record
@@ -98,6 +108,13 @@ bool record_load_json(void);
 bool record_save_json(void);
 void record_print(void);
 void record_init_load(string _path); // @@@@@
+
+
+/**
+ * @brief Function of module_id
+ */
+void save_module_id(void);
+void load_module_id(void);
 void remove_if_exists(fs::path file);
 
 bool get_value_from_json_key(json::value body, string key, int& value);

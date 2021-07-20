@@ -106,8 +106,11 @@ string generate_token(const int _length)
 
 set<unsigned int> task_numset;
 set<unsigned int> account_numset;
+set<unsigned int> session_numset;
 unsigned int account_numset_num = 1;
+unsigned int session_numset_num = 1;
 
+// task id_num
 unsigned int allocate_task_num(void)
 {
     unsigned int num = 1;
@@ -124,10 +127,16 @@ unsigned int allocate_task_num(void)
 void insert_task_num(unsigned int num)
 {
     task_numset.insert(num);
-    
     return;
 }
 
+void delete_task_num(unsigned int num)
+{
+    task_numset.erase(num);
+    return ;
+}
+
+// account id_num
 unsigned int allocate_account_num(void)
 {
     for(account_numset_num; account_numset_num <= UINT_MAX; account_numset_num++)
@@ -150,8 +159,44 @@ unsigned int allocate_account_num(void)
 void insert_account_num(unsigned int num)
 {
     account_numset.insert(num);
-    
     return;
+}
+
+void delete_account_num(unsigned int num)
+{
+    account_numset.erase(num);
+    return ;
+}
+
+// session id_num
+unsigned int allocate_session_num(void)
+{
+    for(session_numset_num; session_numset_num <= UINT_MAX; session_numset_num++)
+    {
+        if(session_numset_num == UINT_MAX)
+        {
+            session_numset_num = 0;
+            continue;
+        }
+
+        if(session_numset.find(session_numset_num) == session_numset.end())
+        {
+            session_numset.insert(session_numset_num);
+            return session_numset_num;
+        }
+    }
+}
+
+void insert_session_num(unsigned int num)
+{
+    session_numset.insert(num);
+    return ;
+}
+
+void delete_session_num(unsigned int num)
+{
+    session_numset.erase(num);
+    return ;
 }
 
 // 꽉차면?
@@ -203,6 +248,30 @@ char *get_popen_string(char *command)
     return temp;
 }
 
+string get_extracted_bmc_id_uri(string _uri)
+{
+    vector<string> uri_tokens = string_split(_uri, '/');
+    string new_uri;
+
+    for(int i=0; i<uri_tokens.size(); i++)
+    {
+        if(i == 3)
+            continue;
+        new_uri += "/";
+        new_uri += uri_tokens[i];
+    }
+
+    return new_uri;
+}
+
+bool check_role_privileges(string _pre)
+{
+    if(_pre == "ConfigureComponents" || _pre == "ConfigureManager" || _pre == "ConfigureSelf"
+    || _pre == "ConfigureUsers" || _pre == "Login" || _pre == "NoAuth")
+        return true;
+
+    return false;
+}
 /**
  * @brief in body, find value with key and return value. if value doesn't exist... return init value
  * @author dyk

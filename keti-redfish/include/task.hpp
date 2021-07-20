@@ -81,20 +81,40 @@ class Task_Manager
 void do_task_cmm_get(http_request _request);
 void do_task_cmm_post(http_request _request);
 void do_task_cmm_patch(http_request _request);
+void do_task_cmm_delete(http_request _request);
 void do_task_bmc_get(http_request _request);
 void do_task_bmc_post(http_request _request);
 void do_task_bmc_patch(http_request _request);
+void do_task_bmc_delete(http_request _request);
 
 
-Task_Manager *category(vector<string> _token);
-
+Task_Manager* category(vector<string> _token);
 m_Request work_before_request_process(string _method, string _host, string _uri, json::value _jv, http_headers _header);
 Task_Manager* work_after_request_process(Task_Manager* _t, m_Request _msg);
-m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value _jv);
+
 m_Request make_account(http_request _request, m_Request _msg, json::value _jv);
 m_Request make_session(http_request _request, m_Request _msg, json::value _jv);
+
+m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value _jv);
+m_Request treat_uri_bmc_patch(http_request _request, m_Request _msg, json::value _jv);
 m_Request modify_account(http_request _request, m_Request _msg, json::value _jv, string _uri);
+m_Request modify_role(http_request _request, m_Request _msg, json::value _jv, string _uri);
+void patch_account_service(json::value _jv, string _record_uri);
+void patch_session_service(json::value _jv);
+void patch_manager(json::value _jv, string _record_uri);
+void patch_network_protocol(json::value _jv, string _record_uri);
+void patch_fan_mode(string _mode, string _record_uri);
+void patch_ethernet_interface(json::value _jv, string _record_uri);
+void patch_system(json::value _jv, string _record_uri);
+void patch_chassis(json::value _jv, string _record_uri);
+void patch_power_control(json::value _jv, string _record_uri);
+
+m_Request treat_uri_cmm_delete(http_request _request, m_Request _msg, json::value _jv);
+m_Request remove_account(http_request _request, m_Request _msg, json::value _jv, string _service_uri);
+m_Request remove_session(http_request _request, m_Request _msg);//, json::value _jv, string _service_uri);
+
 m_Request reply_error(http_request _request, m_Request _msg, string _message, web::http::status_code _status);
+m_Request reply_success(http_request _request, m_Request _msg, string _uri, web::http::status_code _status);
 
 
 #endif

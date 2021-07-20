@@ -890,6 +890,9 @@ void dependency_injection(Resource *res)
         case SESSION_TYPE:
             ((Session *)res)->account = ((Account *)g_record[((Session *)res)->account_id]);
             ((Collection *)g_record[parent_object_id])->add_member((Session *)res);
+            insert_session_num(stoi(current_object_name));
+            ((Session *)res)->_remain_expires_time = ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout;
+            ((Session *)res)->start();
             break;
         case ROLE_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Role *)res);
@@ -994,6 +997,82 @@ void dependency_injection(Resource *res)
     }
 }
 
+/**
+ * @brief module_id_table save & load
+ * @authors 강
+ */
+
+void save_module_id(void)
+{
+    string json_string;
+    
+    json::value j;
+    json::value arr = json::value::array();
+
+    std::map<string, string>::iterator iter;
+    int i=0;
+    for(iter = module_id_table.begin(); iter != module_id_table.end(); iter++)
+    {
+        json::value member;
+        member[U("ID")] = json::value::string(U(iter->first));
+        member[U("Address")] = json::value::string(U(iter->second));
+        arr[i] = member;
+        i++;
+    }
+
+    j[U("Module")] = arr;
+
+    json_string = j.serialize();
+
+    mkdir("/conf/module", 0755);
+    ofstream out("/conf/module/table.json");
+    out << json_string << endl;
+    out.close();
+}
+
+void load_module_id(void)
+{
+    ifstream module_file("/conf/module/table.json");
+    stringstream string_stream;
+
+    string_stream << module_file.rdbuf();
+    module_file.close();
+
+    json::value j = json::value::parse(string_stream);
+    json::value arr = json::value::array();
+    
+    if(j.as_object().find("Module") != j.as_object().end())
+        arr = j.at("Module");
+    else
+        log(error) << "No Module Key";
+
+    for(int i=0; i<arr.size(); i++)
+    {
+        json::value tmp = arr[i];
+        string m_id;
+        string m_address;
+
+        if(tmp.as_object().find("ID") != tmp.as_object().end())
+        {
+            m_id = tmp.at("ID").as_string();
+        }
+        else
+            // id 나 address가 없으면 저장안하면됨 근데 없으면 그게 더 이상함 저장이 이상하게 된거라
+            continue;
+
+        if(tmp.as_object().find("Address") != tmp.as_object().end())
+        {
+            m_address = tmp.at("Address").as_string();
+        }
+        else
+            continue;
+
+        if(module_id_table.find(m_id) == module_id_table.end()) // 없으면 등록
+        {
+            module_id_table.insert({m_id, m_address});
+        }
+    }
+}
 /**
  * @brief g_record init
  * @details g_record를 init하고 연결되어있던 객체또한 모두 free시켜주는 함수

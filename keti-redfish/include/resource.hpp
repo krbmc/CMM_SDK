@@ -1798,6 +1798,8 @@ public:
     pplx::cancellation_token_source cts;
     pplx::cancellation_token c_token = cts.get_token();
 
+    string x_token;
+
     // Class constructor, destructor oveloading
     Session(const string _odata_id) : Resource(SESSION_TYPE, _odata_id, ODATA_SESSION_TYPE)
     {
@@ -2853,7 +2855,17 @@ public:
         this->uuid = "";
 
         // CMM ID와 주소 등록
-        module_id_table.insert({CMM_ID, CMM_ADDRESS});
+        if(module_id_table.find(CMM_ID) == module_id_table.end()) // 없으면 등록
+        {
+            module_id_table.insert({CMM_ID, CMM_ADDRESS});
+            save_module_id();
+            log(info) << "cmm id 등록했음";
+        }
+        else
+        {
+            log(info) << CMM_ID << " 는 이미 있어서 init에서 등록안함";
+            // cout << CMM_ID << " 는 이미 있어서 init에서 등록안함" << endl;
+        }
         
         // Collection Generate in ServiceRoot
         if (!record_is_exist(ODATA_SYSTEM_ID)){
@@ -2937,8 +2949,9 @@ public:
 bool init_record(void);
 bool init_resource(void);
 
+bool is_session_valid(const string _token);
+string get_session_odata_id_by_token(string _token);
 void clear_gc();
-bool is_session_valid(const string _token_id);
 void dependency_injection(Resource *res);
 json::value get_resource_odata_id_json(Resource *res, string loc);
 json::value get_action_info(unordered_map<string, Actions> act);
