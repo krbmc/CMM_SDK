@@ -3,7 +3,8 @@
 
 extern unordered_map<string, Resource *> g_record;
 extern map<string, string> module_id_table;
-vector<Resource*> gc;
+static vector<Resource*> gc;
+static set<string> dir_list;
 
 /**
  * @brief Find uri in to record(unordered_map)
@@ -169,6 +170,7 @@ bool record_load_json(void)
 {
     vector<Resource*> dependency_object;
 
+    init_record();
     record_init_load("/redfish");
     log(info) << "init load complete"; // #1
     
@@ -553,18 +555,15 @@ bool record_load_json(void)
     
     log(info) << "after 4";
     // #5
-    for (auto garbage : gc){
-        // log(info) << garbage->odata.id << " is deleted";
-        delete(garbage);
-    }
-    log(info) << "after 5";
-    
+    clear_gc();
     log(info) << "garbage collection complete";
     return true;
 }
 
 bool record_save_json(void)
 {
+    // #1 redfish 디렉토리 순회 (init_resource)해서 모든 파일 이름 vector<string(odata.id)> dir_list 에 저장 => init_resource
+    // #2 저장 시,  기존에 존재했지만, 현재 저장되는 g_record에 존재하지 않는 파일 비교 및 삭제
     for (auto it = g_record.begin(); it != g_record.end(); it++)
     {
         // Handling save exeception 
@@ -573,11 +572,43 @@ bool record_save_json(void)
             continue;
         }
 
+        string this_odata_id = it->second->odata.id;
+        
+        // update file
+        auto iter = dir_list.find(this_odata_id);
+        if (iter != dir_list.end()){
+            dir_list.erase(iter);        
+            it->second->save_json();
+            // log(info) << "update " << this_odata_id;
+        }
+        else { // create file 
+            it->second->save_json();
+            log(info) << "create " << this_odata_id;
+        }
+
         // log(info) << "uri : " << it->first << ", resource address : " << it->second;
         // log(info) << "id : " << it->second->odata.id << ", type : " << it->second->odata.type << endl;
-        
-        it->second->save_json();
     }
+    
+    // log(info) << "update/create complete";
+
+    // delete file 현재 g_record에 존재하지 않는 record를 disk에서도 삭제.
+    // 모두 json 파일.. 디렉토리는 남아있음
+    for (auto const& iter : dir_list){
+        fs::path target_file(iter + ".json");
+        
+        log(info) << "delete " << iter;
+        fs::remove(target_file);
+    }
+    dir_list.clear();
+
+    
+    // #3 업데이트 된 g_record dir_list에 저장 반복.
+    for (auto it = g_record.begin(); it != g_record.end(); it++){
+        dir_list.insert(it->second->odata.id);
+    }
+    
+    log(info) << "record_save_json complete";
     return true;
 }
 
@@ -597,7 +628,7 @@ void record_print(void)
 
 /**
  * @brief g_record init
- * @details 존재하는 .json 파일 전부를 읽어 type값과 odata.id를 얻어 각자의 Resource 생성. g_record에 저장.
+ * @details 존재하는 .json 파일 전부를 읽어 type값과 odata.id를 얻어 각자의 Resource 생성. g_record에 저장. 
  * @authors 강, 김
  */
 void record_init_load(string _path)
@@ -645,9 +676,10 @@ void record_init_load(string _path)
             if(tmp == ".json") 
             {
                 // 모든 파일 resource로 생성
-                // log(info) << sub << " : 파일 명";   
+                // log(info) << sub;   
                 Resource *res = new Resource(sub);
                 g_record[sub] = res;   
+                dir_list.insert(sub);
             }
         }
     }
@@ -663,7 +695,7 @@ void record_init_load(string _path)
 }
 
 /**
- * @brief Dependency Injection to all Resource
+ * @brief 2 Injection to all Resource
  * @details 모든 연결된 Resource들을 연결시키는 작업 수행
  * @authors 김
  */
@@ -674,6 +706,7 @@ void dependency_injection(Resource *res)
     string current_object_name = get_current_object_name(id, "/");
 
     // log(info) << id << " dependency injection start";
+    // log(info) << "parent : "<< parent_object_id;
 
     switch (res->type)
     {
@@ -865,12 +898,14 @@ void dependency_injection(Resource *res)
             ((Collection *)g_record[parent_object_id])->add_member((Role *)res);
             break;
         case ACCOUNT_TYPE:
-            ((Account *)res)->role = ((Role *)g_record[((Account *)res)->role_id]);
-            ((Collection *)g_record[parent_object_id])->add_member((Account *)res);
             if (isNumber(current_object_name)){
                 insert_account_num(stoi(current_object_name)); 
-            }else
+            }else{
                 log(warning) << "account name is not number : " << current_object_name;
+                break;
+            }
+            ((Account *)res)->role = ((Role *)g_record[((Account *)res)->role_id]);
+            ((Collection *)g_record[parent_object_id])->add_member((Account *)res);
             break;
         case EVENT_DESTINATION_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((EventDestination *)res);
@@ -1037,5 +1072,32 @@ void load_module_id(void)
             module_id_table.insert({m_id, m_address});
         }
     }
+}
+/**
+ * @brief g_record init
+ * @details g_record를 init하고 연결되어있던 객체또한 모두 free시켜주는 함수
+ * @authors 김
+ */
+bool init_record()
+{
+    if (g_record.empty()){
+        return true;
+    }   
+    
+    for(auto it = g_record.begin(); it != g_record.end(); it++){
+        gc.push_back(it->second);
+    }
+    g_record.clear();   
+    clear_gc();
+        
+    return true;
+}
 
+void clear_gc()
+{
+    for (int i = 0; i < gc.size(); i++){
+        delete(gc[i]);
+    }
+    gc.clear();
+    return;
 }
