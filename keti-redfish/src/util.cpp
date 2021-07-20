@@ -198,7 +198,8 @@ char *get_popen_string(char *command)
         }
         pclose(fp);
     }
-    temp[strlen(temp)-1] = '\0';
+    if (temp[strlen(temp) -1] == '\n')
+        temp[strlen(temp) -1] = '\0';
     return temp;
 }
 

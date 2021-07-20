@@ -92,6 +92,7 @@ char *get_popen_string(char *command);
  * @brief Function of record
  */
 bool record_is_exist(const string _uri);
+bool event_is_exist(const string _uri);
 json::value record_get_json(const string _uri);
 bool record_load_json(void);
 bool record_save_json(void);

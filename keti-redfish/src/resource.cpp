@@ -2,7 +2,7 @@
 
 extern unordered_map<string, Resource *> g_record;
 extern ServiceRoot *g_service_root;
-
+unordered_map<string, Event*> event_map;
 #define BMC_PORT "443"
 
 /**
@@ -35,12 +35,14 @@ bool init_resource(void)
     // CertificateService *cert_service = (CertificateService *)g_record["/redfish/v1/CertificateService"];
     // rsp = cert_service->GenerateCSR(body);
     // log(info) << "generateCSR : " << rsp;
-    
+    // // generateCSR test end
+        
     // // rekey&renew test
     // Certificate *cert = (Certificate *)g_record["/redfish/v1/AccountService/Accounts/1/Certificates/1"];
     // rsp = cert->Renew();
     // log(info) << "renew : " << rsp;
-
+    // // rekey&renew test end
+    
     // // replace certificate test
     // json::value re_body;
     // odata["@odata.id"] = json::value::string("/redfish/v1/AccountService/Accounts/1/Certificates/1");
@@ -48,7 +50,29 @@ bool init_resource(void)
     // re_body["CertificateString"] = json::value::string(file2str("/conf/ssl/cert.pem"));
     // re_body["CertificateType"] = json::value::string("PEM");
     // cert_service->ReplaceCertificate(re_body);
+    // // replace certificate test end
     
+    // // eventservice SubmitTestEvent test
+    // json::value submit_body;
+    // submit_body["OriginOfCondition"] = json::value::string("/redfish/v1/Systems/1/LogServices/AuditLog");
+    // submit_body["Message"] = json::value::string("Login ID: USERID from web at IP address 1.1.1.1 has logged off. ---- Test Test");
+    // submit_body["MessageArgs"] = json::value::array();
+    // submit_body["MessageArgs"][0] = json::value::string("USERID");
+    // submit_body["MessageArgs"][1] = json::value::string("web");
+    // submit_body["MessageArgs"][2] = json::value::string("1.1.1.1");
+    // submit_body["MessageId"] = json::value::string("EventRegistry.1.0.FQXSPSE4032I");
+    // submit_body["EventTimestamp"] = json::value::string("2020-12-31T00:00:00+00:00");
+    // submit_body["EventId"] = json::value::string("000003a");
+    // submit_body["EventGroupId"] = json::value::number(1);
+    // log(info) << "submit event test : " <<((EventService *)g_record[ODATA_EVENT_SERVICE_ID])->SubmitTestEvent(submit_body);
+    // // eventservice SubmitTestEvent test end
+    
+    // system reset test
+    // json::value reset_body;
+    // reset_body["ResetType"] = json::value::string("GracefulRestart");
+    // ((Systems *)g_record[ODATA_SYSTEM_ID])->Reset(reset_body);
+    // system reset test end
+
     // init_record();
     record_save_json();
     log(info) << "record save json complete";
@@ -1355,6 +1379,45 @@ bool LogEntry::load_json(json::value &j)
 // Log Service & Log Entry end
 
 // Event Service & Event Destination start
+json::value Event::get_json()
+{
+    json::value j;
+
+    j["Id"] = json::value::string(this->id);
+    j["@odata.type"] = json::value::string(this->type);
+    j["Name"] = json::value::string(this->name);
+    j["Context"] = json::value::string(this->context);
+    j["description"] = json::value::string(this->description);
+    j["Events"] = json::value::array();
+    for(int i = 0; i < this->events.size(); i++){
+        json::value events;
+        events["EventGroupId"] = json::value::number(this->events[i].event_group_id);
+        events["EventId"] = json::value::string(this->events[i].event_id);
+        events["EventTimestamp"] = json::value::string(this->events[i].event_timestamp);
+        events["MessageSeverity"] = json::value::string(this->events[i].message_severity);
+        events["Message"] = json::value::string(this->events[i].message);
+        events["MessageId"] = json::value::string(this->events[i].message_id);
+        
+        json::value ooc;
+        ooc["@odata.id"] = json::value::string(this->events[i].origin_of_condition);
+        events["OriginOfCondition"] = ooc;
+        
+        events["MessageArgs"] = json::value::array();        
+        for(int j = 0; j < this->events[i].message_args.size(); j++)
+            events["MessageArgs"][j] = json::value::string(this->events[i].message_args[j]);
+        j["Events"][i] = events;
+    }
+
+    return j;
+}
+
+bool event_is_exist(const string _uri)
+{
+    if (event_map.find(_uri) != event_map.end())
+        return true;
+    return false;
+}
+
 json::value EventDestination::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -1446,6 +1509,8 @@ json::value EventService::get_json(void)
 
     j["Subscriptions"] = get_resource_odata_id_json(this->subscriptions, this->odata.id);
 
+    j["Actions"] = get_action_info(this->actions);
+
     return j;
 }
 
@@ -1486,6 +1551,36 @@ bool EventService::load_json(json::value &j)
     }
 
     return true;
+}
+
+json::value EventService::SubmitTestEvent(json::value body)
+{
+    Event_Info e;
+    json::value args;
+    string egi;
+
+    // #1 get json value
+    get_value_from_json_key(body, "EventGroupId", e.event_group_id);
+    egi = to_string(e.event_group_id);
+    get_value_from_json_key(body, "EventId", e.event_id);
+    get_value_from_json_key(body, "EventTimestamp", e.event_timestamp);
+    get_value_from_json_key(body, "Message", e.message);
+    get_value_from_json_key(body, "MessageId", e.message_id);
+    get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition);
+    get_value_from_json_key(body, "MessageArgs", args);
+    for(auto arg : args.as_array())
+        e.message_args.push_back(arg.as_string());
+
+    // #2 make event and return
+    if (record_is_exist(egi))
+        event_map[egi]->events.push_back(e);
+    else{
+        Event *event = new Event(egi);
+        event->events.push_back(e);
+        event_map[egi] = event;
+    }
+
+    return event_map[egi]->get_json(); 
 }
 // Event Service & Event Destination end
 
@@ -1548,9 +1643,11 @@ bool UpdateService::SimpleUpdate(json::value body)
         targets.push_back(target.as_string());
     }
 
-    // #2 target update and restart?
-    // available? keti-redfish / keti-rest / keti-edge
+    // #2 create task
+
+    // #3 get uri to check the updating process
     
+    // #4 process restart
     return true;
 }
 
@@ -2937,23 +3034,41 @@ bool Systems::load_json(json::value &j)
 bool Systems::Reset(json::value body)
 {
     string reset_type;
+    char cmds[1024] = {0, };
+
+    // #1 get systems pid && systems bin file
+    int pid = getpid();
+    sprintf(cmds, "cat /proc/%d/cmdline", pid);
+    log(info) << cmds;
+    string this_proc_name(get_popen_string(cmds)); // todo : not this process, target system
+    log(info) << pid << " : " << this_proc_name;
 
     get_value_from_json_key(body, "ResetType", reset_type);
-
+    memset(cmds, 0, sizeof(cmds));
+    
     if (reset_type == "On"){
+        sprintf(cmds, "%s", this_proc_name.c_str());
     }
     if (reset_type == "ForceOff"){
+        sprintf(cmds, "kill -9 %d", pid);
     }
     if (reset_type == "GracefulShutdown"){
+        sprintf(cmds, "kill -s TERM %d", pid);
     }
     if (reset_type == "GracefulRestart"){
+        sprintf(cmds, "kill -s TERM %d && %s", pid, this_proc_name.c_str());
     }
     if (reset_type == "ForceRestart"){
+        sprintf(cmds, "kill -9 %d && %s", pid, this_proc_name.c_str());
     }
     if (reset_type == "Nmi"){
+        // /proc/sys/kernel/nmi_watchdog flag를 1로 체인지.. 현재 해당 파일 없음. buildroot 환경설정?
     }
     if (reset_type == "ForceOn"){
+        // ?????????????????????????????????????????????????????????????????????????????????????????????????????
     }
+
+    system(cmds);
 
     return true;
 }
@@ -3778,17 +3893,17 @@ void update_cert_with_pem(fs::path cert, Certificate *certificate)
 {
     string cmds;
     // get dates
-    log(info) << cert.string();
+    // log(info) << cert.string();
     cmds = "openssl x509 -in " + cert.string() + " -noout -startdate";
     string notbefore(get_popen_string(const_cast<char*>(cmds.c_str())));
     notbefore.erase(0, 10);
-    log(info) << "startdate : " << notbefore;
+    // log(info) << "startdate : " << notbefore;
     certificate->validNotBefore = notbefore;
 
     cmds = "openssl x509 -in " + cert.string() + " -noout -enddate"; 
     string notafter(get_popen_string(const_cast<char*>(cmds.c_str())));
     notafter.erase(0, 9);
-    log(info) << "enddate : " << notafter;
+    // log(info) << "enddate : " << notafter;
     certificate->validNotAfter = notafter;
     
     // get issuer

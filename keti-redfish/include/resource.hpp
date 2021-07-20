@@ -92,6 +92,7 @@
 #define ODATA_EVENT_SERVICE_TYPE "#EventService." ODATA_TYPE_VERSION ".EventService"
 #define ODATA_EVENT_DESTINATION_TYPE "#EventDestination." ODATA_TYPE_VERSION ".EventDestination" // @@@@ 추가
 #define ODATA_EVENT_DESTINATION_COLLECTION_TYPE "#EventDestinationCollection.EventDestinationCollection" // @@@@ 추가
+#define ODATA_EVENT_TYPE "#Event." ODATA_TYPE_VERSION ".Event"
 // #define ODATA_DESTINATION_COLLECTION_TYPE "#EventDestinationCollection.EventDestinationCollection"
 // #define ODATA_DESTINATION_TYPE "#EventDestination." ODATA_TYPE_VERSION ".EventDestination"
 #define ODATA_UPDATE_SERVICE_TYPE "#UpdateService." ODATA_TYPE_VERSION ".UpdateService" // @@@@ 추가
@@ -311,11 +312,6 @@ typedef struct _Actions_Parameter
     std::vector<string> allowable_values;    
 } Parameter;
 
-
-/**
- * @brief struct addition
- * @authors 강
- */
 typedef struct _Actions
 {
     int type;
@@ -547,73 +543,16 @@ typedef struct _Value_About_HA
     bool enabled;
 } Value_About_HA;
 
-
-/**
- * @brief Redfish resource of Actions
- * @authors 강
- * @details Actions 클래스가 해당하는 건 /Actions가 아니라 뒤에 더 붙는 /Actions/~~~~.#### 에 해당함
- * 앞에 Actions는 그냥 그걸 담고있는 리소스 안에 컬렉션으로 만들어놓을거임
- */
-
-// class Actions : public Resource
-// {
-//     public:
-//     string id;
-//     string target; //uri
-//     string act_type; // ---ActionInfo
-//     string name; // action_by.action_what
-//     string action_by; 
-//     string action_what; // action_by.action_what 의 형태
-//     vector<string> action_info;
-
-//     // for parsing
-//     string uri;
-//     vector<string> uri_tokens;
-
-//     Actions(const string _odata_id) : Resource(ACTIONS_TYPE, _odata_id, ODATA_ACTIONS_TYPE)
-//     {
-//         // cout << "odata : " << _odata_id << endl;
-//         this->uri = _odata_id;
-//         this->uri_tokens = string_split(this->uri, '/');
-//         string last = uri_tokens[uri_tokens.size()-1];
-//         this->name = last;
-//         vector<string> v = string_split(last, '.');
-//         this->action_by = v.at(0);
-//         this->action_what = v.at(1);
-//         this->target = _odata_id;
-
-        
-
-//         g_record[_odata_id] = this;
-
-//     }
-//     Actions(const string _odata_id, const string _act_type) : Actions(_odata_id)
-//     {
-//         this->act_type = _act_type;
-
-//         if(act_type == "Reset")
-//         {
-//             this->action_info.push_back("On");
-//             this->action_info.push_back("ForceOff");
-//             this->action_info.push_back("ForceRestart");
-//             this->action_info.push_back("ForceOn");
-//             this->action_info.push_back("GracefulShutdown");
-//             this->action_info.push_back("GracefulRestart");
-//             this->action_info.push_back("Nmi");
-//             this->action_info.push_back("PushPowerButton");
-//         }
-
-//     };
-//     ~Actions()
-//     {
-//         g_record.erase(this->odata.id);
-
-//     };
-
-//     json::value get_json(void);
-//     bool load_json(json::value &j);
-
-// };
+typedef struct _Event_Info{
+    int event_group_id;
+    string event_id;
+    string event_timestamp;
+    string message_severity;
+    string message;
+    string message_id;
+    string origin_of_condition;
+    vector<string> message_args;
+} Event_Info;
 
 /**
  * @brief Resource of redfish schema
@@ -1050,6 +989,28 @@ class LogService : public Resource
  * @brief Redfish resource of Event Service
  * @authors 강
  */
+class Event
+{
+    public:
+    string id;
+    string name;
+    string type;
+    string context;
+    string description;
+    
+    vector<Event_Info> events;
+
+    Event(string id)
+    {
+        this->id = id;
+        this->name = "Redfish Event";
+        this->type = ODATA_EVENT_TYPE;
+        this->context = "";
+        this->description = "";
+    };
+    ~Event(){};
+    json::value get_json(void);
+};
 
 class EventDestination : public Resource
 {
@@ -1073,7 +1034,7 @@ class EventDestination : public Resource
         this->context = "WebUser3";
         this->protocol = "Redfish";
 
-        this->event_types.push_back("Alert");
+        // this->event_types.push_back("Alert");
 
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
@@ -1110,6 +1071,8 @@ class EventService : public Resource
     Status status;
     Collection *subscriptions;
 
+    unordered_map<string, Actions> actions;
+    
     EventService() : Resource(EVENT_SERVICE_TYPE, ODATA_EVENT_SERVICE_ID, ODATA_EVENT_SERVICE_TYPE)
     {
         this->id = "";
@@ -1117,11 +1080,11 @@ class EventService : public Resource
         this->delivery_retry_attempts = 3;
         this->delivery_retry_interval_seconds = 60;
 
-        this->event_types_for_subscription.push_back("StatusChange");
-        this->event_types_for_subscription.push_back("ResourceUpdated");
-        this->event_types_for_subscription.push_back("ResourceAdded");
-        this->event_types_for_subscription.push_back("ResourceRemoved");
-        this->event_types_for_subscription.push_back("Alert");
+        // this->event_types_for_subscription.push_back("StatusChange");
+        // this->event_types_for_subscription.push_back("ResourceUpdated");
+        // this->event_types_for_subscription.push_back("ResourceAdded");
+        // this->event_types_for_subscription.push_back("ResourceRemoved");
+        // this->event_types_for_subscription.push_back("Alert");
 
         this->serversent_event_uri = "/redfish/v1/EventService/SSE";
 
@@ -1139,11 +1102,14 @@ class EventService : public Resource
 
         this->subscriptions = nullptr;
 
-        // this->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
-        // this->subscriptions->name = "Subscription Collection";
-
+        Actions submit_test_event;
+        submit_test_event.type = SUBMIT_TEST_EVENT;
+        submit_test_event.name = "#EventService.submit_test_event";
+        submit_test_event.target = this->odata.id + "Actions/EventService.submit_test_event";
+        
+        this->actions["submit_test_event"] = submit_test_event;
+        
         g_record[ODATA_EVENT_SERVICE_ID] = this;
-
     };
     ~EventService()
     {
@@ -1152,7 +1118,7 @@ class EventService : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
+    json::value SubmitTestEvent(json::value body);
 };
 
 /**
@@ -1330,7 +1296,6 @@ class Certificate : public Resource
         renew.target = this->odata.id + "Actions/Certificate.ReNew";
         
         this->actions["ReNew"] = renew;
-        
 
         g_record[_odata_id] = this;
     }
