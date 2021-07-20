@@ -42,7 +42,6 @@ void Handler::handle_get(http_request _request)
 
 
     //여기에 pplx시작하면 될듯
-
     try
     {
         // Response Redfish Version
@@ -236,149 +235,213 @@ void Handler::handle_delete(http_request _request)
     string uri = _request.request_uri().to_string();
     vector<string> uri_tokens = string_split(uri, '/');
     string filtered_uri = make_path(uri_tokens);
-    json::value d = _request.extract_json().get();
-    string user_name;
-    string password;
-    string odata_id;
-    Account *account;
-    AccountService *acc_service;
+    // json::value d = _request.extract_json().get();
+    // string user_name;
+    // string password;
+    // string odata_id;
+    // Account *account;
+    // AccountService *acc_service;
 
     log(info) << "Request method: DELETE";
     log(info) << "Reqeust uri : " << filtered_uri;
 
+
     try
     {
-        if(filtered_uri == ODATA_ACCOUNT_ID)
+        if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
         {
-            user_name = d.at("UserName").as_string();
-            password = d.at("Password").as_string();
-            odata_id = ODATA_ACCOUNT_ID;
-            odata_id = odata_id + '/' + user_name;
+            do_task_cmm_delete(_request);
+            return ;
+        }
 
-            // Check account exist
-            if (!record_is_exist(odata_id))
+        if(uri_tokens.size() >= 4)
+        {
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
             {
-                _request.reply(status_codes::BadRequest);
-                return;
+                //CMM자체 동작으로다가 처리하시면됨
+                do_task_cmm_delete(_request);
             }
-
-            account = (Account *)g_record[odata_id];
-            // Check password correct
-            if (account->password != password)
+            else
             {
-                _request.reply(status_codes::BadRequest);
-                return;
-            }
-
-            g_record.erase(odata_id);
-
-            acc_service = (AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID];
-            //cout << "ACC : " << typeid(acc_service).name() << endl;
-            vector<Resource *> tmp;
-            tmp = acc_service->account_collection->members;
-            //cout << "TMP : " << typeid(tmp).name() << endl;
-            std::vector<Resource *>::iterator iter;
-            for(iter = acc_service->account_collection->members.begin(); iter != acc_service->account_collection->members.end(); iter++)
-            // for(iter = tmp.begin(); iter != tmp.end(); iter++)
-            {
-                Account *t = (Account *)*iter;
-                //cout << typeid(t).name() << endl;
-                //cout << t->user_name << endl;
-                if(t->user_name == user_name && t->password == password)
+                if(uri_tokens[3] == CMM_ID)
                 {
-                    acc_service->account_collection->members.erase(iter);
-                    _request.reply(status_codes::Gone, record_get_json(ODATA_ACCOUNT_ID));
-                    // status 임시로 Gone갖다씀
-                    break;
+                    //CMM 자체처리
+                    do_task_cmm_delete(_request);
                 }
-
+                else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                {
+                    if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
+                    // 일단 104번에서 처리
+                        do_task_bmc_delete(_request);
+                    else
+                    {
+                        json::value j;
+                        j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+                        _request.reply(status_codes::BadRequest, j);
+                        cout << "Unvalid BMC_id" << endl;
+                        return ;
+                    }
+                }
             }
-
-            // @ TODO : 현재는 딜리트하지않고 서버를 종료하면
-            // 라즈베리파이에 계정.json 파일들이 남아있음
-            // 다시 서버를 켰을 경우 저장되어있는 계정들 읽어와서 레코드
-            // 구성해주는 작업 필요
-            
-            record_save_json(); // @@@@@@@@json 레코드갱신기록
-            string delete_path = filtered_uri + '/' + user_name + ".json";
-            // cout << "dd2 : " << delete_path2 << endl;
-            if(remove(delete_path.c_str()) < 0)
-            {
-                cout << "delete error" << endl;
-            }
-            // else
-            // cout << "HOO~" << endl;
-            // 해당 계정에 대한 json파일 삭제
-            
-
-            // Collection *account_col = (AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID]->account_collection;
-
-
         }
-        /**
-         * @brief AccountService/Accounts 로 토큰과함께 들어왔을 때 logout(세션종료)
-         * @authors 강
-         * @TODO : 세션종료시 레코드 갱신 작업하고 해당세션json파일 삭제 필요
-         * @TODO : 현재 Accounts에 GET에서 처리하고있는데 Sessions에 DELETE로 옮길것
-        */
-        else if(filtered_uri == ODATA_SESSION_ID)
+        else
         {
-            if(is_session_valid(_request.headers()["X-Auth-Token"]))
-            {
-                // 토큰에 해당하는 세션 종료
-                string token = _request.headers()["X-Auth-Token"];
-                string session_uri = ODATA_SESSION_ID;
-                session_uri = session_uri + '/' + token;
-                Session *session;
-
-                session = (Session *)g_record[session_uri];
-                // cout << "YYYY : " << session->id << endl;
-                session->_remain_expires_time = 1;
-                // 여기서는 남은시간 1로만 만들고 삭제작업은 session pplx then에서
-
-                // SessionService * ses_service = (SessionService *)g_record[ODATA_SESSION_SERVICE_ID];
-                // std::vector<Resource *>::iterator iter;
-                // for(iter = ses_service->session_collection->members.begin(); iter != ses_service->session_collection->members.end(); iter++)
-                // {
-                //     Session *t = (Session *)*iter;
-                //     if(t->id == token)
-                //     {
-                //         session = (Session *)*iter;
-                //         // session->cts.cancel();
-                //         cout << "YYYY : " << session->id << endl;
-                //         session->_remain_expires_time = 1;
-                //         ses_service->session_collection->members.erase(iter);
-                //         // 이 작업을 해야 record_get_json(ODATA_SESSION_ID))때 안나옴
-                //         break;
-                //     }
-                // }
-                // 세션서비스->컬렉션->멤버스 돌면서 해당하는 세션의 남은시간 1로 만들어서 종료되게끔 함
-                
-                // cout << "Session : " << session_uri << endl;
-                // cout << record_get_json(ODATA_SESSION_ID) << endl;
-                // cout << "AAAAAAA" << endl;
-                // 토큰 붙인거로 Session들어가고 세션에 취소토큰만들어서 취소줘야겠다 여기서
-
-                //Session *session = (Session *)g_record[ODATA_SESSION_ID];
-                // cout << record_get_json(session_uri) << endl;
-                // delete session;
-                // 리플라이
-            }
+            // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
+            _request.reply(status_codes::BadRequest);
+            return ;
         }
+
+
+
+// No task화 -----------------------------------------------------------------------
+
+//         if(filtered_uri == ODATA_ACCOUNT_ID)
+//         {
+//             user_name = d.at("UserName").as_string();
+//             password = d.at("Password").as_string();
+//             odata_id = ODATA_ACCOUNT_ID;
+// //             odata_id = odata_id + '/' + user_name;
+// // cout << "BOOM 0" << endl;
+// //             // Check account exist
+// //             if (!record_is_exist(odata_id))
+// //             {
+// //                 _request.reply(status_codes::BadRequest);
+// //                 return;
+// //             }
+// // cout << "BOOM 1" << endl;
+// //             account = (Account *)g_record[odata_id];
+// //             // Check password correct
+// //             if (account->password != password)
+// //             {
+// //                 _request.reply(status_codes::BadRequest);
+// //                 return;
+// //             }
+// // cout << "BOOM 2" << endl;
+
+//             // string acc_id = "";
+//             // g_record.erase(odata_id);
+
+//             bool exist = false;
+//             acc_service = (AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID];
+//             //cout << "ACC : " << typeid(acc_service).name() << endl;
+//             vector<Resource *> tmp;
+//             tmp = acc_service->account_collection->members;
+//             //cout << "TMP : " << typeid(tmp).name() << endl;
+//             std::vector<Resource *>::iterator iter;
+//             for(iter = acc_service->account_collection->members.begin(); iter != acc_service->account_collection->members.end(); iter++)
+//             // for(iter = tmp.begin(); iter != tmp.end(); iter++)
+//             {
+//                 Account *t = (Account *)*iter;
+//                 //cout << typeid(t).name() << endl;
+//                 //cout << t->user_name << endl;
+//                 if(t->user_name == user_name && t->password == password)
+//                 {
+//                     odata_id = t->odata.id;
+//                     exist = true;
+//                     acc_service->account_collection->members.erase(iter);
+//                     _request.reply(status_codes::Gone, record_get_json(ODATA_ACCOUNT_ID));
+//                     // status 임시로 Gone갖다씀
+//                     break;
+//                 }
+
+//             }
+
+//             if(exist == false)
+//             {
+//                 json::value mm;
+//                 mm[U("Error")] = json::value::string(U("No Account or Does not match Password"));
+//                 _request.reply(status_codes::BadRequest, mm);
+//                 return ;
+//             }
+//             g_record.erase(odata_id);
+            
+//             record_save_json();
+//             string delete_path = odata_id + ".json";
+//             // string delete_path = filtered_uri + '/' + user_name + ".json";
+//             // cout << "dd2 : " << delete_path2 << endl;
+//             if(remove(delete_path.c_str()) < 0)
+//             {
+//                 cout << "delete error" << endl;
+//             }
+//             // else
+//             // cout << "HOO~" << endl;
+//             // 해당 계정에 대한 json파일 삭제
+            
+
+//             // Collection *account_col = (AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID]->account_collection;
+
+
+//         }
+//         /**
+//          * @brief AccountService/Accounts 로 토큰과함께 들어왔을 때 logout(세션종료)
+//          * @authors 강
+//          * @TODO : 세션종료시 레코드 갱신 작업하고 해당세션json파일 삭제 필요
+//          * @TODO : 현재 Accounts에 GET에서 처리하고있는데 Sessions에 DELETE로 옮길것
+//         */
+        // else if(filtered_uri == ODATA_SESSION_ID)
+        // {
+        //     if(is_session_valid(_request.headers()["X-Auth-Token"]))
+        //     {
+        //         // 토큰에 해당하는 세션 종료
+        //         string token = _request.headers()["X-Auth-Token"];
+        //         string session_uri = ODATA_SESSION_ID;
+        //         session_uri = session_uri + '/' + token;
+        //         Session *session;
+
+        //         session = (Session *)g_record[session_uri];
+        //         // cout << "YYYY : " << session->id << endl;
+        //         session->_remain_expires_time = 1;
+        //         // 여기서는 남은시간 1로만 만들고 삭제작업은 session pplx then에서
+
+        //         // SessionService * ses_service = (SessionService *)g_record[ODATA_SESSION_SERVICE_ID];
+        //         // std::vector<Resource *>::iterator iter;
+        //         // for(iter = ses_service->session_collection->members.begin(); iter != ses_service->session_collection->members.end(); iter++)
+        //         // {
+        //         //     Session *t = (Session *)*iter;
+        //         //     if(t->id == token)
+        //         //     {
+        //         //         session = (Session *)*iter;
+        //         //         // session->cts.cancel();
+        //         //         cout << "YYYY : " << session->id << endl;
+        //         //         session->_remain_expires_time = 1;
+        //         //         ses_service->session_collection->members.erase(iter);
+        //         //         // 이 작업을 해야 record_get_json(ODATA_SESSION_ID))때 안나옴
+        //         //         break;
+        //         //     }
+        //         // }
+        //         // 세션서비스->컬렉션->멤버스 돌면서 해당하는 세션의 남은시간 1로 만들어서 종료되게끔 함
+                
+        //         // cout << "Session : " << session_uri << endl;
+        //         // cout << record_get_json(ODATA_SESSION_ID) << endl;
+        //         // cout << "AAAAAAA" << endl;
+        //         // 토큰 붙인거로 Session들어가고 세션에 취소토큰만들어서 취소줘야겠다 여기서
+
+        //         //Session *session = (Session *)g_record[ODATA_SESSION_ID];
+        //         // cout << record_get_json(session_uri) << endl;
+        //         // delete session;
+        //         // 리플라이
+        //     }
+        // }
+// No task화 -----------------------------------------------------------------------
 
     }
-    catch(json::json_exception &e)
+    catch(const std::exception& e)
     {
+        std::cerr << e.what() << '\n';
         _request.reply(status_codes::BadRequest);
     }
+    // catch(json::json_exception &e)
+    // {
+    //     _request.reply(status_codes::BadRequest);
+    // }
 
     // @@@@@@ 여기까지
 
     cout << "handle_delete request" << endl;
 
-    auto j = _request.extract_json().get();
+    // auto j = _request.extract_json().get();
 
-    _request.reply(status_codes::NotImplemented, U("DELETE Request Response"));
+    // _request.reply(status_codes::NotImplemented, U("DELETE Request Response"));
 }
 
 /**
@@ -542,30 +605,61 @@ void Handler::handle_post(http_request _request)
             return ;
         }
 
-        // if(uri_tokens.size() == 1 && uri_tokens[0] == "Command")
-        // {
-        //     // string path받아서 명령어처리
-        //     json::value command_info;
-        //     command_info = _request.extract_json().get();
+        if(uri_tokens.size() == 1 && uri_tokens[0] == "Command")
+        {
+            // string path받아서 명령어처리
+            json::value command_info, j;
+            command_info = _request.extract_json().get();
 
-        //     if(command_info.as_object().find("Cmd") == command_info.as_object().end()
-        //     || command_info.as_object().find("Path") == command_info.as_object().end())
-        //     {
-        //         _request.reply(status_codes::BadRequest);
-        //         return ;
-        //     }
+            if(command_info.as_object().find("Cmd") == command_info.as_object().end()
+            || command_info.as_object().find("Path") == command_info.as_object().end())
+            {
+                _request.reply(status_codes::BadRequest);
+                return ;
+            }
 
-        //     string cmd, path;
-        //     cmd = command_info.at("Cmd").as_string();
-        //     path = command_info.at("Path").as_string();
+            string cmd, path, result;
+            cmd = command_info.at("Cmd").as_string();
+            path = command_info.at("Path").as_string();
 
-        //     // char *boo = path.c_str();
+            char *boo = (char *)path.c_str();
+            char *res;
 
-        //     // get_popen_string(path.c_str());
+            res = get_popen_string(boo);
+            result = res;
 
-        //     // system(path)
+            // Todo
+            // (popen하는 시간땜에 1초정도 쉬고)
+            // 로드(스탠바이상태인 cmm녀석이 백업을 하는거)
 
-        // }
+            j[U("Status")] = json::value::string("OK");
+            cout << "dd : " << result << endl;
+            // j[U("Result")] = json::value::string(result);
+            _request.reply(status_codes::OK, j);
+            return ;
+            // Cmd가 FileSync 일 때 자기랑 반대되는 cmm에다가 json파일 보낸거 읽어서 백업하기
+
+        }
+
+//         if(uri_tokens.size() == 1 && uri_tokens[0] == "Mytest")
+//         {
+//             char *ttt = "ls -al";
+//             string result;
+//             char *res;
+
+// cout << "MY TEST START------------------------" << endl;
+//             res = get_popen_string(ttt);
+//             result = res;
+
+//             // cout << "MY TEST START------------------------" << endl;
+//             // printf("%s\n", res);
+//             // cout << result << endl;
+//             cout << "MY TEST FIN------------------------" << endl;
+//             cout << result << endl;
+
+//             _request.reply(status_codes::Accepted);
+//             return ;
+//         }
 
         if(uri_tokens.size() >= 4)
         {

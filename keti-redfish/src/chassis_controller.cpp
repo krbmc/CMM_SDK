@@ -62,7 +62,18 @@ void add_new_bmc(string _bmc_id, string _ip, string _port, bool _is_https, strin
         host = "http";
     host = host + "://" + _ip + ":" + _port;
     cout << "Host : " << host << endl;
-    module_id_table.insert({_bmc_id, host});
+
+    if(module_id_table.find(_bmc_id) == module_id_table.end()) // 없으면 등록
+    {
+        module_id_table.insert({_bmc_id, host});
+        save_module_id();
+        log(error) << "bmc id 등록했음";
+    }
+    else
+    {
+        cout << _bmc_id << " 는 이미 있어서 add에서 등록안함" << endl;
+    }
+
     log(info) << "BMC_id : " << _bmc_id << " / Address : " << module_id_table[_bmc_id];
 
     string session_uri = ODATA_SESSION_ID;//"/redfish/v1/SessionService/Sessions";
@@ -285,7 +296,6 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     // cout << "System BiosVersion is X" << endl;
 
 
-
     if(system_info.as_object().find("Status") != system_info.as_object().end())
     {
         // cout << "FIRE FIRE 13" << endl;
@@ -329,7 +339,6 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     }
     // else
     // cout << "System IndicatorLED is X" << endl;
-
     if(system_info.as_object().find("Boot") != system_info.as_object().end())
     {
         json::value j = json::value::object();
@@ -584,7 +593,6 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     // else
     // cout << "System Memory is X" << endl;
     // cout << "FIRE FIRE  A  4 " << endl;
-
     if(system_info.as_object().find("EthernetInterfaces") != system_info.as_object().end())
     {
         // cout << "EthernetInterfaces Exist ~~" << endl;
@@ -632,10 +640,10 @@ void add_system(string _bmc_id, string _host, string _auth_token)
 
                         if(ethernet_info.as_object().find("MACAddress") != ethernet_info.as_object().end())
                             eth->mac_address = ethernet_info.at("MACAddress").as_string();
-
+// cout << " 이쯤 ?? 0 " << endl;
                         if(ethernet_info.as_object().find("MTUSize") != ethernet_info.as_object().end())
                             eth->mtu_size = ethernet_info.at("MTUSize").as_integer();
-
+// cout << " 이쯤 ?? 1 " << endl;
                         if(ethernet_info.as_object().find("HostName") != ethernet_info.as_object().end())
                             eth->hostname = ethernet_info.at("HostName").as_string();
 
@@ -680,10 +688,10 @@ void add_system(string _bmc_id, string _host, string _auth_token)
 
                                 if(ip_array[ip_num].as_object().find("AddressState") != ip_array[ip_num].as_object().end())
                                     tmp.address_state = ip_array[ip_num].at("AddressState").as_string();
-
+// cout << " 이쯤 ?? 2 " << endl;
                                 if(ip_array[ip_num].as_object().find("PrefixLength") != ip_array[ip_num].as_object().end())
                                     tmp.prefix_length = ip_array[ip_num].at("PrefixLength").as_integer();
-
+// cout << " 이쯤 ?? 3 " << endl;
                                 eth->v_ipv6.push_back(tmp);
                             }
                         }
@@ -706,7 +714,6 @@ void add_system(string _bmc_id, string _host, string _auth_token)
     // else
     // cout << "System EthernetInterfaces is X" << endl;
     // cout << "FIRE FIRE  A  5 " << endl;
-
     if(system_info.as_object().find("SimpleStorage") != system_info.as_object().end())
     {
         // cout << "SimpleStorage Exist ~~" << endl;

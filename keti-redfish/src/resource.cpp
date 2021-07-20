@@ -10,13 +10,17 @@ extern ServiceRoot *g_service_root;
  */
 bool init_resource(void)
 {
+    load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
+    // 등록해버리고 table.json까지 수정해버림
     record_load_json();
     // log(info) << "record load json complete";
+
     
-    g_service_root = new ServiceRoot();
+    if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
+        g_service_root = new ServiceRoot();
     
-    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
     record_save_json();
@@ -52,7 +56,10 @@ void init_system(Collection *system_collection, string _id)
         system->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         system->ethernet->name = "Computer System Ethernet Interface Collection";
     
-        init_ethernet(system->ethernet, "0");
+        // init_ethernet(system->ethernet, "0");
+        for(uint8_t i = 0; i<4; i++){
+            init_ethernet(system->ethernet, to_string(i));
+        }
     }
     if (!record_is_exist(odata_id + "/LogServices")){
         system->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
@@ -249,6 +256,7 @@ void init_thermal(Thermal *thermal)
             intake_temperature->upper_threshold_critical = round(temp[1] * 0.7);
             intake_temperature->upper_threshold_fatal = round(temp[1] * 0.85);
             intake_temperature->read(i, INTAKE_CONTEXT);
+            intake_temperature->sensor_num = i;
             thermal->temperatures->add_member(intake_temperature);
         }
 
@@ -263,16 +271,23 @@ void init_thermal(Thermal *thermal)
         cpu_temperature->upper_threshold_critical = round(cpu_temperature->max_reading_range_temp * 0.75);
         cpu_temperature->upper_threshold_fatal = round(cpu_temperature->max_reading_range_temp * 0.8);
         cpu_temperature->read(thermal->temperatures->members.size(), CPU_CONTEXT);
+        cpu_temperature->sensor_num = thermal->temperatures->members.size();
         thermal->temperatures->add_member(cpu_temperature);
     }
     if (!record_is_exist(odata_id + "/Fans")){
         thermal->fans = new List(odata_id + "/Fans", FAN_TYPE);
         thermal->fans->name = "Chassis Fans";
 
-        ostringstream os;
-        os << thermal->fans->odata.id << "/0";// << "0";
-        Fan *chassis_f = new Fan(os.str(), "0~~");
-        thermal->fans->add_member(chassis_f);
+        for(int i=0; i<2; i++)
+        {
+            ostringstream os;
+            os << thermal->fans->odata.id << "/" << to_string(i);// << "0";
+            Fan *chassis_f = new Fan(os.str(), to_string(i));
+            chassis_f->max_reading_range = 3000 * (i+1);
+            chassis_f->sensor_num = i;
+            thermal->fans->add_member(chassis_f);
+        }
+
     }
     return;
 }
@@ -328,6 +343,8 @@ void init_manager(Collection *manager_collection, string _id)
     /**
      * @todo 여기에 manager 일반멤버변수값 넣어주기
      */
+
+    manager->network = new NetworkProtocol(odata_id + "/NetworkProtocol", "NetworkProtocol");
     
     
     if (!record_is_exist(odata_id + "/EthernetInterfaces")){
@@ -1035,6 +1052,8 @@ json::value Session::get_json(void)
     j[U("UserName")] = json::value::string(U(this->account->user_name));
     // j[U("UserName")] = json::value::string("");
     j[U("AccountId")] = json::value::string(this->account_id);
+    j[U("AuthToken")] = json::value::string(this->x_token);
+    
     
     return j;
 }
@@ -1045,6 +1064,7 @@ bool Session::load_json(json::value &j)
         Resource::load_json(j);
         this->id = j.at("Id").as_string();
         this->account_id = j.at("AccountId").as_string();
+        this->x_token = j.at("AuthToken").as_string();
     }
     catch (json::json_exception &e)
     {
@@ -1084,36 +1104,50 @@ pplx::task<void> Session::start(void)
             cout << "IN START : " << session->id << endl;
             // @TODO : 세션종료되면서 세션.json삭제랑 레코드json들 수정작업 해야함
 
-            string path = ODATA_SESSION_ID;
-            path = path + '/' + session->id;
+            string path = session->odata.id;
+            // string path = ODATA_SESSION_ID;
+            // path = path + '/' + session->id;
             cout << path << endl;
-
-            g_record.erase(path); // 레코드자체 지운거
 
             cout << "지우기 전" << endl;
             cout << record_get_json(ODATA_SESSION_ID) << endl;
 
+            bool exist = false;
             Collection *col = (Collection *)g_record[ODATA_SESSION_ID];
             std::vector<Resource *>::iterator iter;
             for(iter=col->members.begin(); iter!=col->members.end(); iter++)
             {
-                if(((Session *)(*iter))->id == session->id)
+                Session *s = (Session *)*iter;
+
+                if(s->id == session->id)
                 {
-                    col->members.erase(iter);
+                    // col->members.erase(iter);
+                    exist = true;
                     break;
                 }
             } // 컬렉션에서 지운거
 
-            record_save_json(); // 레코드 json파일 갱신
-            string json_path = path;
-            json_path = json_path + ".json";
-            if(remove(json_path.c_str()) < 0)
+            if(exist)
             {
-                cout << "delete error in session remove" << endl;
-            }
-            // json파일 제거
+                unsigned int id_num;
+                id_num = stoi(session->id);
+                delete_session_num(id_num);
+                // numset에서 num id 삭제
 
-            // delete session;
+                delete(*iter);
+                col->members.erase(iter);
+                // session자체 객체삭제, g_record에서 삭제, session collection에서 삭제
+
+                record_save_json(); // 레코드 json파일 갱신
+                string json_path = path;
+                json_path = json_path + ".json";
+                if(remove(json_path.c_str()) < 0)
+                {
+                    cout << "delete error in session remove" << endl;
+                }
+                // session json파일 삭제
+            }
+
             cout << "지운 후" << endl;
             cout << record_get_json(ODATA_SESSION_ID) << endl;
             cout << "LOGOUT!!!!" << endl;
@@ -3403,17 +3437,60 @@ json::value ServiceRoot::get_json(void)
 // }
 // ServiceRoot end
 
-bool is_session_valid(const string _token_id)
+bool is_session_valid(const string _token)
 {
     Session *session;
-    string odata_id = ODATA_SESSION_ID;
-    odata_id = odata_id + '/' + _token_id;
-    if (!record_is_exist(odata_id))
+    // string odata_id = ODATA_SESSION_ID;
+    Collection *col = (Collection *)g_record[ODATA_SESSION_ID];
+    // odata_id = odata_id + '/' + _token_id;
+
+    bool exist = false;
+    std::vector<Resource *>::iterator iter;
+    for(iter = col->members.begin(); iter != col->members.end(); iter++)
+    {
+        if(((Session *)(*iter))->x_token == _token)
+        {
+            session = (Session *)(*iter);
+            exist = true;
+            break;
+        }
+    }
+
+    if(!exist)
         return false;
-    session = (Session *)g_record[odata_id];
+
+    if (!record_is_exist(session->odata.id))
+        return false;
+    // session = (Session *)g_record[odata_id];
     if (session->_remain_expires_time <= 0)
         return false;
+
     return true;
+}
+
+/**
+ * @brief x-auth-token 으로 session_odata_id 얻기
+ * @author 강
+ * @details 토큰에 대한 session이 있는지 확인여부는 is_session_valid로 할것
+ * 이 함수에서는 있다고 생각하고 odata를 얻기 위함임
+ */
+
+string get_session_odata_id_by_token(string _token)
+{
+    Collection *session_col = (Collection *)g_record[ODATA_SESSION_ID];
+    string session_odata = "";
+
+    std::vector<Resource *>::iterator iter;
+    for(iter = session_col->members.begin(); iter != session_col->members.end(); iter++)
+    {
+        if(((Session *)(*iter))->x_token == _token)
+        {
+            session_odata = ((Session *)(*iter))->odata.id;
+            break;
+        }
+    }
+
+    return session_odata;
 }
 
 const std::string currentDateTime(void)
