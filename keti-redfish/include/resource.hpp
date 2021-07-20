@@ -92,6 +92,7 @@
 #define ODATA_EVENT_SERVICE_TYPE "#EventService." ODATA_TYPE_VERSION ".EventService"
 #define ODATA_EVENT_DESTINATION_TYPE "#EventDestination." ODATA_TYPE_VERSION ".EventDestination" // @@@@ 추가
 #define ODATA_EVENT_DESTINATION_COLLECTION_TYPE "#EventDestinationCollection.EventDestinationCollection" // @@@@ 추가
+#define ODATA_EVENT_TYPE "#Event." ODATA_TYPE_VERSION ".Event"
 // #define ODATA_DESTINATION_COLLECTION_TYPE "#EventDestinationCollection.EventDestinationCollection"
 // #define ODATA_DESTINATION_TYPE "#EventDestination." ODATA_TYPE_VERSION ".EventDestination"
 #define ODATA_UPDATE_SERVICE_TYPE "#UpdateService." ODATA_TYPE_VERSION ".UpdateService" // @@@@ 추가
@@ -227,6 +228,21 @@ enum RESOURCE_TYPE
     CERTIFICATE_SERVICE_TYPE
 };
 
+enum ACTION_NAME
+{
+    RESET_BIOS,
+    CHANGE_PASSWORD,
+    CLEAR_LOG,
+    RESET_SYSTEM,
+    RESET_MANAGER,
+    RE_KEY,
+    RE_NEW,
+    GENERATE_CSR,
+    REPLACE_CERTIFICATE,
+    SUBMIT_TEST_EVENT,
+    SIMPLE_UPDATE
+};
+
 /**
  * @brief Sensor context
  */
@@ -290,17 +306,20 @@ typedef struct _Location
     Placement placement;
 } Location;
 
-/**
- * @brief struct addition
- * @authors 강
- */
-// typedef struct _Actions
-// {
-//     std::vector<string> actions;
-//     string type;
-//     string target;
-//     string actioncommand;
-// } Actions;
+typedef struct _Actions_Parameter
+{
+    string name;
+    std::vector<string> allowable_values;    
+} Parameter;
+
+typedef struct _Actions
+{
+    int type;
+    string name;
+    string target;
+    std::vector<Parameter> parameters; 
+} Actions;
+
 
 typedef struct _Boot
 {
@@ -524,130 +543,16 @@ typedef struct _Value_About_HA
     bool enabled;
 } Value_About_HA;
 
-
-/**
- * @brief Redfish resource of Actions
- * @authors 강
- * @details Actions 클래스가 해당하는 건 /Actions가 아니라 뒤에 더 붙는 /Actions/~~~~.#### 에 해당함
- * 앞에 Actions는 그냥 그걸 담고있는 리소스 안에 컬렉션으로 만들어놓을거임
- */
-
-class Actions
-{
-    public:
-    string id;
-    string target; //uri
-    string act_type; // ---ActionInfo
-    string action_name; // action_by.action_what
-    string action_by; 
-    string action_what; // action_by.action_what 의 형태
-    vector<string> action_info;
-
-    // for parsing
-    string uri;
-    vector<string> uri_tokens;
-
-    Actions(const string _target)
-    {
-        // cout << "odata : " << _odata_id << endl;
-        this->uri = _target;
-        this->uri_tokens = string_split(this->uri, '/');
-        string last = uri_tokens[uri_tokens.size()-1];
-        this->action_name = last;
-        vector<string> v = string_split(last, '.');
-        this->action_by = v.at(0);
-        this->action_what = v.at(1);
-        this->target = _target;
-
-        // g_record[_odata_id] = this;
-
-    }
-    Actions(const string _target, const string _act_type) : Actions(_target)
-    {
-        this->act_type = _act_type;
-
-        if(act_type == "Reset")
-        {
-            this->action_info.push_back("On");
-            this->action_info.push_back("ForceOff");
-            this->action_info.push_back("ForceRestart");
-            this->action_info.push_back("ForceOn");
-            this->action_info.push_back("GracefulShutdown");
-            this->action_info.push_back("GracefulRestart");
-            this->action_info.push_back("Nmi");
-            this->action_info.push_back("PushPowerButton");
-        }
-
-    };
-    ~Actions()
-    {
-        // g_record.erase(this->odata.id);
-
-    };
-
-    json::value get_json(void);
-    bool load_json(json::value &j);
-};
-
-// class Actions : public Resource
-// {
-//     public:
-//     string id;
-//     string target; //uri
-//     string act_type; // ---ActionInfo
-//     string action_name; // action_by.action_what
-//     string action_by; 
-//     string action_what; // action_by.action_what 의 형태
-//     vector<string> action_info;
-
-//     // for parsing
-//     string uri;
-//     vector<string> uri_tokens;
-
-//     Actions(const string _odata_id) : Resource(ACTIONS_TYPE, _odata_id, ODATA_ACTIONS_TYPE)
-//     {
-//         // cout << "odata : " << _odata_id << endl;
-//         this->uri = _odata_id;
-//         this->uri_tokens = string_split(this->uri, '/');
-//         string last = uri_tokens[uri_tokens.size()-1];
-//         this->action_name = last;
-//         vector<string> v = string_split(last, '.');
-//         this->action_by = v.at(0);
-//         this->action_what = v.at(1);
-//         this->target = _odata_id;
-
-        
-
-//         g_record[_odata_id] = this;
-
-//     }
-//     Actions(const string _odata_id, const string _act_type) : Actions(_odata_id)
-//     {
-//         this->act_type = _act_type;
-
-//         if(act_type == "Reset")
-//         {
-//             this->action_info.push_back("On");
-//             this->action_info.push_back("ForceOff");
-//             this->action_info.push_back("ForceRestart");
-//             this->action_info.push_back("ForceOn");
-//             this->action_info.push_back("GracefulShutdown");
-//             this->action_info.push_back("GracefulRestart");
-//             this->action_info.push_back("Nmi");
-//             this->action_info.push_back("PushPowerButton");
-//         }
-
-//     };
-//     ~Actions()
-//     {
-//         g_record.erase(this->odata.id);
-
-//     };
-
-//     json::value get_json(void);
-//     bool load_json(json::value &j);
-
-// };
+typedef struct _Event_Info{
+    int event_group_id;
+    string event_id;
+    string event_timestamp;
+    string message_severity;
+    string message;
+    string message_id;
+    string origin_of_condition;
+    vector<string> message_args;
+} Event_Info;
 
 /**
  * @brief Resource of redfish schema
@@ -1041,8 +946,8 @@ class LogService : public Resource
 
     Collection *entry;
     
-    // vector<Actions *> actions;
-
+    unordered_map<string, Actions> actions;
+    
     LogService(const string _odata_id) : Resource(LOG_SERVICE_TYPE, _odata_id, ODATA_LOG_SERVICE_TYPE)
     {
         this->id = "";
@@ -1057,21 +962,14 @@ class LogService : public Resource
         this->service_enabled = true;
         this->entry = nullptr;
 
-        // this->entry = new Collection(_odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
-        // this->entry->name = "Log Entry Collection";
+        Actions clearlog;
+        clearlog.type = CLEAR_LOG;
+        clearlog.name = "#LogService.ClearLog";
+        clearlog.target = this->odata.id + "/Actions/LogService.ClearLog";
 
-
-        // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
-        // actions.push_back(act);
-        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
-        // this->actions->name = "LogService Actions Collection";
-        // Actions *act = new Actions(_odata_id + "/Actions/LogService.ClearLog");
-        // this->actions->add_member(act);
-
-        this->entry = nullptr;
-
+        this->actions["ClearLog"] = clearlog;
+        
         g_record[_odata_id] = this;
-
     }
     LogService(const string _odata_id, const string _log_service_id) : LogService(_odata_id)
     {
@@ -1084,14 +982,35 @@ class LogService : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-    
-
+    bool ClearLog();
 };
 
 /**
  * @brief Redfish resource of Event Service
  * @authors 강
  */
+class Event
+{
+    public:
+    string id;
+    string name;
+    string type;
+    string context;
+    string description;
+    
+    vector<Event_Info> events;
+
+    Event(string id)
+    {
+        this->id = id;
+        this->name = "Redfish Event";
+        this->type = ODATA_EVENT_TYPE;
+        this->context = "";
+        this->description = "";
+    };
+    ~Event(){};
+    json::value get_json(void);
+};
 
 class EventDestination : public Resource
 {
@@ -1115,7 +1034,7 @@ class EventDestination : public Resource
         this->context = "WebUser3";
         this->protocol = "Redfish";
 
-        this->event_types.push_back("Alert");
+        // this->event_types.push_back("Alert");
 
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
@@ -1152,6 +1071,8 @@ class EventService : public Resource
     Status status;
     Collection *subscriptions;
 
+    unordered_map<string, Actions> actions;
+    
     EventService() : Resource(EVENT_SERVICE_TYPE, ODATA_EVENT_SERVICE_ID, ODATA_EVENT_SERVICE_TYPE)
     {
         this->id = "";
@@ -1159,11 +1080,11 @@ class EventService : public Resource
         this->delivery_retry_attempts = 3;
         this->delivery_retry_interval_seconds = 60;
 
-        this->event_types_for_subscription.push_back("StatusChange");
-        this->event_types_for_subscription.push_back("ResourceUpdated");
-        this->event_types_for_subscription.push_back("ResourceAdded");
-        this->event_types_for_subscription.push_back("ResourceRemoved");
-        this->event_types_for_subscription.push_back("Alert");
+        // this->event_types_for_subscription.push_back("StatusChange");
+        // this->event_types_for_subscription.push_back("ResourceUpdated");
+        // this->event_types_for_subscription.push_back("ResourceAdded");
+        // this->event_types_for_subscription.push_back("ResourceRemoved");
+        // this->event_types_for_subscription.push_back("Alert");
 
         this->serversent_event_uri = "/redfish/v1/EventService/SSE";
 
@@ -1181,11 +1102,14 @@ class EventService : public Resource
 
         this->subscriptions = nullptr;
 
-        // this->subscriptions = new Collection(ODATA_EVENT_DESTINATION_ID, ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
-        // this->subscriptions->name = "Subscription Collection";
-
+        Actions submit_test_event;
+        submit_test_event.type = SUBMIT_TEST_EVENT;
+        submit_test_event.name = "#EventService.submit_test_event";
+        submit_test_event.target = this->odata.id + "Actions/EventService.submit_test_event";
+        
+        this->actions["submit_test_event"] = submit_test_event;
+        
         g_record[ODATA_EVENT_SERVICE_ID] = this;
-
     };
     ~EventService()
     {
@@ -1194,7 +1118,7 @@ class EventService : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
+    json::value SubmitTestEvent(json::value body);
 };
 
 /**
@@ -1225,7 +1149,6 @@ class SoftwareInventory : public Resource
         this->version = "";
         this->software_id = "";
         this->lowest_supported_version = "";
-        this->uefi_device_paths.push_back("BMC(0x1, 0x0ABCDEF)");
 
         this->status.state = STATUS_STATE_ENABLED;
         this->status.health = STATUS_HEALTH_OK;
@@ -1259,8 +1182,8 @@ class UpdateService : public Resource
     Collection *firmware_inventory;
     Collection *software_inventory;
     
-    // Collection *actions;
-
+    unordered_map<string, Actions> actions;
+    
     UpdateService(const string _odata_id) : Resource(UPDATE_SERVICE_TYPE, _odata_id, ODATA_UPDATE_SERVICE_TYPE)
     {
         this->id = "";
@@ -1273,25 +1196,27 @@ class UpdateService : public Resource
         this->firmware_inventory = nullptr;
         this->software_inventory = nullptr;
 
-        // this->firmware_inventory = new Collection(_odata_id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
-        // this->firmware_inventory->name = "Firmware Inventory Collection";
-        // this->software_inventory = new Collection(_odata_id + "/SoftwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
-        // this->software_inventory->name = "Software Inventory Collection";
+        Actions simple_update;
+        simple_update.type = SIMPLE_UPDATE;
+        simple_update.name = "#UpdateService.SimpleUpdate";
+        simple_update.target = this->odata.id + "/Actions/UpdateService.SimpleUpdate";
 
-        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
-        // this->actions->name = "UpdateService Actions Collection";
-        // Actions *act = new Actions(_odata_id + "/Actions/UpdateService.SimpleUpdate");
+        Parameter transfer_protocol;
+        transfer_protocol.name = "TransferProtocol";
+        transfer_protocol.allowable_values.push_back("TFTP");
+        transfer_protocol.allowable_values.push_back("SFTP");
 
-        this->firmware_inventory = nullptr;
-        this->software_inventory = nullptr;
+        //target 변경 가능
+        Parameter targets;
+        targets.name = "Targets";
+        targets.allowable_values.push_back("/redfish/v1/UpdateService/FirmwareInventory/BMC-Backup");
 
+        simple_update.parameters.push_back(transfer_protocol);
+        simple_update.parameters.push_back(targets);
+
+        this->actions["SimpleUpdate"] = simple_update;
         g_record[_odata_id] = this;
     };
-    // UpdateService(const string _odata_id, const string _update_id) : UpdateService(_odata_id)
-    // {
-    //     this->id = _update_id;
-    //     // ((Collection *)(g_record[ODATA_UPDATE_SERVICE_ID]))->add_member(this);
-    // };
     ~UpdateService()
     {
         g_record.erase(this->odata.id);
@@ -1299,7 +1224,7 @@ class UpdateService : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
+    bool SimpleUpdate(json::value body);
 };
 
 // /**
@@ -1321,6 +1246,8 @@ class Certificate : public Resource
     CertContent issuer;
     CertContent subject;
     vector<string> keyUsage;
+
+    unordered_map<string, Actions> actions;
 
     Certificate(const string _odata_id) : Resource(CERTIFICATE_TYPE, _odata_id, ODATA_CERTIFICATE_TYPE)
     {
@@ -1344,6 +1271,32 @@ class Certificate : public Resource
         this->subject.organizationUnit = "";
         this->subject.state = "";
 
+        Actions rekey;
+        rekey.type = RE_KEY;
+        rekey.name = "#Certificate.Rekey";
+        rekey.target = this->odata.id + "Actions/Certificate.ReKey";
+
+        // required, allowable_values 바뀔 수 있음
+        Parameter key_curve_id;
+        key_curve_id.name = "KeyCurveId";
+        key_curve_id.allowable_values.push_back("TPM_ECC_NIST_P384");
+
+        Parameter key_pair_algorithm;
+        key_pair_algorithm.name = "KeyPairAlgorithm";
+        key_pair_algorithm.allowable_values.push_back("TPM_ALG_ECDH");
+
+        rekey.parameters.push_back(key_curve_id);
+        rekey.parameters.push_back(key_pair_algorithm);
+
+        this->actions["ReKey"] = rekey;
+        
+        Actions renew;
+        renew.type = RE_NEW;
+        renew.name = "#Certificate.ReNew";
+        renew.target = this->odata.id + "Actions/Certificate.ReNew";
+        
+        this->actions["ReNew"] = renew;
+
         g_record[_odata_id] = this;
     }
     Certificate(const string _odata_id, const string _certificateString, const string _certificateType) : Certificate(_odata_id)
@@ -1357,6 +1310,8 @@ class Certificate : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
+    json::value Rekey(json::value body);
+    json::value Renew(void);
 };
 
 class CertificateLocation : public Resource
@@ -1381,27 +1336,71 @@ class CertificateLocation : public Resource
     bool load_json(json::value &j);
 };
 
-// Actions 구현 필요. ( GenerateCSR, ReplaceCertificate )
 class CertificateService : public Resource
 {
     public:
     string id;
+    
     CertificateLocation *certificate_location;
     
+    unordered_map<string, Actions> actions;
+
     CertificateService() : Resource(CERTIFICATE_SERVICE_TYPE, ODATA_CERTIFICATE_SERVICE_ID, ODATA_CERTIFICATE_SERVICE_TYPE)
     {
         this->id = "CertificateService";
         this->name = "Certificate Service";
         
+        this->certificate_location = nullptr;
+
+        Actions generate_CSR;
+        generate_CSR.type = GENERATE_CSR;
+        generate_CSR.name = "#CertificateService.GenerateCSR";
+        generate_CSR.target = this->odata.id + "/Actions/CertificateService.GenerateCSR";
+
+        Parameter key_usage;
+        key_usage.name = "KeyUsage";
+        key_usage.allowable_values.push_back("DigitalSignature");
+        key_usage.allowable_values.push_back("NonRepudiation");
+        key_usage.allowable_values.push_back("KeyEncipherment");
+
+        Parameter key_curve_id;
+        key_curve_id.name = "KeyCurveId";
+        key_curve_id.allowable_values.push_back("TPM_ECC_NIST_P384");
+        
+        Parameter key_pair_altorithm;
+        key_pair_altorithm.name = "KeyPairAlgorithm";
+        key_pair_altorithm.allowable_values.push_back("TPM_ALG_ECDH");
+        
+        generate_CSR.parameters.push_back(key_usage);
+        generate_CSR.parameters.push_back(key_curve_id);
+        generate_CSR.parameters.push_back(key_pair_altorithm);
+        
+        this->actions["GenerateCSR"] = generate_CSR;
+
+        Actions replace_certificate;
+        replace_certificate.type = REPLACE_CERTIFICATE;
+        replace_certificate.name = "#CertificateService.ReplaceCertificate";
+        replace_certificate.target = this->odata.id + "/Actions/CertificateService.ReplaceCertificate";
+
+        Parameter certificate_type;
+        certificate_type.name = "CertificateType";
+        certificate_type.allowable_values.push_back("PEM");
+
+        replace_certificate.parameters.push_back(certificate_type);
+
+        this->actions["ReplaceCertificate"] = replace_certificate;
+
         g_record[this->odata.id] = this;
     }
     ~CertificateService()
     {
         g_record.erase(this->odata.id);
     }
-
+    
     json::value get_json(void);
     bool load_json(json::value &j);
+    json::value GenerateCSR(json::value body);
+    bool ReplaceCertificate(json::value body);
 };
 
 /**
@@ -1615,61 +1614,41 @@ public:
 
     Collection *ethernet;
     Collection *log_service;
-    // Collection *actions;
-    vector<Actions *> actions;
-    AccountService *remote_account_service;
-    // BMC의 계정정보를 관리하는 AccountService
     
+    AccountService *remote_account_service; // BMC의 계정정보를 관리하는 AccountService
     NetworkProtocol *network;
     
+    unordered_map<string, Actions> actions;
+
     Manager(const string _odata_id) : Resource(MANAGER_TYPE, _odata_id, ODATA_MANAGER_TYPE)
     {
-        // this->name = "";
-        // // this->id = _manager_id;
-        // this->manager_type = "CMM";
-        // this->description = "CMM Manager";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // this->firmware_version = "Manager Firmware Version";
-        // this->uuid = "Manager UUID";
-        // this->model = "Manager Model";
-        // this->power_state = "On";
-
-        // this->network = new NetworkProtocol(this->odata.id + "/NetworkProtocol", "NetworkProtocol");
-
-        // string oodata = _odata_id;
-        // cout << "oodata : " << oodata << endl;
-        // oodata = oodata + "/EthernetInterfaces";
-        // cout << "oodata2 : " << oodata << endl;
-        // this->ethernet = new Collection(oodata, ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
-        // 여기에 이더넷 4개 만드는거 걍 넣어놓기 -> 서비스루트에서 이닛할때로 만듬.
-
-        // this->datetime = currentDateTime();
-        // this->datetime_offset = "+06:00";
-
         this->ethernet = nullptr;
         this->log_service = nullptr;
         this->remote_account_service = nullptr;
         this->network = nullptr;
         
-        // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
-        // actions.push_back(act);
+        Actions reset;
+        reset.type = RESET_MANAGER;
+        reset.name = "#Manager.Reset";
+        reset.target = this->odata.id + "/Actions/Manager.Reset";
+        
+        Parameter reset_type;
+        reset_type.name = "ResetType";
+        reset_type.allowable_values.push_back("GracefulRestart");
+        reset_type.allowable_values.push_back("ForceRestart");
+        
+        reset.parameters.push_back(reset_type);
 
-        // this->actions = new Collection(_odata_id + "/Actions", ODATA_ACTIONS_COLLECTION_TYPE);
-        // this->actions->name = "Managers Actions Collection";
-        // Actions *act = new Actions(_odata_id + "/Actions/Manager.Reset", "Reset");
-        // this->actions->add_member(act);
+        this->actions["Reset"] = reset; 
 
         g_record[_odata_id] = this;
     }
     Manager(const string _odata_id, const string _manager_id) : Manager(_odata_id)
     {
         this->id = _manager_id;
-        // ((Collection *)g_record[ODATA_MANAGER_ID])->add_member(this);
     };
     ~Manager()
     {
-        delete network;
         g_record.erase(this->odata.id);
     };
 
@@ -2295,11 +2274,13 @@ class Bios : public Resource
     string id;
     string attribute_registry;
     Attribute attribute;
+    unordered_map<string, Actions> actions;
     
     Bios(const string _odata_id) : Resource(BIOS_TYPE, _odata_id, ODATA_BIOS_TYPE)
     {
 
         this->id = "";
+        this->attribute_registry = "";
         this->attribute_registry = "";
         this->attribute.boot_mode = "";
         this->attribute.embedded_sata = "";
@@ -2311,17 +2292,25 @@ class Bios : public Resource
         this->attribute.proc_turbo_mode = "";
         this->attribute.usb_control = "";
 
-        // this->id = "";
-        // this->attribute_registry = "Attribute registry";
-        // this->attribute.boot_mode = "Uefi";
-        // this->attribute.embedded_sata = "Raid";
-        // this->attribute.nic_boot1 = "NetworkBoot";
-        // this->attribute.nic_boot2 = "Disabled";
-        // this->attribute.power_profile = "MaxPerf";
-        // this->attribute.proc_core_disable = 0;
-        // this->attribute.proc_hyper_threading = "Enabled";
-        // this->attribute.proc_turbo_mode = "Enabled";
-        // this->attribute.usb_control = "UsbEnabled";
+        Actions reset_bios;
+        reset_bios.type = RESET_BIOS;
+        reset_bios.name = "#Bios.ResetBios";
+        reset_bios.target = this->odata.id + "/Actions/Bios.ResetBios";
+        
+        Actions change_password;
+        change_password.type = CHANGE_PASSWORD;
+        change_password.name = "#Bios.ChangePassword";
+        change_password.target = this->odata.id + "/Actions/Bios.ChangePassword";
+
+        Parameter password_name;
+        password_name.name = "PasswordName";
+        password_name.allowable_values.push_back("UefiAdminPassword");
+        password_name.allowable_values.push_back("UefiPowerOnPassword");
+
+        change_password.parameters.push_back(password_name);
+
+        this->actions["ResetBios"] = reset_bios;
+        this->actions["ChangePassword"] = change_password;
 
         g_record[_odata_id] = this;    
     }
@@ -2336,8 +2325,8 @@ class Bios : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-    // 현 시스템의 password를 바꾸는? actions
     bool ChangePassword(string new_password, string old_password, string password_name);
+    bool ResetBios();
 };
 
 class SimpleStorage : public Resource
@@ -2683,6 +2672,8 @@ class Systems : public Resource
     Collection *log_service; // resource LogService
     Collection *simple_storage;
 
+    unordered_map <string, Actions> actions;
+
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
         this->id = "";
@@ -2718,62 +2709,20 @@ class Systems : public Resource
         this->log_service = nullptr;
         this->simple_storage = nullptr;
 
-        // this->bios = 0;
-        // null로 넣는법
+        Actions reset;
+        reset.type = RESET_SYSTEM;
+        reset.name = "#ComputerSystem.Reset";
+        reset.target = this->odata.id + "/Actions/ComputerSystem.Reset";
 
-        // this->id = _systems_id;
-        // // this->sku = "";
-        // this->system_type = "Physical";
-        // this->asset_tag = "Asset tag";
-        // this->manufacturer = "Manufacturer";
-        // this->model = "Model";
-        // this->serial_number = "Serial Number";
-        // this->part_number = "Part Number";
-        // this->description = "Chassis Manager Module System";
-        // this->uuid = "This is UUID";
-        // this->hostname = "Keti";       
-        // this->hosting_roles.push_back("ApplicationServer");
-        // this->indicator_led = LED_OFF;
-        // this->power_state = "On";
-        // this->bios_version = "Bios Version";
+        Parameter reset_type;
+        reset_type.name = "ResetType";
+        reset_type.allowable_values.push_back("On");
+        reset_type.allowable_values.push_back("ForceOff");
+        reset_type.allowable_values.push_back("GracefulShutdown");
+        reset_type.allowable_values.push_back("GracefulRestart");
         
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
+        reset.parameters.push_back(reset_type);
         
-        
-        // // this->actions
-        // this->boot.boot_source_override_enabled = "Disabled";
-        // this->boot.boot_source_override_target = "None";
-        // this->boot.boot_source_override_mode = "UEFI";
-        // this->boot.uefi_target_boot_source_override = "";
-
-        // this->ms.total_system_memory_GiB = 96;
-        // this->ms.total_
-
-        // Collection Generate
-        // 컬렉션인거 processor, memory, ethernet, log_service, simple_storage;
-        // this->processor = new Collection(_odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
-        // this->processor->name = "Computer System Processor Collection";
-
-        // this->memory = new Collection(_odata_id + "/Memory", ODATA_MEMORY_COLLECTION_TYPE);
-        // this->memory->name = "Computer System Memory Collection";
-
-        // this->ethernet = new Collection(_odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
-        // this->ethernet->name = "Computer System Ethernet Interface Collection";
-
-        // this->log_service = new Collection(_odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
-        // this->log_service->name = "Computer System Log Service Collection";
-
-        // this->simple_storage = new Collection(_odata_id + "/SimpleStorage", ODATA_SIMPLE_STORAGE_COLLECTION_TYPE);
-        // this->simple_storage->name = "Computer System Simple Storage Collection";
-
-        // this->storage = new Collection(_odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
-        // this->storage->name = "Storage Collection";
-        // 일단은 포인터변수들 중에 컬렉션만 만들고 나머지 포인터 변수에 해당하는 멤버변수들은 system을 초기화하는
-        // 부분에서 별도로 생성 >> 에서 컬렉션도 밖에서 별도생성으로 바꿈
-
-        
-
         g_record[_odata_id] = this;
     }
     Systems(const string _odata_id, const string _systems_id) : Systems(_odata_id)
@@ -2789,7 +2738,7 @@ class Systems : public Resource
 
     bool load_json(json::value &j);
     json::value get_json(void);
-
+    bool Reset(json::value body);
 };
 
 /**
@@ -2808,7 +2757,7 @@ public:
     string asset_tag;
     string power_state;
     uint8_t indicator_led;
-
+    
     // double height_mm;
     // double width_mm;
     // double depth_mm;
@@ -2819,44 +2768,13 @@ public:
 
     // TODO 리소스 변경 필요
     Thermal *thermal;
-    // Resource *power;
     Power *power;
-    //sensor 들어가야됨
     Collection *sensors;
+
 
     // TODO Contains, ManagedBy 추가 필요
     Chassis(const string _odata_id) : Resource(CHASSIS_TYPE, _odata_id, ODATA_CHASSIS_TYPE)
     {
-        // this->name = "";
-        // // this->id = _chassis_id;
-        // this->chassis_type = "";
-        // this->manufacturer = "";
-        // this->model = "";
-        // // this->sku = "";
-        // this->serial_number = "";
-        // this->part_number = "";
-        // this->asset_tag = "";
-        // this->power_state = POWER_STATE_ON;
-        // this->indicator_led = LED_OFF;
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // this->location.postal_address.country = "";
-        // this->location.postal_address.territory = "";
-        // this->location.postal_address.city = "";
-        // this->location.postal_address.street = "";
-        // this->location.postal_address.house_number = "";
-        // this->location.postal_address.name = "";
-        // this->location.postal_address.postal_code = "";
-        // this->location.placement.row = "";
-        // this->location.placement.rack = "";
-        // this->location.placement.rack_offset_units = "";
-        // this->location.placement.rack_offset = 0;
-
-        // pointer
-        this->thermal = nullptr;
-        this->power = nullptr;
-        this->sensors = nullptr;
-
         this->thermal = nullptr;
         this->power = nullptr;
         this->sensors = nullptr;
@@ -2874,6 +2792,7 @@ public:
 
     json::value get_json(void);
     bool load_json(json::value &j);
+
     pplx::task<void> led_off(uint8_t _led_index);
     pplx::task<void> led_lit(uint8_t _led_index);
     pplx::task<void> led_blinking(uint8_t _led_index);
@@ -2886,6 +2805,7 @@ void init_ethernet(Collection *ethernet_collection, string _id);
 void init_log_service(Collection *log_service_collection, string _id);
 void init_log_entry(Collection *log_entry_collection, string _id);
 void init_simple_storage(Collection *simple_storage_collection, string _id);
+void init_bios(Bios *bios);
 void init_chassis(Collection *chassis_collection, string _id);
 void init_sensor(Collection *sensor_collection, string _id);
 void init_thermal(Thermal *thermal);
@@ -3014,10 +2934,18 @@ public:
     // bool load_json(json::value &j);
 };
 
+bool init_record(void);
 bool init_resource(void);
 
+void clear_gc();
 bool is_session_valid(const string _token_id);
 void dependency_injection(Resource *res);
 json::value get_resource_odata_id_json(Resource *res, string loc);
+json::value get_action_info(unordered_map<string, Actions> act);
 
+//certificate action 
+void generate_ssl_private_key(fs::path key, string key_length);
+json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id);
+string file2str(string file_path);
+void update_cert_with_pem(fs::path cert, Certificate *certificate);
 #endif
