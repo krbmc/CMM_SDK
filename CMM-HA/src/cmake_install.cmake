@@ -1,4 +1,4 @@
-# Install script for directory: /root/CMM_SDK/source/CMM-HA/src
+# Install script for directory: /home/keti/CMM_SDK/source/CMM-HA/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

@@ -54,10 +54,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /root/CMM_SDK/source/CMM-HA
+CMAKE_SOURCE_DIR = /home/keti/CMM_SDK/source/CMM-HA
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /root/CMM_SDK/source/CMM-HA
+CMAKE_BINARY_DIR = /home/keti/CMM_SDK/source/CMM-HA
 
 #=============================================================================
 # Directory level rules for directory src
@@ -84,7 +84,7 @@ src/preinstall:
 src/CMakeFiles/CMM-HA.dir/all:
 	$(MAKE) -f src/CMakeFiles/CMM-HA.dir/build.make src/CMakeFiles/CMM-HA.dir/depend
 	$(MAKE) -f src/CMakeFiles/CMM-HA.dir/build.make src/CMakeFiles/CMM-HA.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/root/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11 "Built target CMM-HA"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11 "Built target CMM-HA"
 .PHONY : src/CMakeFiles/CMM-HA.dir/all
 
 # Include target in all.
@@ -94,9 +94,9 @@ all: src/CMakeFiles/CMM-HA.dir/all
 
 # Build rule for subdir invocation for target.
 src/CMakeFiles/CMM-HA.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /root/CMM_SDK/source/CMM-HA/CMakeFiles 11
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/keti/CMM_SDK/source/CMM-HA/CMakeFiles 11
 	$(MAKE) -f CMakeFiles/Makefile2 src/CMakeFiles/CMM-HA.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /root/CMM_SDK/source/CMM-HA/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/keti/CMM_SDK/source/CMM-HA/CMakeFiles 0
 .PHONY : src/CMakeFiles/CMM-HA.dir/rule
 
 # Convenience name for target.

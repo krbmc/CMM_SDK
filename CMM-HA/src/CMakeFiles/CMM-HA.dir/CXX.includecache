@@ -6,65 +6,65 @@
 
 #IncludeRegexTransform: 
 
-/root/CMM_SDK/source/CMM-HA/src/KETIHA.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.cpp
 KETIHA.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETIHA.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.hpp
 KETI_halmp.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp
 KETIHA_Sync.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.hpp
 KETI_halmp.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
 handler.hpp
-/root/CMM_SDK/source/CMM-HA/src/handler.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/handler.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp
 KETI_Helper.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_Helper.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp
 KETI_Switch.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_Switch.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp
 KETI_halmp.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
 KETI_Helper.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_Helper.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp
 KETIhaNetService.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETIhaNetService.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/TaskServer.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/TaskServer.cpp
 
-/root/CMM_SDK/source/CMM-HA/src/handler.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/handler.cpp
 handler.hpp
-/root/CMM_SDK/source/CMM-HA/src/handler.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/handler.hpp
 fstream
 -
 KETI_halmp.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
 KETIHA.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETIHA.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.hpp
 xml2json.hpp
-/root/CMM_SDK/source/CMM-HA/src/xml2json.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/xml2json.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/main.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/main.cpp
 iostream
 -
 thread
 -
 KETI_halmp.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.hpp
 KETIHA.hpp
-/root/CMM_SDK/source/CMM-HA/src/KETIHA.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.hpp
 
-/root/CMM_SDK/source/CMM-HA/src/util.cpp
+/home/keti/CMM_SDK/source/CMM-HA/src/util.cpp
 stdafx.hpp
-/root/CMM_SDK/source/CMM-HA/src/stdafx.hpp
+/home/keti/CMM_SDK/source/CMM-HA/src/stdafx.hpp
 
 include/KETIHA.hpp
 chrono

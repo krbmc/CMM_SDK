@@ -6,5 +6,5 @@ CXX_FLAGS = -O1 -Wall -Wfatal-errors -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/root/CMM_SDK/source/CMM-HA/include 
+CXX_INCLUDES = -I/home/keti/CMM_SDK/source/CMM-HA/include 
 
