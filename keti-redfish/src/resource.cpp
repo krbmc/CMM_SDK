@@ -10,9 +10,9 @@ unordered_map<string, Event*> event_map;
  */
 bool init_resource(void)
 {
-    load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
+    // load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
     // 등록해버리고 table.json까지 수정해버림
-    record_load_json();
+    // record_load_json();
     // log(info) << "record load json complete";
 
     
@@ -1362,6 +1362,17 @@ bool LogService::ClearLog()
     return true;
 }
 
+void LogService::new_log_entry(string _entry_id)
+{
+    if(this->entry == nullptr)
+    {
+        this->entry = new Collection(this->odata.id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
+        this->entry->name = "Log Entry Collection";
+    }
+
+    init_log_entry(this->entry, _entry_id);
+}
+
 json::value LogEntry::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -1407,6 +1418,28 @@ bool LogEntry::load_json(json::value &j)
     }
 
     return true;
+}
+
+void LogEntry::set_entry_type(string _val){
+    this->entry_type = _val;
+}
+void LogEntry::set_severity(string _val){
+    this->severity = _val;
+}
+void LogEntry::set_message(string _val){
+    this->message = _val;
+}
+void LogEntry::set_message_id(string _val){
+    this->message_id = _val;
+}
+void LogEntry::add_message_args(string _val){
+    this->message_args.push_back(_val);
+}
+void LogEntry::set_sensor_num(unsigned int _val){
+    this->sensor_number = _val;
+}
+void LogEntry::set_created(string _val){
+    this->created = _val;
 }
 // Log Service & Log Entry end
 
@@ -2797,23 +2830,23 @@ bool NetworkProtocol::load_json(json::value &j)
         //test
         obj = j.at("SNMP");
         get_value_from_json_key(obj, "ProtocolEnabled", this->snmp_enabled);
-        get_value_from_json_key(obj, "port", this->snmp_port);
+        get_value_from_json_key(obj, "Port", this->snmp_port);
         
         obj = j.at("IPMI");
         get_value_from_json_key(obj, "ProtocolEnabled", this->ipmi_enabled);
-        get_value_from_json_key(obj, "port", this->ipmi_port);
+        get_value_from_json_key(obj, "Port", this->ipmi_port);
         
         obj = j.at("KVMIP");
         get_value_from_json_key(obj, "ProtocolEnabled", this->kvmip_enabled);
-        get_value_from_json_key(obj, "port", this->kvmip_port);
+        get_value_from_json_key(obj, "Port", this->kvmip_port);
         
         obj = j.at("HTTP"); 
         get_value_from_json_key(obj, "ProtocolEnabled", this->http_enabled);
-        get_value_from_json_key(obj, "port", this->http_port);
+        get_value_from_json_key(obj, "Port", this->http_port);
         
         obj = j.at("HTTPS");
         get_value_from_json_key(obj, "ProtocolEnabled", this->https_enabled);
-        get_value_from_json_key(obj, "port", this->https_port);
+        get_value_from_json_key(obj, "Port", this->https_port);
          
         obj = j.at("NTP");
         get_value_from_json_key(obj, "ProtocolEnabled", this->ntp_enabled);
@@ -3654,7 +3687,11 @@ json::value Certificate::Rekey(json::value body)
     string key_pair_algorithm;
     string challenge_password;
        
-    get_value_from_json_key(body, "KeyBitLength", key_bit_length);
+    if(!(get_value_from_json_key(body, "KeyBitLength", key_bit_length)))
+    {
+        rsp = json::value::null();
+        return rsp;
+    }
     
     if (fs::exists(key))
     {
@@ -3864,7 +3901,7 @@ json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr
     }else{
         log(warning) << "[Error] Failed to Generate CSR";
         json::value msg;
-        msg["Message"] = json::value::string("Requeset Failed.");
+        msg["Message"] = json::value::string("Request Failed.");
         rsp["Failed"] = msg;
     }
 

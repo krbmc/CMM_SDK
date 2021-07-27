@@ -561,7 +561,20 @@ void Handler::handle_post(http_request _request)
                 return ;
                 // std::cerr << e.what() << '\n';
             }
-            
+
+            // origin을 true로 받은녀석이 peerprimaryaddress에 해당 false받은녀석은 secondary에 해당
+            // --> true이면 secondary address로 , false면 primary address로 쏘기
+            string op1, op2, ip;
+            if(ha_value.origin == true) // peerprimaryaddress
+                ip = ha_value.peer_secondary_address;
+            else
+                ip = ha_value.peer_primary_address;
+                
+            op1 = "ssh-keygen -f \"/root/.ssh/known_hosts\" -R \"" + ip + "\"";
+            op2 = "ssh-keyscan -t rsa " + ip + " >>~/.ssh/known_hosts";
+
+            system(op1.c_str());
+            system(op2.c_str());
 
             _request.reply(status_codes::OK);
             return ;
@@ -643,19 +656,23 @@ void Handler::handle_post(http_request _request)
 
 //         if(uri_tokens.size() == 1 && uri_tokens[0] == "Mytest")
 //         {
-//             char *ttt = "ls -al";
-//             string result;
-//             char *res;
+//             // system("ls -l");
+//             string test;
+//             test = "ssh-keygen -f \"/root/.ssh/known_hosts\" -R \"$ip\"";
+//             cout << test << endl;
+// //             char *ttt = "ls -al";
+// //             string result;
+// //             char *res;
 
-// cout << "MY TEST START------------------------" << endl;
-//             res = get_popen_string(ttt);
-//             result = res;
+// // cout << "MY TEST START------------------------" << endl;
+// //             res = get_popen_string(ttt);
+// //             result = res;
 
-//             // cout << "MY TEST START------------------------" << endl;
-//             // printf("%s\n", res);
-//             // cout << result << endl;
-//             cout << "MY TEST FIN------------------------" << endl;
-//             cout << result << endl;
+// //             // cout << "MY TEST START------------------------" << endl;
+// //             // printf("%s\n", res);
+// //             // cout << result << endl;
+// //             cout << "MY TEST FIN------------------------" << endl;
+// //             cout << result << endl;
 
 //             _request.reply(status_codes::Accepted);
 //             return ;

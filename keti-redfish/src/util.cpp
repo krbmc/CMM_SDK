@@ -264,10 +264,10 @@ string get_extracted_bmc_id_uri(string _uri)
     return new_uri;
 }
 
-bool check_role_privileges(string _pre)
+bool check_role_privileges(string _pri)
 {
-    if(_pre == "ConfigureComponents" || _pre == "ConfigureManager" || _pre == "ConfigureSelf"
-    || _pre == "ConfigureUsers" || _pre == "Login" || _pre == "NoAuth")
+    if(_pri == "ConfigureComponents" || _pri == "ConfigureManager" || _pri == "ConfigureSelf"
+    || _pri == "ConfigureUsers" || _pri == "Login" || _pri == "NoAuth")
         return true;
 
     return false;

@@ -63,19 +63,6 @@ void add_new_bmc(string _bmc_id, string _ip, string _port, bool _is_https, strin
     host = host + "://" + _ip + ":" + _port;
     cout << "Host : " << host << endl;
 
-    if(module_id_table.find(_bmc_id) == module_id_table.end()) // 없으면 등록
-    {
-        module_id_table.insert({_bmc_id, host});
-        save_module_id();
-        log(error) << "bmc id 등록했음";
-    }
-    else
-    {
-        cout << _bmc_id << " 는 이미 있어서 add에서 등록안함" << endl;
-    }
-
-    log(info) << "BMC_id : " << _bmc_id << " / Address : " << module_id_table[_bmc_id];
-
     string session_uri = ODATA_SESSION_ID;//"/redfish/v1/SessionService/Sessions";
     json::value jv;
     jv[U("UserName")] = json::value::string(U(_username));
@@ -100,6 +87,19 @@ void add_new_bmc(string _bmc_id, string _ip, string _port, bool _is_https, strin
         return ;
     }
     // cout << login_response.status_code() << endl;
+
+    if(module_id_table.find(_bmc_id) == module_id_table.end()) // 없으면 등록
+    {
+        module_id_table.insert({_bmc_id, host});
+        save_module_id();
+        log(error) << "bmc id 등록했음";
+    }
+    else
+    {
+        cout << _bmc_id << " 는 이미 있어서 add에서 등록안함" << endl;
+    }
+
+    log(info) << "BMC_id : " << _bmc_id << " / Address : " << module_id_table[_bmc_id];
 
     auth_token = login_response.headers()["X-Auth-Token"];
 
