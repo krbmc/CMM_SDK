@@ -96,7 +96,7 @@ bool isNumber(const string str);
 
 char *get_popen_string(char *command);
 string get_extracted_bmc_id_uri(string _uri);
-bool check_role_privileges(string _pre);
+bool check_role_privileges(string _pri);
 
 /**
  * @brief Function of record

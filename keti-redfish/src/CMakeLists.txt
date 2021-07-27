@@ -47,4 +47,5 @@ target_link_libraries(
     boost_log 
     boost_log_setup 
     boost_thread
+    stdc++fs
 )

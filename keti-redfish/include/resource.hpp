@@ -928,6 +928,14 @@ class LogEntry : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
+    void set_entry_type(string _val);
+    void set_severity(string _val);
+    void set_message(string _val);
+    void set_message_id(string _val);
+    void add_message_args(string _val);
+    void set_sensor_num(unsigned int _val);
+    void set_created(string _val);
+
 
 };
 
@@ -983,6 +991,8 @@ class LogService : public Resource
     json::value get_json(void);
     bool load_json(json::value &j);
     bool ClearLog();
+    // 로그 엔트리생성함수
+    void new_log_entry(string _entry_id);
 };
 
 /**
