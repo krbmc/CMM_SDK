@@ -74,7 +74,8 @@ void KETIhaNetService::RESTService(void *data)
     // Set SSL certification
     listen_config.set_ssl_context_callback([](boost::asio::ssl::context &_ctx) {
         _ctx.set_options(
-            boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 // Not use SSL2
+            boost::asio::ssl::context::default_workarounds 
+            | boost::asio::ssl::context::no_sslv2 // Not use SSL2
             | boost::asio::ssl::context::no_tlsv1                                                // NOT use TLS1
             | boost::asio::ssl::context::no_tlsv1_1                                              // NOT use TLS1.1
             | boost::asio::ssl::context::single_dh_use);
@@ -103,6 +104,7 @@ void KETIhaNetService::RESTService(void *data)
 
     // RESTful server start
     g_listener = unique_ptr<Handler>(new Handler(url, listen_config));
+
     g_listener->open().wait();
     log(info) << "CMM HA start";
     

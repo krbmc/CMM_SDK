@@ -1,13 +1,12 @@
 #pragma once
 #include "stdafx.hpp"
-
 #define SERVER_CERTIFICATE_CHAIN_PATH "/conf/ssl/rootca.crt"
 #define SERVER_PRIVATE_KEY_PATH "/conf/ssl/rootca.key"
 #define SERVER_TMP_DH_PATH "/conf/ssl/dh2048.pem"
 
 #define SERVER_REQUEST_TIMEOUT 10
 #define SERVER_ENTRY_POINT "https://0.0.0.0:644"
-
+#define SERVER_HTTP_PROTOCOL 443
 
 
 
@@ -38,4 +37,6 @@ private:
     void all_handle();
 };
 
+// wstring Utf8ToUnicode(const std::wstring & wstr_utf8);
+http_response All_request(string _uri, string _path,const web::http::method &mth,json::value _jv);
 json::value heart_request(string _uri, string _path, json::value _jv);

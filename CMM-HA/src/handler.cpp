@@ -1,6 +1,10 @@
 #include "handler.hpp"
 #include<fstream>
+#include "KETI_halmp.hpp"
+#include "KETIHA.hpp"
+#include "xml2json.hpp"
 unsigned int g_count = 0;
+
 
 /**
  * @brief Handler class constructor with method connection
@@ -12,11 +16,28 @@ Handler::Handler(utility::string_t _url, http_listener_config _config) : m_liste
     log(info) << "_url=" << _url;
 
     // Handler connection
-    this->m_listener.support(methods::GET, std::bind(&Handler::handle_get, this, std::placeholders::_1));
-    this->m_listener.support(methods::PUT, std::bind(&Handler::handle_put, this, std::placeholders::_1));
-    this->m_listener.support(methods::POST, std::bind(&Handler::handle_post, this, std::placeholders::_1));
-    this->m_listener.support(methods::DEL, std::bind(&Handler::handle_delete, this, std::placeholders::_1));
-    this->m_listener.support(methods::PATCH, std::bind(&Handler::handle_patch, this, std::placeholders::_1));
+    this->m_listener.support(std::bind(&Handler::handle_get, this, std::placeholders::_1));
+    //this->m_listener.support(methods::PUT, std::bind(&Handler::handle_put, this, std::placeholders::_1));
+    //this->m_listener.support(methods::POST, std::bind(&Handler::handle_post, this, std::placeholders::_1));
+    //this->m_listener.support(methods::DEL, std::bind(&Handler::handle_delete, this, std::placeholders::_1));
+    //this->m_listener.support(methods::PATCH, std::bind(&Handler::handle_patch, this, std::placeholders::_1));
+}
+json::value string2json(http_request &_request,json::value &obj)
+{
+    try{
+        string wstr_utf8 = _request.extract_string().get();
+        string converter =xml2json(wstr_utf8.c_str());
+        utility::stringstream_t s;
+        s<<converter;
+        obj=json::value::parse(s);
+
+        //cout <<obj.serialize().c_str()<<endl;
+    }
+    catch(...)
+    {
+        obj["Error"]=json::value::string("Not XML,JSON FORMAT");
+    }
+    return obj;
 }
 /**
  * @brief GET method request handler
@@ -26,28 +47,52 @@ Handler::Handler(utility::string_t _url, http_listener_config _config) : m_liste
  */
 void Handler::handle_get(http_request _request)
 {
-
+    auto ha = KETI_halmp::Instance();
+    string senduri="http://";
+json::value obj ;
+    if (ha->IsSwtich==KETIhaStatus::HA_STATUS_ACTIVE)
+        senduri+=ha->PeerPrimaryAddress+":"+to_string(80);
+    else if(ha->IsSwtich==KETIhaStatus::HA_STATUS_STANDBY)
+        senduri+=ha->PeerSecondaryAddress+":"+to_string(80);
+    else
+    {
+        log(info) << "Not response" ;
+        _request.reply(status_codes::BadRequest);
+    }
     log(info) << "Request method: GET";
     string uri = _request.request_uri().to_string();
     vector<string> uri_tokens = string_split(uri, '/');
     string filtered_uri = make_path(uri_tokens);
     string servicepath;
-    json::value j = _request.extract_json().get();
-
-    log(info) << "Reqeust URL : " << filtered_uri;
-    log(info) << "Request Body : " << _request.to_string();
-
     try
     {
-        _request.reply(status_codes::OK);
+        json::value j = _request.extract_json().get();
+    }
+    catch (...)
+    {
+        log(info) << "NOT JSON : ";
+        
+        string2json(_request,obj);
+// printf("root 노드 이름: %s\n", root->name()); 
+        
+        // std::cout << wstr_utf8 << std::endl;
+
+    }
+    log(info) << "Reqeust URL : " << filtered_uri;
+    log(info) << "send URL : " << senduri;
+    log(info) << "Request Body : " << _request.to_string();
+    http_response response;
+    response=All_request(senduri,filtered_uri,_request.method(),obj);
+    json::value response_json = response.extract_json().get();
+    try
+    {
+        _request.reply(response.status_code(),response_json);
     }
     catch (json::json_exception &e)
     {
         log(info) << "badRequest" << uri_tokens[0];
         _request.reply(status_codes::BadRequest);
     }
-    g_count++;
-    log(info) << g_count;
 }
 
 /**
@@ -127,11 +172,25 @@ void Handler::handle_post(http_request _request)
 
     _request.reply(status_codes::BadRequest);
 }
+/**
+ * @brief All request command 
+ * @param _uri sending uri
+ * @param _path sending path
+ * @param _jv sending json format data
+ * @param mth http protocal method GET PUT DELETE POST only GET method don't have _jv
+ * 
+ */
+http_response All_request(string _uri, string _path,const web::http::method &mth,json::value _jv)
+{
+
+    http_client client(_uri);
+    pplx::task<http_response> responseTask;
+    responseTask = client.request(mth, _path,_jv.serialize(), U("application/json"));
+    http_response response = responseTask.get();
+    return response;
+}
 json::value heart_request(string _uri, string _path, json::value _jv)
 {
-    cout << "<< POST >>" << endl;
-    cout << "path : " << _path << endl;
-    cout << "uri : " << _uri << endl;
     // 파라미터로 json::value를 그대로 받으면 그냥 쓰면 되고
     // 그 안에 내용물을 받았으면 이렇게 만들어주어야함
     http_client client(_path);

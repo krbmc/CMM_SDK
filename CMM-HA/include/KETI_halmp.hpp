@@ -9,6 +9,8 @@
 #include"KETIHA.hpp"
 #include"KETIHA_Sync.hpp"
 #include"KETI_Switch.hpp"
+#include<string>
+
 using namespace std;
 using namespace KETIHA_NSP;
 /**
@@ -36,6 +38,11 @@ private:
 
 
 public:
+    string PeerPrimaryAddress;
+    string PeerSecondaryAddress;
+    int PeerPort;
+    int SecondPort;
+    KETIhaStatus IsSwtich;
 	static KETI_halmp* Instance();
     KETI_halmp();
 	~KETI_halmp();
@@ -49,7 +56,7 @@ public:
         std::chrono::milliseconds SwitchTimeout,
         bool Debug = false) override;
 
-    KETIhaStatus IsSwtich;
+    
     KETIhaError Release() override;
     void UnRegisterCallback() override;
     void RegisterCallback(std::shared_ptr<KETICallbackIf> Callback) override;
