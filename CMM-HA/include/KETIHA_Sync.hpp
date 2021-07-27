@@ -7,7 +7,8 @@
 #include "KETI_Switch.hpp"
 using namespace std;
 using namespace KETIHA_NSP;
-
+static string id="root";
+static string passwd="ketilinux";
 struct Sync_Heartbit{
 	std::chrono::seconds Heartbeat;
 	std::chrono::milliseconds NetworkTimeout;
@@ -39,16 +40,17 @@ public:
 	
 	void Thread_Origin_Heart();
 	void Thread_Sub_Heart();
-	KETIhaError SyncData(const string& Data);
+	KETIhaError SyncData(const KETIhaStatus sw=KETIhaStatus::HA_STATUS_PENDING);
 
 private:
 	void SyncHeartbeat(Sync_Heartbit *data);
+	void Thread_File_Sync();
 	future<void> m_Future;
 	condition_variable m_Cond;
 	atomic<bool> m_Quit;
 	bool IsActive;
 	mutex m_Lock;
-	thread *t_SyncHeartbeat[3];
+	thread *t_SyncHeartbeat[4];
 	int max_count;
 	int cur_count;
 	KETIhaStatus *IsSwitch;

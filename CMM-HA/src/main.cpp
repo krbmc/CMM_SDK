@@ -12,12 +12,14 @@ int main(void)
 {
     
     auto ha = GetKetihaIf();
-    auto rc = ha->Initialize("10.0.6.107", "10.0.6.107", 808, 80,chrono::milliseconds(50), chrono::seconds(5), chrono::seconds(10), false);
+    auto rc = ha->Initialize("10.0.6.107", "10.0.6.106", 80, 80,chrono::milliseconds(50), chrono::seconds(5), chrono::seconds(10), false);
     // for (int i = 0; i < 3; i++)
     // {
     //     this_thread::sleep_for(chrono::seconds(1));
     // }
     //ha->Switch();
+    
+    //mainserver();
     while(true)
      pause();
     return 0;

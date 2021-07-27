@@ -96,7 +96,7 @@ chrono::system_clock::time_point KETI_halmp::PeerLiveTime()
  * @param NetworkTimeout 
  * @param Heartbeat 
  * @param SwitchTimeout 
- * @param Debug true일경우 debug 수행하게 함 warning 아하만 출력함
+ * @param Debug true일경우 debug 수행하게 함 warning 아하만 출력함 trace >debug > info >warning> error>fatal
  * @return KETIhaError 
  */
 KETIhaError KETI_halmp::Initialize(
@@ -109,6 +109,11 @@ KETIhaError KETI_halmp::Initialize(
         std::chrono::milliseconds SwitchTimeout,
         bool Debug)
 {
+    this->PeerPrimaryAddress=PeerPrimaryAddress;
+    this->PeerSecondaryAddress=PeerSecondaryAddress;
+    this->PeerPort=PeerPort;
+    this->SecondPort=SecondPort;
+
     if (Debug)
     {
         cout<<"Debug flag Setting"<<endl;

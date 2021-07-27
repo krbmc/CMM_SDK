@@ -14,7 +14,6 @@ class KETIhaNetService
 public:
     KETIhaNetService();
     ~KETIhaNetService();
-
     KETIhaError Start(int Port, int TimeOut);
     KETIhaError Stop();
     void RESTService(void *data);

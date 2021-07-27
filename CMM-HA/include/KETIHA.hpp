@@ -6,13 +6,14 @@
 #include<list>
 #define ENTRY_PORT 808
 using namespace std;
-
+// unique_ptr<int> a = unique_ptr<int>(new int(3));
 namespace KETIHA_NSP
 {
     enum KETIhaError : unsigned short
     {
         HA_ERROR_OK = 0,  
         HA_ERROR_FAIL,     
+        
     };
 
     enum KETIhaStatus : unsigned short

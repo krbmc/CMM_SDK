@@ -1226,6 +1226,7 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
     // json::value response_json;
     // http_response response;
 
+// adf
     if(uri_part == ODATA_ACCOUNT_SERVICE_ID)
     {
         // /redfish/v1/AccountService 처리

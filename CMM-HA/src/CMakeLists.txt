@@ -21,8 +21,8 @@ set(
 
 
 # Directory setting
-set(Boost_INCLUDE_DIR ${ROOT_DIR}/output/build/boost-1.74.0)
-set(Boost_LIBRARY_DIR ${ROOT_DIR}/CMM_SDK/output/build/boost-1.74.0/stage/lib)
+#set(Boost_INCLUDE_DIR ${ROOT_DIR}/output/build/boost-1.74.0)
+#set(Boost_LIBRARY_DIR ${ROOT_DIR}/CMM_SDK/output/build/boost-1.74.0/stage/lib)
 
 # Linkinking
 ## Header
@@ -49,4 +49,5 @@ target_link_libraries(
     boost_log_setup
 	boost_system
     boost_thread
+    ${PROJECT_SOURCE_DIR}/xml2json/libxml2json.a
 )
