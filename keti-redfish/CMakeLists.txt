@@ -11,8 +11,7 @@ project(
 )
 
 # Directory setting
-# set(ROOT_DIR /home/keti/CMM_SDK)
-set(ROOT_DIR /root/CMM_SDK)
+set(ROOT_DIR /home/keti/CMM_SDK)
 set(PROJECT_SOURCE_DIR ${ROOT_DIR}/source/keti-redfish)
 set(Buildroot_INCLUDE_DIR ${ROOT_DIR}/output/host/usr/arm-buildroot-linux-uclibcgnueabihf/sysroot/usr/include)
 set(Buildroot_LIBRARY_DIR ${ROOT_DIR}/output/host/usr/arm-buildroot-linux-uclibcgnueabihf/sysroot/lib)
@@ -23,8 +22,6 @@ set(CMAKE_SYSTEM_PROCESSOR arm)
 set(CROSS_COMPILE ${ROOT_DIR}/output/host/usr/bin/arm-linux-)
 set(GCC ${CROSS_COMPILE}gcc)
 set(GPP ${CROSS_COMPILE}g++)
-#set (GCC gcc)
-#set (GPP g++)
 set(CMAKE_C_COMPILER ${GCC})
 set(CMAKE_CXX_COMPILER ${GPP})
 set(CMAKE_CXX_FLAGS "-O1 -Wall -Wfatal-errors -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11") 

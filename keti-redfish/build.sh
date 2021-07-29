@@ -7,6 +7,9 @@ path=/root
 file=keti-redfish
 # file=keti-redfish1024
 
+ssh-keygen -f "/root/.ssh/known_hosts" -R "$ip"
+ssh-keyscan -t rsa $ip >>~/.ssh/known_hosts
+
 cmake CMakeLists.txt
 make
 mv src/keti-redfish .

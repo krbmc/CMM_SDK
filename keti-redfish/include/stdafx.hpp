@@ -35,6 +35,15 @@
 #include <limits.h> // @@@@
 #include <set> // @@@@
 
+#define DEFAULT_SNMP_PORT 161
+#define DEFAULT_IPMI_PORT 623
+#define DEFAULT_NTP_PORT 123
+#define DEFAULT_KVMIP_PORT 5288
+#define DEFAULT_HTTPS_PORT 443
+#define DEFAULT_HTTP_PORT 80
+#define DEFAULT_VIRTUAL_MEDIA_PORT 3900
+#define DEFAULT_SSH_PORT 22
+
 using namespace web::http::client; // @@@@
 using namespace std;
 using namespace web;
@@ -95,6 +104,7 @@ bool isNumber(const string str);
 
 
 char *get_popen_string(char *command);
+string get_popen_string(string command);
 string get_extracted_bmc_id_uri(string _uri);
 bool check_role_privileges(string _pri);
 
@@ -108,7 +118,6 @@ bool record_load_json(void);
 bool record_save_json(void);
 void record_print(void);
 void record_init_load(string _path); // @@@@@
-
 
 /**
  * @brief Function of module_id

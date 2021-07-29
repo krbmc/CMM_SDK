@@ -448,7 +448,41 @@ void init_manager(Collection *manager_collection, string _id)
      */
 
     manager->network = new NetworkProtocol(odata_id + "/NetworkProtocol", "NetworkProtocol");
+    /**
+     * @todo 여기에 network 일반멤버변수값 넣어주기
+     */
+    manager->network->hostname = get_popen_string("cat /etc/hostname");
+    manager->network->description = "Manager Network Service";
+    manager->network->fqdn = get_popen_string("hostname -f");
     
+    manager->network->snmp_enabled = false;
+    manager->network->snmp_port = DEFAULT_SNMP_PORT;
+    
+    // cmm doesn't use ipmi 
+    manager->network->ipmi_enabled = false;
+    manager->network->ipmi_port = DEFAULT_IPMI_PORT;
+    
+    manager->network->ntp_enabled = false;
+    manager->network->ntp_port = DEFAULT_NTP_PORT;
+    // manager->network->v_netservers;
+    
+    manager->network->kvmip_enabled = true;
+    manager->network->kvmip_port = DEFAULT_KVMIP_PORT;
+    
+    manager->network->https_enabled = true;
+    manager->network->https_port = DEFAULT_HTTPS_PORT;
+    
+    manager->network->http_enabled = true;
+    manager->network->http_port = DEFAULT_HTTP_PORT;
+    
+    manager->network->virtual_media_enabled = true;
+    manager->network->virtual_media_port = DEFAULT_VIRTUAL_MEDIA_PORT;
+    
+    manager->network->ssh_enabled = true;
+    manager->network->ssh_port = DEFAULT_SSH_PORT;
+    
+    manager->network->status.state = STATUS_STATE_ENABLED;
+    manager->network->status.health = STATUS_HEALTH_OK;
     
     if (!record_is_exist(odata_id + "/EthernetInterfaces")){
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
@@ -2773,7 +2807,7 @@ json::value NetworkProtocol::get_json(void)
     if (j.is_null())
         return j;
     
-    json::value snmp,ipmi,ntp,kvmip,https,http;
+    json::value snmp,ipmi,ntp,kvmip,https,http,virtual_media,ssh;
     j[U("FQDN")] = json::value::string(U(this->fqdn));
     j[U("Id")] = json::value::string(U(this->id));
     j[U("HostName")] = json::value::string(U(this->hostname));
@@ -2791,6 +2825,14 @@ json::value NetworkProtocol::get_json(void)
     ipmi[U("ProtocolEnabled")] = json::value::boolean(this->ipmi_enabled);
     ipmi[U("Port")] = json::value::number(U(this->ipmi_port));
     j[U("IPMI")]=ipmi;
+
+    virtual_media[U("ProtocolEnabled")] = json::value::boolean(this->virtual_media_enabled);
+    virtual_media[U("Port")] = json::value::number(U(this->virtual_media_port));
+    j[U("VirtualMedia")]=virtual_media;
+
+    ssh[U("ProtocolEnabled")] = json::value::boolean(this->ssh_enabled);
+    ssh[U("Port")] = json::value::number(U(this->ssh_port));
+    j[U("SSH")]=ssh;
 
     kvmip[U("ProtocolEnabled")] = json::value::boolean(this->kvmip_enabled);
     kvmip[U("Port")] = json::value::number(U(this->kvmip_port));
