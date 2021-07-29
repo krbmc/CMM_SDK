@@ -1432,47 +1432,30 @@ class NetworkProtocol : public Resource
     bool kvmip_enabled;
     bool https_enabled;
     bool http_enabled;
+    bool virtual_media_enabled;
+    bool ssh_enabled;
     int snmp_port;
     int ipmi_port;
     int ntp_port;
     int kvmip_port;
     int https_port;
     int http_port;
+    int virtual_media_port;
+    int ssh_port;
+
+    //telnet, ssdp
+    
     vector<string> v_netservers;
 
     Status status;
 
     NetworkProtocol(const string _odata_id) : Resource(NETWORK_PROTOCOL_TYPE, _odata_id, ODATA_NETWORK_PROTOCOL_TYPE)
     {
-        // this->id = "";
-        // this->fqdn = "web483-bmc.dmtf.org";
-        // this->description = "Manager Network Service";
-        // this->hostname = "web483-bmc";
-
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
-        // this->http_enabled = true;
-        // this->http_port = 80;
-        // this->https_enabled = true;
-        // this->https_port = 443;
-
-        // this->ipmi_enabled = true;
-        // this->ipmi_port = 623;
-        // this->snmp_enabled = true;
-        // this->snmp_port = 161;
-
-        // this->kvmip_enabled = true;
-        // this->kvmip_port = 5288;
-        // this->ntp_enabled = true;
-        // this->ntp_port = 77;
-
         g_record[_odata_id] = this;
     }
     NetworkProtocol(const string _odata_id, const string _network_id) : NetworkProtocol(_odata_id)
     {
         this->id = _network_id;
-
     };
     ~NetworkProtocol()
     {
