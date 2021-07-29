@@ -1444,7 +1444,7 @@ class NetworkProtocol : public Resource
     int ssh_port;
 
     //telnet, ssdp
-    
+
     vector<string> v_netservers;
 
     Status status;
@@ -1455,7 +1455,9 @@ class NetworkProtocol : public Resource
     }
     NetworkProtocol(const string _odata_id, const string _network_id) : NetworkProtocol(_odata_id)
     {
-        this->id = _network_id;
+        this->id = "NIC";
+        if (_network_id != "0")
+            this->id += _network_id;
     };
     ~NetworkProtocol()
     {
@@ -1480,6 +1482,8 @@ public:
     unsigned int mtu_size;
     string hostname;
     string fqdn;
+    string ipv6_default_gateway;
+
     vector<string> name_servers;
     DHCP_v4 dhcp_v4;
     DHCP_v6 dhcp_v6;
@@ -1487,92 +1491,10 @@ public:
     vector<IPv6_Address> v_ipv6;
     Vlan vlan;
 
-    string ipv6_default_gateway;
-
     Status status;
-    // string address;
-    // string subnetMask;
-    // string gateway;
-    // string addressOrigin;
     
-
-    // string addressv6;
-    // string prefixLength;
-    // string addressOriginv6;
-    // string gatewayv6;
-    // int vlanid;
-    // bool vlan_enable;
-    
-    
-    int index;
-    
-    // vector<string> v_netservers;
-
     EthernetInterfaces(const string _odata_id) : Resource(ETHERNET_INTERFACE_TYPE, _odata_id, ODATA_ETHERNET_INTERFACE_TYPE)
-    {
-        // this->id = "";
-        // this->description = "Manager NIC 1";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // this->link_status = "LinkUp";
-        // this->permanent_mac_address = "12:44:6A:3B:04:11";
-        // this->mac_address = "12:44:6A:3B:04:11";
-        // this->speed_Mbps = 1000;
-        // this->autoneg = true;
-        // this->full_duplex = true;
-        // this->mtu_size = 1500;
-        // this->hostname = "web483";
-        // this->fqdn = "web483.contoso.com";
-        // this->name_servers.push_back("names.contoso.com");
-
-        // IPv4_Address add4;
-        // add4.address = "192.168.0.10";
-        // add4.subnet_mask = "255.255.252.0";
-        // add4.address_origin = "DHCP";
-        // add4.gateway = "192.168.0.1";
-        // this->v_ipv4.push_back(add4);
-
-        // IPv6_Address add6;
-        // add6.address = "fe80::1ec1:deff:fe6f:1e24";
-        // add6.address_origin = "SLAAC";
-        // add6.address_state = "Preferred";
-        // add6.prefix_length = 64;
-        // this->v_ipv6.push_back(add6);
-
-        // this->dhcp_v4.dhcp_enabled = true;
-        // this->dhcp_v4.use_dns_servers = true;
-        // this->dhcp_v4.use_ntp_servers = false;
-        // this->dhcp_v4.use_gateway = true;
-        // this->dhcp_v4.use_static_routes = true;
-        // this->dhcp_v4.use_domain_name = true;
-
-        // this->dhcp_v6.operating_mode = "Stateful";
-        // this->dhcp_v6.use_dns_servers = true;
-        // this->dhcp_v6.use_ntp_servers = false;
-        // this->dhcp_v6.use_domain_name = false;
-        // this->dhcp_v6.use_rapid_commit = false;
-
-        // this->vlan.vlan_enable = true;
-        // this->vlan.vlan_id = 101;
-
-
-        // 기존
-        // this->macaddress = "";
-        // this->description = "";
-        // this->mtusize = "";
-        // this->hostname = "";
-        // this->address = "";
-        // this->subnetMask = "";
-        // this->gateway = "";
-        // this->addressOrigin = "";
-        // this->linkstatus = "";
-
-        // this->addressv6 = "";
-        // this->prefixLength = "";
-        // this->addressOriginv6 = "";
-        // this->gatewayv6 = "";
-        
-
+    { 
         g_record[_odata_id] = this;
     }
     EthernetInterfaces(const string _odata_id, const string _ether_id) : EthernetInterfaces(_odata_id)

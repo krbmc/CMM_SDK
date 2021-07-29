@@ -109,11 +109,12 @@ void init_system(Collection *system_collection, string _id)
         system->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         system->ethernet->name = "Computer System Ethernet Interface Collection";
     
-        // init_ethernet(system->ethernet, "0");
-        for(uint8_t i = 0; i<4; i++){
+        int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        for (int i = 0; i < eth_num; i++){
             init_ethernet(system->ethernet, to_string(i));
         }
     }
+
     if (!record_is_exist(odata_id + "/LogServices")){
         system->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
         system->log_service->name = "Computer System Log Service Collection";
@@ -165,13 +166,77 @@ void init_memory(Collection *memory_collection, string _id)
 
 void init_ethernet(Collection *ethernet_collection, string _id)
 {
-    string odata_id = ethernet_collection->odata.id + "/" + _id;
+    string odata_id = ethernet_collection->odata.id + "/NIC";
+    if (_id != "0")
+        odata_id += _id;
 
     EthernetInterfaces *ethernet = new EthernetInterfaces(odata_id, _id);
     /**
      * @todo 여기에 ethernet 일반멤버변수값 넣어주기
      */
+    string eth_id = "eth" + _id;
+    ethernet->description = "Manager Ethernet Interface";
+    ethernet->link_status = "LinkDown";
+    if (get_popen_string("cat /sys/class/net/" + eth_id + "/operstate") == "up")
+        ethernet->link_status = "LinkUp";
 
+    ethernet->permanent_mac_address = get_popen_string("cat /sys/class/net/" + eth_id + "/address");
+    ethernet->mac_address = ethernet->permanent_mac_address;
+    ethernet->speed_Mbps = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/speed"));
+    ethernet->autoneg = true; // it can be set false. but not recommended. it sets speed and duplex automatically
+    ethernet->full_duplex = false;
+    if (get_popen_string("cat /sys/class/net/" + eth_id + "/duplex") == "full")
+        ethernet->full_duplex = true;
+    ethernet->mtu_size = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/mtu"));
+    ethernet->hostname = get_popen_string("cat /etc/hostname");
+    ethernet->fqdn = get_popen_string("hostname -f");
+    ethernet->name_servers = string_split(get_popen_string("cat /etc/resolv.conf"), ' ');
+    ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
+    
+    if (fs::exists(DHCPV4_CONF)){
+        log(warning) << "NOT IMPLEMENTED : read dhcpv4 conf";
+    }
+    if (fs::exists(DHCPV6_CONF)){
+        log(warning) << "NOT IMPLEMENTED : read dhcpv6 conf";
+    }
+
+    if (ethernet->link_status == "LinkUp"){
+        int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth0 | wc -l"));
+        
+        for (int i = 0; i < ipv4_num; i++){
+            string ipv4_alias = eth_id;
+            if (i != 0)
+                ipv4_alias += ":" + i;
+    
+            IPv4_Address ipv4;
+            ipv4.address = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "inet addr");
+            ipv4.address_origin = get_value_from_cmd_str("cat /etc/network/interfaces | grep \"iface " + ipv4_alias + "\"", "inet");
+            ipv4.subnet_mask = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "Mask");
+            ipv4.gateway = string_split(get_popen_string("ip r | grep default"), ' ')[2];
+            ethernet->v_ipv4.push_back(ipv4);
+    
+            IPv6_Address ipv6;
+            string ipv6_temp = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet6 addr\"", "inet6 addr");
+            ipv6.address = string_split(ipv6_temp, '/')[0];
+            log(info) << ipv6_temp;
+            ipv6.prefix_length = stoi(string_split(ipv6_temp, '/')[1]);
+            // ipv6.address_origin = 
+            // ipv6.address_state
+            ethernet->v_ipv6.push_back(ipv6);
+        }
+
+        if (fs::exists(VLAN_CONF)){
+            if (stoi(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id +" | wc -l"))){
+                Vlan v;
+                v.vlan_enable = true;
+                v.vlan_id = stoi(string_split(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id), '|')[1]);
+            }   
+        }
+    }
+    
+    ethernet->status.state = STATUS_STATE_ENABLED;
+    ethernet->status.health = STATUS_HEALTH_OK;
+    
     ethernet_collection->add_member(ethernet);
     return;
 }
@@ -488,9 +553,11 @@ void init_manager(Collection *manager_collection, string _id)
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         manager->ethernet->name = "Manager Ethernet Interface Collection";
 
-        for(uint8_t i = 0; i<4; i++){
+        int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        for (int i = 0; i < eth_num; i++){
             init_ethernet(manager->ethernet, to_string(i));
         }
+    
     }
 
     if (!record_is_exist(odata_id + "/LogServices")){

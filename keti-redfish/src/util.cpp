@@ -377,3 +377,16 @@ void remove_if_exists(fs::path file)
     }
     return;
 }
+
+/**
+ * @brief read value(string) with key from string that cmd returns
+ * @author dyk
+ */
+string get_value_from_cmd_str(string cmd_str, string key)
+{
+    log(info) << "cmd_str : " << cmd_str;
+    string cmd_ret = get_popen_string(cmd_str);
+    string ret = cmd_ret.substr(cmd_ret.rfind(key) + key.size());
+    ret.erase(0,ret.find_first_not_of(" :\n\t"));
+    return string_split(ret, ' ')[0];
+}   
