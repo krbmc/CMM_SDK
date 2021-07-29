@@ -35,6 +35,7 @@
 #include <limits.h> // @@@@
 #include <set> // @@@@
 
+// default port define
 #define DEFAULT_SNMP_PORT 161
 #define DEFAULT_IPMI_PORT 623
 #define DEFAULT_NTP_PORT 123
@@ -44,6 +45,11 @@
 #define DEFAULT_VIRTUAL_MEDIA_PORT 3900
 #define DEFAULT_SSH_PORT 22
 
+// default conf file path define
+#define DHCPV4_CONF "/etc/dhcp/dhcpd.conf"
+#define DHCPV6_CONF "/etc/dhcp/dhcpd6.conf"
+#define DNS_CONF "/etc/resolv.conf"
+#define VLAN_CONF "/proc/net/vlan/config"
 using namespace web::http::client; // @@@@
 using namespace std;
 using namespace web;
@@ -102,11 +108,11 @@ string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
 
-
 char *get_popen_string(char *command);
 string get_popen_string(string command);
 string get_extracted_bmc_id_uri(string _uri);
 bool check_role_privileges(string _pri);
+string get_value_from_cmd_str(string cmd_str, string key);
 
 /**
  * @brief Function of record
