@@ -12,8 +12,8 @@ bool init_resource(void)
 {
     // load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
     // 등록해버리고 table.json까지 수정해버림
-    // record_load_json();
-    // log(info) << "record load json complete";
+    record_load_json();
+    log(info) << "record load json complete";
 
     
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
@@ -126,6 +126,12 @@ void init_system(Collection *system_collection, string _id)
         system->simple_storage->name = "Computer System Simple Storage Collection";
     
         init_simple_storage(system->simple_storage, "0");
+    }
+    if (!record_is_exist(odata_id + "/VirtualMedia")){
+        system->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        system->virtual_media->name = "VirtualMediaCollection";
+
+        insert_virtual_media(system->virtual_media, "EXT1_test");    // temp
     }
     if (!record_is_exist(odata_id + "/Bios")){
         system->bios = new Bios(odata_id + "/Bios", "Bios");
@@ -305,6 +311,33 @@ void init_bios(Bios *bios)
     bios->attribute.proc_turbo_mode = "Enabled";
     bios->attribute.usb_control = "UsbEnabled";
 
+    return;
+}
+
+void insert_virtual_media(Collection *virtual_media_collection, string _id)
+{
+    string odata_id = virtual_media_collection->odata.id + "/" + _id;
+    VirtualMedia *virtual_media;
+
+    if (!record_is_exist(odata_id))
+        virtual_media = new VirtualMedia(odata_id);
+    
+    /**
+     * @todo 여기에 virtual_media 일반멤버변수값 넣어주기
+     */
+    virtual_media->id = _id;
+    virtual_media->name = "VirtualMedia";
+    virtual_media->image = "http://192.168.1.2/Core-current.iso";
+    virtual_media->image_name = "Core-current.iso";
+    virtual_media->media_type.push_back("CD");
+    virtual_media->media_type.push_back("DVD");
+    virtual_media->connected_via = "URI";
+    virtual_media->inserted = true;
+    virtual_media->write_protected = true;
+    virtual_media->user_name = "test";
+    virtual_media->passwword = "password";
+    
+    virtual_media_collection->add_member(virtual_media);
     return;
 }
 
@@ -566,6 +599,7 @@ void init_manager(Collection *manager_collection, string _id)
 
         init_log_service(manager->log_service, "Log1");
     }
+
     manager_collection->add_member(manager);
     return;
 }
@@ -3152,6 +3186,7 @@ json::value Systems::get_json(void)
     j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
     j["SimpleStorage"] = get_resource_odata_id_json(this->simple_storage, this->odata.id);
     j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
+    j["VirtualMedia"] = get_resource_odata_id_json(this->virtual_media, this->odata.id);
 
     j["Actions"] = get_action_info(this->actions);
     
@@ -4137,22 +4172,53 @@ void update_cert_with_pem(fs::path cert, Certificate *certificate)
 }
 // dy : certificate end
 
-
-// // 틀틀틀 복붙
-// json::value ProcessorSummary::get_json(void)
-// {
-//     auto j = this->Resource::get_json();
-    // if (j.is_null())
-    //     return j;
+// dy : virtual media start
+json::value VirtualMedia::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
     
-//     j[U("Id")] = json::value::string(U(this->id));
+    j["ConnectedVia"] = json::value::string(this->connected_via);
+    j["Id"] = json::value::string(this->id);
+    j["Image"] = json::value::string(this->image);
+    j["ImageName"] = json::value::string(this->image_name);
+    j["UserName"] = json::value::string(this->user_name);
+    j["Password"] = json::value::string(this->passwword);
+    j["Inserted"] = json::value::boolean(this->inserted);
+    j["WriteProtected"] = json::value::boolean(this->write_protected);
+    j["MediaTypes"] = json::value::array();
+    for(int i = 0; i < this->media_type.size(); i++)
+        j["MediaTypes"][i] = json::value::string(this->media_type[i]);
 
+    return j;
+}
 
-//     return j;
-// }
+bool VirtualMedia::load_json(json::value &j)
+{
+    json::value media_type;
+    try {
+        Resource::load_json(j);
+        get_value_from_json_key(j, "ConnectedVia", this->connected_via);
+        get_value_from_json_key(j, "Id", this->id);
+        get_value_from_json_key(j, "Image", this->image);
+        get_value_from_json_key(j, "ImageName", this->image_name);
+        get_value_from_json_key(j, "UserName", this->user_name);
+        get_value_from_json_key(j, "Password", this->passwword);
+        get_value_from_json_key(j, "Inserted", this->inserted);
+        get_value_from_json_key(j, "WriteProtected", this->write_protected);
+        get_value_from_json_key(j, "MediaTypes", media_type);
+        for (auto types : media_type.as_array())
+            this->media_type.push_back(types.as_string());
+    }
+    catch (json::json_exception &e)
+    {
+        return false;
+    }
 
-
-
+    return true;
+}
+// dy : virtual media end
 
 // ServiceRoot start
 json::value ServiceRoot::get_json(void)
