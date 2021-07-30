@@ -100,7 +100,7 @@
 #define ODATA_SOFTWARE_INVENTORY_TYPE "#SoftwareInventory." ODATA_TYPE_VERSION ".SoftwareInventory" // @@@@ 추가
 #define ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE "#SoftwareInventoryCollection.SoftwareInventoryCollection" // @@@@ 추가
 
-// doyoung
+// dy : certificate
 #define ODATA_CERTIFICATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/CertificateService"
 #define ODATA_CERTIFICATE_SERVICE_TYPE "#CertificateService." ODATA_TYPE_VERSION ".CertificateService" // @@@@ 도영 추가
 #define ODATA_CERTIFICATE_LOCATION_ID ODATA_CERTIFICATE_SERVICE_ID "/CertificateLocations" 
@@ -108,6 +108,10 @@
 #define ODATA_CERTIFICATE_COLLECTION_TYPE "#CertificateCollection.CertificateCollection" // @@@@ 도영 추가
 #define ODATA_CERTIFICATE_ID "/Certificates"
 #define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate" // @@@@ 도영 추가
+
+// dy : virtual media
+#define ODATA_VIRTUAL_MEDIA_TYPE "#VirtualMedia" ODATA_TYPE_VERSION ".VirtualMedia"
+#define ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE "#VirtualMediaCollection.VirtualMediaCollection"
 
 #define NO_DATA_TYPE 0
 
@@ -225,7 +229,8 @@ enum RESOURCE_TYPE
     DESTINATION_TYPE,
     CERTIFICATE_TYPE,
     CERTIFICATE_LOCATION_TYPE,
-    CERTIFICATE_SERVICE_TYPE
+    CERTIFICATE_SERVICE_TYPE,
+    VIRTUAL_MEDIA_TYPE
 };
 
 enum ACTION_NAME
@@ -1508,8 +1513,6 @@ public:
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
-
 };
 
 class Manager : public Resource
@@ -1529,7 +1532,7 @@ public:
 
     Collection *ethernet;
     Collection *log_service;
-    
+
     AccountService *remote_account_service; // BMC의 계정정보를 관리하는 AccountService
     NetworkProtocol *network;
     
@@ -2588,6 +2591,7 @@ class Systems : public Resource
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
     Collection *simple_storage;
+    Collection *virtual_media;
 
     unordered_map <string, Actions> actions;
 
@@ -2715,6 +2719,32 @@ public:
     pplx::task<void> led_blinking(uint8_t _led_index);
 };
 
+class VirtualMedia : public Resource
+{
+    public:
+    string id;
+    string image;
+    string image_name;
+    vector<string> media_type;
+    string connected_via;
+    bool inserted;
+    bool write_protected;
+    string user_name;
+    string passwword;
+
+    VirtualMedia(const string _odata_id) : Resource(VIRTUAL_MEDIA_TYPE, _odata_id, ODATA_VIRTUAL_MEDIA_TYPE)
+    {
+        g_record[_odata_id] = this;
+    }
+    ~VirtualMedia()
+    {
+        g_record.erase(this->odata.id);
+    };
+
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
+
 void init_system(Collection *system_collection, string _id);
 void init_processor(Collection *processor_collection, string _id);
 void init_memory(Collection *memory_collection, string _id);
@@ -2735,7 +2765,7 @@ void init_event_service(EventService *event_service);
 void init_event_destination(Collection *event_destination_collection, string _id);
 void init_account_service(AccountService *account_service);
 void init_session_service(SessionService *session_service);
-
+void insert_virtual_media(Collection *virtual_media_collection, string _id);
 /**
  * @brief Root of redfish
  *        This resource create only once

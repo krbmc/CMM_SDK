@@ -150,6 +150,9 @@ json::value record_get_json(const string _uri)
         case CERTIFICATE_SERVICE_TYPE:
             j = ((CertificateService *)g_record[_uri])->get_json();
             break;
+        case VIRTUAL_MEDIA_TYPE:
+            j = ((VirtualMedia *)g_record[_uri])->get_json();
+            break;
         default:
             break;
     }
@@ -541,6 +544,15 @@ bool record_load_json(void)
                 dependency_object.push_back(cert);
                 break;
             } 
+            case VIRTUAL_MEDIA_TYPE:{
+                string this_odata_id = it->second->odata.id;
+                gc.push_back(it->second);
+                VirtualMedia *vm = new VirtualMedia(this_odata_id);
+                if (!vm->load_json(j))
+                    log(warning) << "load Virtual Media failed";
+                dependency_object.push_back(vm);
+                break;
+            } 
             default:
                 log(warning) << "NOT IMPLEMETED IN LOAD JSON : " << it->second->odata.id;
                 gc.push_back(it->second);
@@ -732,7 +744,7 @@ void dependency_injection(Resource *res)
         case COLLECTION_TYPE:{
         /*  == Collection location == 
             service root collection : systems, chassis, manager, update
-            systems collection : network_interfaces, storage, processor, memory, ethernet, log_service, simple_storage
+            systems collection : network_interfaces, storage, processor, virtual_media, memory, ethernet, log_service, simple_storage
             chassis collection : sensors
             manager collection : ethernet_interfaces, log_service
             log_service collection : log_entry 
@@ -770,6 +782,8 @@ void dependency_injection(Resource *res)
                         ((Systems *)g_record[parent_object_id])->log_service = (Collection *)res;
                     }else if (res->odata.type == ODATA_SIMPLE_STORAGE_COLLECTION_TYPE){
                         ((Systems *)g_record[parent_object_id])->simple_storage = (Collection *)res;
+                    }else if (res->odata.type == ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE){
+                        ((Systems *)g_record[parent_object_id])->virtual_media = (Collection *)res;
                     }else{
                         log(warning) << "\t\t dy : what is this in system? : " << id << " type : " << res->odata.type;
                     }
@@ -876,6 +890,9 @@ void dependency_injection(Resource *res)
             break;
         case ETHERNET_INTERFACE_TYPE: // BMC Manager && Systems
             ((Collection *)g_record[parent_object_id])->add_member((EthernetInterfaces *)res);
+            break;
+        case VIRTUAL_MEDIA_TYPE: // BMC Manager && Systems
+            ((Collection *)g_record[parent_object_id])->add_member((VirtualMedia *)res);
             break;
         case SENSOR_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Sensor *)res);
@@ -1032,6 +1049,10 @@ void save_module_id(void)
 
 void load_module_id(void)
 {
+    if (!fs::exists("/conf/module/table.json")){
+        log(warning) << "module table doesn't exists.. cannot load";
+        return;
+    }
     ifstream module_file("/conf/module/table.json");
     stringstream string_stream;
 
