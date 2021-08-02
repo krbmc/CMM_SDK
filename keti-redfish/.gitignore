@@ -44,3 +44,5 @@ include/divisible/*
 
 # Local
 *.tar
+
+bin/
