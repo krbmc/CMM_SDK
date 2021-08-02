@@ -1,8 +1,10 @@
 #include "resource.hpp"
+#include "handler.hpp"
 
 extern unordered_map<string, Resource *> g_record;
 extern ServiceRoot *g_service_root;
 unordered_map<string, Event*> event_map;
+extern unique_ptr<Handler> g_listener, HA_listener;
 #define BMC_PORT "443"
 
 /**
@@ -1373,6 +1375,28 @@ void LogService::new_log_entry(string _entry_id)
     init_log_entry(this->entry, _entry_id);
 }
 
+void LogService::set_description(string _val){
+    this->description = _val;
+}
+void LogService::set_datetime(string _val){
+    this->datetime = _val;
+}
+void LogService::set_datetime_offset(string _val){
+    this->datetime_local_offset = _val;
+}
+void LogService::set_logentry_type(string _val){
+    this->log_entry_type = _val;
+}
+void LogService::set_overwrite_policy(string _val){
+    this->overwrite_policy = _val;
+}
+void LogService::set_service_enabled(bool _val){
+    this->service_enabled = _val;
+}
+void LogService::set_max_record(unsigned int _val){
+    this->max_number_of_records = _val;
+}
+
 json::value LogEntry::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -1625,14 +1649,17 @@ json::value EventService::SubmitTestEvent(json::value body)
     string egi;
 
     // #1 get json value
-    get_value_from_json_key(body, "EventGroupId", e.event_group_id);
+    if(!(get_value_from_json_key(body, "EventGroupId", e.event_group_id)))
+        return json::value::null();
     egi = to_string(e.event_group_id);
     get_value_from_json_key(body, "EventId", e.event_id);
     get_value_from_json_key(body, "EventTimestamp", e.event_timestamp);
     get_value_from_json_key(body, "Message", e.message);
     get_value_from_json_key(body, "MessageId", e.message_id);
     get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition);
-    get_value_from_json_key(body, "MessageArgs", args);
+    if(!(get_value_from_json_key(body, "MessageArgs", args)))
+        return json::value::null();
+
     for(auto arg : args.as_array())
         e.message_args.push_back(arg.as_string());
 
@@ -2554,6 +2581,17 @@ pplx::task<void> Chassis::led_blinking(uint8_t _led_index)
         }
     });
 }
+
+void Chassis::new_log_service(string _service_id)
+{
+    if(this->log_service == nullptr)
+    {
+        this->log_service = new Collection(this->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        this->log_service->name = "Log Service Collection";
+    }
+
+    init_log_service(this->log_service, _service_id);
+}
 // Chassis end
 
 // Manager start
@@ -2614,6 +2652,17 @@ bool Manager::load_json(json::value &j)
 
     return true;
 
+}
+
+void Manager::new_log_service(string _service_id)
+{
+    if(this->log_service == nullptr)
+    {
+        this->log_service = new Collection(this->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        this->log_service->name = "Log Service Collection";
+    }
+
+    init_log_service(this->log_service, _service_id);
 }
 
 json::value EthernetInterfaces::get_json(void)
@@ -3124,7 +3173,46 @@ bool Systems::Reset(json::value body)
         sprintf(cmds, "kill -s TERM %d && %s", pid, this_proc_name.c_str());
     }
     if (reset_type == "ForceRestart"){
-        sprintf(cmds, "kill -9 %d && %s", pid, this_proc_name.c_str());
+        int fork_pid;
+        fork_pid = fork();
+        if(fork_pid < 0)
+        {
+            fprintf(stderr, "Fork Fail");
+            return false;
+        }
+        else if(fork_pid == 0)
+        {
+            cout << "!child 0" << endl;
+            cout << "pid in child : " << pid << endl;
+            //child
+            sprintf(cmds, "kill -9 %d", pid);
+            sleep(3);
+            system(cmds);
+            cout << "!child 1" << endl;
+            // sleep(10);
+            // execl("/bin/ls", "ls", "-l", NULL);
+            execlp("./reboot", NULL);
+            // execlp(this_proc_name.c_str(), NULL);
+            // sprintf(cmds, "%s", this_proc_name.c_str());
+            cout << "!child 2" << endl;
+
+        }
+        else
+        {
+            cout << "!parent 0" << endl;
+            //parent
+            // sprintf(cmds, "kill -9 %d", pid);
+            // g_listener->close().wait();
+            return true;
+            cout << "!parent 1" << endl;
+            system(cmds);
+            // sprintf(cmds, "kill -9 %d && %s", pid, this_proc_name.c_str());
+            cout << "!parent 2" << endl;
+        }
+        // #1 부모는 자기꺼 kill하고 종료 자식은 sleep햇다가 ./keti-redfish실행방법 ->안됨
+        // #2 부모는 리턴해서 OK사인 reply 자식은 짧게슬립했다가 kill하고(부모) ./keti-redfish실행방법 -> 안됨
+        // 보니깐 부모자식 나눠져도 서버가 켜진상태로 나눠져서 부모프로세스 죽어도 자식이 남아있어서 다시
+        // keti-redfish실행했을 때 address already in use 뜨는거 같음
     }
     if (reset_type == "Nmi"){
         // /proc/sys/kernel/nmi_watchdog flag를 1로 체인지.. 현재 해당 파일 없음. buildroot 환경설정?
@@ -3133,9 +3221,21 @@ bool Systems::Reset(json::value body)
         // ?????????????????????????????????????????????????????????????????????????????????????????????????????
     }
 
+cout << "???" << endl;
     system(cmds);
 
     return true;
+}
+
+void Systems::new_log_service(string _service_id)
+{
+    if(this->log_service == nullptr)
+    {
+        this->log_service = new Collection(this->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        this->log_service->name = "Log Service Collection";
+    }
+
+    init_log_service(this->log_service, _service_id);
 }
 // System end
 
@@ -4192,4 +4292,39 @@ json::value get_action_info(unordered_map<string, Actions> act)
     }
     
     return actions;
+}
+
+void generate_logservice(string _res_odata, string _service_id)
+{
+    // _res_odata는 system, chassis, manager에 해당
+    uint8_t type = g_record[_res_odata]->type;
+
+    switch(type)
+    {
+        case SYSTEM_TYPE:{
+            Systems *sys = (Systems *)g_record[_res_odata];
+            sys->new_log_service(_service_id);
+            break;
+        }
+        case CHASSIS_TYPE:{
+            Chassis *cha = (Chassis *)g_record[_res_odata];
+            cha->new_log_service(_service_id);
+            break;
+        }
+        case MANAGER_TYPE:{
+            Manager *man = (Manager *)g_record[_res_odata];
+            man->new_log_service(_service_id);
+            break;
+        }
+        default:
+            log(error) << "wrong resource in generate logservice";
+            break;   
+    }
+}
+void generate_logentry(string _res_odata, string _entry_id)
+{
+    // _res_odata는 logservice에 해당
+    LogService *log = (LogService *)g_record[_res_odata];
+
+    log->new_log_entry(_entry_id);
 }

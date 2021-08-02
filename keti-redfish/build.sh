@@ -4,11 +4,13 @@ ip=10.0.6.107
 id=root
 password=ketilinux
 path=/root
+# file=reboot
 file=keti-redfish
 # file=keti-redfish1024
 
 cmake CMakeLists.txt
 make
+# mv src/reboot .
 mv src/keti-redfish .
 # mv src/keti-redfish1024 .
 

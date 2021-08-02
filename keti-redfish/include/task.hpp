@@ -94,6 +94,12 @@ Task_Manager* work_after_request_process(Task_Manager* _t, m_Request _msg);
 
 m_Request treat_uri_cmm_post(http_request _request, m_Request _msg, json::value _jv);
 m_Request do_actions(http_request _request, m_Request _msg, json::value _jv);
+m_Request act_bios(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
+m_Request act_certificate(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
+m_Request act_certificate_service(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
+m_Request act_system(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
+m_Request act_eventservice(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
+m_Request act_logservice(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
 m_Request make_account(http_request _request, m_Request _msg, json::value _jv);
 m_Request make_session(http_request _request, m_Request _msg, json::value _jv);
 m_Request make_logentry(http_request _request, m_Request _msg, json::value _jv);

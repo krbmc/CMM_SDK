@@ -2,12 +2,14 @@
 ## Execute file
 set(
     OUTPUT
+    # reboot
    keti-redfish
 #   keti-redfish1024
 )
 ## Source file
 set(
     SOURCE_FILES 
+    # reboot.cpp
     main.cpp 
     handler.cpp
     resource.cpp

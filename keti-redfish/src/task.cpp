@@ -1,7 +1,9 @@
 #include "task.hpp"
 #include "resource.hpp"
+#include "handler.hpp"
 
 extern unordered_map<uint8_t, Task_Manager *> task_map;
+extern unique_ptr<Handler> g_listener, HA_listener;
 
 
 /**
@@ -1002,6 +1004,17 @@ Task_Manager *category(vector<string> _token)
         else
             point = task_map.find(TASK_TYPE_UPDATESERVICE)->second;
     }
+    else if(val == ODATA_CERTIFICATE_SERVICE_ID)
+    {
+        if(task_map.find(TASK_TYPE_CERTIFICATESERVICE) == task_map.end())
+        {
+            point = new Task_Manager();
+            point->task_type = TASK_TYPE_CERTIFICATESERVICE;
+            task_map.insert(make_pair(TASK_TYPE_CERTIFICATESERVICE, point));
+        }
+        else
+            point = task_map.find(TASK_TYPE_CERTIFICATESERVICE)->second;
+    }
     else
         point = 0;
 
@@ -1281,6 +1294,7 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
             return _msg;
         }
         // 요기 else밑압축가능
+        
 
     }
     else if(uri_part == ODATA_MANAGER_ID)
@@ -1636,156 +1650,23 @@ m_Request do_actions(http_request _request, m_Request _msg, json::value _jv)
 
     if(action_by == "Bios")
     {
-        Bios *bios = (Bios *)g_record[resource_uri];
-        if(bios->actions.find(action_what) == bios->actions.end())
-        {
-            _msg = reply_error(_request, _msg, get_error_json("No Action in Bios"), status_codes::BadRequest);
-            return _msg;
-        }
-
-        if(action_what == "ResetBios")
-        {
-            if(!(bios->ResetBios()))
-            {
-                _msg = reply_error(_request, _msg, get_error_json("Problem occur in ResetBios()"), status_codes::BadRequest);
-                return _msg;
-            }
-
-            _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
-            return _msg;
-        }
-        else if(action_what == "ChangePassword")
-        {
-            // json으로 NewPassword, OldPassword, PasswordName 3개 필요
-        }
-
+        _msg = act_bios(_request, _msg, _jv, resource_uri, action_what);
+        return _msg;
     }
     else if(action_by == "Certificate")
     {
-        Certificate *certi = (Certificate *)g_record[resource_uri];
-        if(certi->actions.find(action_what) == certi->actions.end())
-        {
-            _msg = reply_error(_request, _msg, get_error_json("No Action in Certificate"), status_codes::BadRequest);
-            return _msg;
-        }
-
-        if(action_what == "ReKey")
-        {
-            json::value result;
-            result = certi->Rekey(_jv);
-            if(result == json::value::null())
-            {
-                // 리퀘스트바디오류
-                _msg = reply_error(_request, _msg, get_error_json("Request Body error in Certificate Rekey"), status_codes::BadRequest);
-                return _msg;
-            }
-            else
-            {
-                json::value check;
-                if(get_value_from_json_key(result, "Failed", check))
-                {
-                    _msg = reply_error(_request, _msg, result, status_codes::BadRequest);
-                    return _msg;
-                }
-                else if(get_value_from_json_key(result, "CertificateCollection", check))
-                {
-                    _msg = reply_success(_request, _msg, result, status_codes::OK);
-                    return _msg;
-                }
-            }
-            // rsp에 Failed가 있으면 실패
-            // rsp에 CertificatieCollection이 있으면 성공
-        }
-        else if(action_what == "ReNew")
-        {
-            json::value result;
-            result = certi->Renew();
-            if(result == json::value::null())
-            {
-                // 리퀘스트바디오류
-                _msg = reply_error(_request, _msg, get_error_json("No Files Error in Certificate ReNew"), status_codes::BadRequest);
-                return _msg;
-            }
-            else
-            {
-                json::value check;
-                if(get_value_from_json_key(result, "Failed", check))
-                {
-                    _msg = reply_error(_request, _msg, result, status_codes::BadRequest);
-                    return _msg;
-                }
-                else if(get_value_from_json_key(result, "CertificateCollection", check))
-                {
-                    _msg = reply_success(_request, _msg, result, status_codes::OK);
-                    return _msg;
-                }
-            }
-        }
+        _msg = act_certificate(_request, _msg, _jv, resource_uri, action_what);
+        return _msg;
     }
     else if(action_by == "CertificateService")
     {
-        CertificateService *cert_service = (CertificateService *)g_record[resource_uri];
-        if(cert_service->actions.find(action_what) == cert_service->actions.end())
-        {
-            _msg = reply_error(_request, _msg, get_error_json("No Action in Certificate Service"), status_codes::BadRequest);
-            return _msg;
-        }
-        
-        if(action_what == "GenerateCSR")
-        {
-            // json받아서 json으로 나옴
-            json::value result;
-            cert_service->GenerateCSR(_jv);
-            json::value check;
-            if(get_value_from_json_key(result, "Failed", check))
-            {
-                _msg = reply_error(_request, _msg, result, status_codes::BadRequest);
-                return _msg;
-            }
-            else if(get_value_from_json_key(result, "CertificateCollection", check))
-            {
-                _msg = reply_success(_request, _msg, result, status_codes::OK);
-                return _msg;
-            }
-            /// 함수수정해야겟다 reply_error(req, msg, string, status)에서
-            // string을 jv로 해서 jv받는걸로하고 스트링받아서 기본 jv만들어주는함수를 추가로 만들기
-            // reply_success(req, msg, uri(str), status)에서
-            // 기존 uri받아서 안에서 record_get_json(uri)하는데 이걸 jv로 넣고 기본것들은 인자로 넣어줄때
-            // record_get_json(uri)로 넘겨주는식으로
-
-        }
-        else if(action_what == "ReplaceCertificate")
-        {
-            if(!cert_service->ReplaceCertificate(_jv))
-            {
-                _msg = reply_error(_request, _msg, get_error_json("Problem occur in ReplaceCertificate()"), status_codes::BadRequest);
-                return _msg;
-            }
-
-            _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
-            return _msg;
-        }
-
-
+        _msg = act_certificate_service(_request, _msg, _jv, resource_uri, action_what);
+        return _msg;
     }
     else if(action_by == "ComputerSystem")
     {
-        Systems *system = (Systems *)g_record[resource_uri];
-        if(system->actions.find(action_what) == system->actions.end())
-        {
-            // action_what에 해당하는 액션정보가 없음 error
-            _msg = reply_error(_request, _msg, get_error_json("No Action in ComputerSystem"), status_codes::BadRequest);
-            return _msg;
-        }
-
-        if(!(system->Reset(_jv)))
-        {
-            _msg = reply_error(_request, _msg, get_error_json("Problem occur in Reset()"), status_codes::BadRequest);
-            return _msg;
-        }
-        _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
+        _msg = act_system(_request, _msg, _jv, resource_uri, action_what);
         return _msg;
-        
     }
     else if(action_by == "Chassis")
     {}
@@ -1793,35 +1674,13 @@ m_Request do_actions(http_request _request, m_Request _msg, json::value _jv)
     {}
     else if(action_by == "EventService")
     {
-        EventService *ev_service = (EventService *)g_record[resource_uri];
-        if(ev_service->actions.find(action_what) == ev_service->actions.end())
-        {
-            // action_what에 해당하는 액션정보가 없음 error
-            _msg = reply_error(_request, _msg, get_error_json("No Action in EventService"), status_codes::BadRequest);
-            return _msg;
-        }
-
-        
+        _msg = act_eventservice(_request, _msg, _jv, resource_uri, action_what);
+        return _msg; 
     }
     else if(action_by == "LogService")
     {
-        LogService *log_service = (LogService *)g_record[resource_uri];
-        if(log_service->actions.find(action_what) == log_service->actions.end())
-        {
-            // action_what에 해당하는 액션정보가 없음 error
-            _msg = reply_error(_request, _msg, get_error_json("No Action in LogService"), status_codes::BadRequest);
-            return _msg;
-        }
-        // cout << "BOOM!" << endl;
-        // 클리어로그밖에 없으니까 그냥 바로 실행
-        if(!(log_service->ClearLog()))
-        {
-            _msg = reply_error(_request, _msg, get_error_json("Problem occur in ClearLog()"), status_codes::BadRequest);
-            return _msg;
-        }
-
-        _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
-        return _msg;
+        _msg = act_logservice(_request, _msg, _jv, resource_uri, action_what);
+        return _msg; 
     }
     else if(action_by == "UpdateService")
     {}
@@ -1837,6 +1696,209 @@ m_Request do_actions(http_request _request, m_Request _msg, json::value _jv)
     // 찾으면 함수호출 ㅇㅋ
 
     _msg = reply_error(_request, _msg, get_error_json("오면안되는곳"), status_codes::BadRequest);
+    return _msg;
+}
+
+m_Request act_bios(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what)
+{
+    Bios *bios = (Bios *)g_record[_resource];
+    if(bios->actions.find(_what) == bios->actions.end())
+    {
+        _msg = reply_error(_request, _msg, get_error_json("No Action in Bios"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    if(_what == "ResetBios")
+    {
+        if(!(bios->ResetBios()))
+        {
+            _msg = reply_error(_request, _msg, get_error_json("Problem occur in ResetBios()"), status_codes::BadRequest);
+            return _msg;
+        }
+
+        _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
+        return _msg;
+    }
+    else if(_what == "ChangePassword")
+    {
+        // json으로 NewPassword, OldPassword, PasswordName 3개 필요
+    }
+
+    // Bios는 보드오면 할 수 있는듯
+
+}
+
+m_Request act_certificate(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what)
+{
+    Certificate *certi = (Certificate *)g_record[_resource];
+    if(certi->actions.find(_what) == certi->actions.end())
+    {
+        _msg = reply_error(_request, _msg, get_error_json("No Action in Certificate"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    if(_what == "ReKey")
+    {
+        json::value result;
+        result = certi->Rekey(_jv);
+        if(result == json::value::null())
+        {
+            // 리퀘스트바디오류
+            _msg = reply_error(_request, _msg, get_error_json("Request Body error in Certificate Rekey"), status_codes::BadRequest);
+            return _msg;
+        }
+        else
+        {
+            json::value check;
+            if(get_value_from_json_key(result, "Failed", check))
+            {
+                _msg = reply_error(_request, _msg, result, status_codes::BadRequest);
+                return _msg;
+            }
+            else if(get_value_from_json_key(result, "CertificateCollection", check))
+            {
+                _msg = reply_success(_request, _msg, result, status_codes::OK);
+                return _msg;
+            }
+        }
+        // rsp에 Failed가 있으면 실패
+        // rsp에 CertificatieCollection이 있으면 성공
+    }
+    else if(_what == "ReNew")
+    {
+        json::value result;
+        result = certi->Renew();
+        if(result == json::value::null())
+        {
+            // 리퀘스트바디오류
+            _msg = reply_error(_request, _msg, get_error_json("No Files Error in Certificate ReNew"), status_codes::BadRequest);
+            return _msg;
+        }
+        else
+        {
+            json::value check;
+            if(get_value_from_json_key(result, "Failed", check))
+            {
+                _msg = reply_error(_request, _msg, result, status_codes::BadRequest);
+                return _msg;
+            }
+            else if(get_value_from_json_key(result, "CertificateCollection", check))
+            {
+                _msg = reply_success(_request, _msg, result, status_codes::OK);
+                return _msg;
+            }
+        }
+    }
+
+}
+
+m_Request act_certificate_service(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what)
+{
+    CertificateService *cert_service = (CertificateService *)g_record[_resource];
+    if(cert_service->actions.find(_what) == cert_service->actions.end())
+    {
+        _msg = reply_error(_request, _msg, get_error_json("No Action in Certificate Service"), status_codes::BadRequest);
+        return _msg;
+    }
+    
+    if(_what == "GenerateCSR")
+    {
+        // json받아서 json으로 나옴
+        json::value result;
+        cert_service->GenerateCSR(_jv);
+        json::value check;
+        if(get_value_from_json_key(result, "Failed", check))
+        {
+            _msg = reply_error(_request, _msg, result, status_codes::BadRequest);
+            return _msg;
+        }
+        else if(get_value_from_json_key(result, "CertificateCollection", check))
+        {
+            _msg = reply_success(_request, _msg, result, status_codes::OK);
+            return _msg;
+        }
+        /// 함수수정해야겟다 reply_error(req, msg, string, status)에서
+        // string을 jv로 해서 jv받는걸로하고 스트링받아서 기본 jv만들어주는함수를 추가로 만들기
+        // reply_success(req, msg, uri(str), status)에서
+        // 기존 uri받아서 안에서 record_get_json(uri)하는데 이걸 jv로 넣고 기본것들은 인자로 넣어줄때
+        // record_get_json(uri)로 넘겨주는식으로
+
+    }
+    else if(_what == "ReplaceCertificate")
+    {
+        if(!cert_service->ReplaceCertificate(_jv))
+        {
+            _msg = reply_error(_request, _msg, get_error_json("Problem occur in ReplaceCertificate()"), status_codes::BadRequest);
+            return _msg;
+        }
+
+        _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
+        return _msg;
+    }
+}
+
+m_Request act_system(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what)
+{
+    Systems *system = (Systems *)g_record[_resource];
+    if(system->actions.find(_what) == system->actions.end())
+    {
+        // action_what에 해당하는 액션정보가 없음 error
+        _msg = reply_error(_request, _msg, get_error_json("No Action in ComputerSystem"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    if(!(system->Reset(_jv)))
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Problem occur in Reset()"), status_codes::BadRequest);
+        return _msg;
+    }
+    _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
+    // g_listener->close().wait();
+    // exit(0);
+    return _msg;
+}
+
+m_Request act_eventservice(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what)
+{
+    EventService *ev_service = (EventService *)g_record[_resource];
+    if(ev_service->actions.find(_what) == ev_service->actions.end())
+    {
+        // action_what에 해당하는 액션정보가 없음 error
+        _msg = reply_error(_request, _msg, get_error_json("No Action in EventService"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    json::value result;
+    result = ev_service->SubmitTestEvent(_jv);
+    if(result == json::value::null())
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Need Correct Request Body"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    _msg = reply_success(_request, _msg, result, status_codes::OK);
+    return _msg;
+
+}
+
+m_Request act_logservice(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what)
+{
+    LogService *log_service = (LogService *)g_record[_resource];
+    if(log_service->actions.find(_what) == log_service->actions.end())
+    {
+        // action_what에 해당하는 액션정보가 없음 error
+        _msg = reply_error(_request, _msg, get_error_json("No Action in LogService"), status_codes::BadRequest);
+        return _msg;
+    }
+    // cout << "BOOM!" << endl;
+    // 클리어로그밖에 없으니까 그냥 바로 실행
+    if(!(log_service->ClearLog()))
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Problem occur in ClearLog()"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
     return _msg;
 }
 

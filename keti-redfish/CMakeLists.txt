@@ -11,8 +11,8 @@ project(
 )
 
 # Directory setting
-# set(ROOT_DIR /home/keti/CMM_SDK)
-set(ROOT_DIR /root/CMM_SDK)
+set(ROOT_DIR /home/keti/CMM_SDK)
+# set(ROOT_DIR /root/CMM_SDK)
 set(PROJECT_SOURCE_DIR ${ROOT_DIR}/source/keti-redfish)
 set(Buildroot_INCLUDE_DIR ${ROOT_DIR}/output/host/usr/arm-buildroot-linux-uclibcgnueabihf/sysroot/usr/include)
 set(Buildroot_LIBRARY_DIR ${ROOT_DIR}/output/host/usr/arm-buildroot-linux-uclibcgnueabihf/sysroot/lib)

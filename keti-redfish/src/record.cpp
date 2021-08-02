@@ -583,7 +583,7 @@ bool record_save_json(void)
         }
         else { // create file 
             it->second->save_json();
-            log(info) << "create " << this_odata_id;
+            // log(info) << "create " << this_odata_id;
         }
 
         // log(info) << "uri : " << it->first << ", resource address : " << it->second;

@@ -680,7 +680,8 @@ void Handler::handle_post(http_request _request)
 
         if(uri_tokens.size() >= 4)
         {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
                 //CMM자체 동작으로다가 처리하시면됨
                 do_task_cmm_post(_request);

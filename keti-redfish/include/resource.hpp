@@ -993,6 +993,13 @@ class LogService : public Resource
     bool ClearLog();
     // 로그 엔트리생성함수
     void new_log_entry(string _entry_id);
+    void set_description(string _val);
+    void set_datetime(string _val);
+    void set_datetime_offset(string _val);
+    void set_logentry_type(string _val);
+    void set_overwrite_policy(string _val);
+    void set_service_enabled(bool _val);
+    void set_max_record(unsigned int _val);
 };
 
 /**
@@ -1114,10 +1121,10 @@ class EventService : public Resource
 
         Actions submit_test_event;
         submit_test_event.type = SUBMIT_TEST_EVENT;
-        submit_test_event.name = "#EventService.submit_test_event";
-        submit_test_event.target = this->odata.id + "Actions/EventService.submit_test_event";
+        submit_test_event.name = "#EventService.SubmitTestEvent";
+        submit_test_event.target = this->odata.id + "Actions/EventService.SubmitTestEvent";
         
-        this->actions["submit_test_event"] = submit_test_event;
+        this->actions["SubmitTestEvent"] = submit_test_event;
         
         g_record[ODATA_EVENT_SERVICE_ID] = this;
     };
@@ -1662,9 +1669,9 @@ public:
         g_record.erase(this->odata.id);
     };
 
-    json::value get_json(void); // 여기 가서 수정해줘야함
+    json::value get_json(void);
     bool load_json(json::value &j);
-
+    void new_log_service(string _service_id);
 
 };
 
@@ -2734,6 +2741,8 @@ class Systems : public Resource
         reset_type.allowable_values.push_back("GracefulRestart");
         
         reset.parameters.push_back(reset_type);
+
+        this->actions["Reset"] = reset;
         
         g_record[_odata_id] = this;
     }
@@ -2751,6 +2760,7 @@ class Systems : public Resource
     bool load_json(json::value &j);
     json::value get_json(void);
     bool Reset(json::value body);
+    void new_log_service(string _service_id);
 };
 
 /**
@@ -2782,6 +2792,8 @@ public:
     Thermal *thermal;
     Power *power;
     Collection *sensors;
+    Collection *log_service;
+    // 로그서비스 나중에 추가한거라서 get_json, load_json 이런곳에 없을거임
 
 
     // TODO Contains, ManagedBy 추가 필요
@@ -2790,6 +2802,7 @@ public:
         this->thermal = nullptr;
         this->power = nullptr;
         this->sensors = nullptr;
+        this->log_service = nullptr;
 
         g_record[_odata_id] = this;
     }
@@ -2804,6 +2817,7 @@ public:
 
     json::value get_json(void);
     bool load_json(json::value &j);
+    void new_log_service(string _service_id);
 
     pplx::task<void> led_off(uint8_t _led_index);
     pplx::task<void> led_lit(uint8_t _led_index);

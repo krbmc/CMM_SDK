@@ -98,6 +98,9 @@ char *get_popen_string(char *command);
 string get_extracted_bmc_id_uri(string _uri);
 bool check_role_privileges(string _pri);
 
+void generate_logservice(string _res_odata, string _service_id);
+void generate_logentry(string _res_odata, string _entry_id);
+
 /**
  * @brief Function of record
  */

@@ -47,17 +47,15 @@ int main(int _argc, char *_argv[])
         log(info) << "Redfish resource initialization complete";
 
 
-    // @@@@@ cmm이 요청보내는 것 테스트용
-    // json::value ddd;
-    // ddd = redfish_request_get("/redfish", "http://10.0.6.104:443");
-    // cout << ddd << endl;
-    // cout << "!@#$ Good GET" << endl;
+    // string sys = ODATA_SYSTEM_ID;
+    // sys = sys + "/" + CMM_ID;
+    // generate_logservice(sys, "TEST");
 
-    // redfish_request_post("/redfish/v1/AccountService/Accounts", "http://10.0.6.104:443");
-    // redfish_request_post("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
-    // redfish_request_patch("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
-    // redfish_request_delete("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
-    // @@@@@
+    // sys = sys + "/LogServices/TEST";
+
+    // generate_logentry(sys, "YAM");
+    // record_save_json();
+    // generate 로그서비스,엔트리 테스트
 
     pplx::create_task([]{
         sleep(3);
