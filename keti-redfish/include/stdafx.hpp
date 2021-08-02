@@ -107,6 +107,7 @@ void delete_session_num(unsigned int num);
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
+string ltrim(string str);
 
 char *get_popen_string(char *command);
 string get_popen_string(string command);

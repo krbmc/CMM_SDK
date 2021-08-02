@@ -384,9 +384,19 @@ void remove_if_exists(fs::path file)
  */
 string get_value_from_cmd_str(string cmd_str, string key)
 {
-    log(info) << "cmd_str : " << cmd_str;
     string cmd_ret = get_popen_string(cmd_str);
+    // log(warning) << cmd_str << " : " << cmd_ret;
+    if (cmd_ret.rfind(key) == string::npos)
+        return "";
     string ret = cmd_ret.substr(cmd_ret.rfind(key) + key.size());
-    ret.erase(0,ret.find_first_not_of(" :\n\t"));
-    return string_split(ret, ' ')[0];
-}   
+    return string_split(ltrim(ret), ' ')[0];
+}
+
+/**
+ * @brief string ltrim
+ * @author dyk
+ */
+string ltrim(string str)
+{
+    return str.erase(0, str.find_first_not_of(" :\n\t"));
+}

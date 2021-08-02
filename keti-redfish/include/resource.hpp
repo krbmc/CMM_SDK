@@ -2459,26 +2459,6 @@ class Processors : public Resource
 
     Processors(const string _odata_id) : Resource(PROCESSOR_TYPE, _odata_id, ODATA_PROCESSOR_TYPE)
     {
-        // this->id = "";
-        // this->socket = "CPU 1";
-        // this->processor_type = "CPU";
-        // this->processor_architecture = "x86";
-        // this->instruction_set = "x86-64";
-        // this->manufacturer = "Intel(R) Corporation";
-        // this->model = "Multi-Core Intel(R) Xeon(R) processor 7xxx Series";
-        // this->max_speed_mhz = 3700;
-        // this->total_cores = 8;
-        // this->total_threads = 16;
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
-        // this->p_id.vendor_id = "GenuineIntel";
-        // this->p_id.identification_registers = "0x34AC34DC8901274A";
-        // this->p_id.effective_family = "0x42";
-        // this->p_id.effective_model = "0x61";
-        // this->p_id.step = "0x1";
-        // this->p_id.microcode_info = "0x429943";
-
         g_record[_odata_id] = this;
     }
     Processors(const string _odata_id, const string _processor_id) : Processors(_odata_id)
