@@ -14,8 +14,8 @@ bool init_resource(void)
 {
     // load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
     // 등록해버리고 table.json까지 수정해버림
-    // record_load_json();
-    // log(info) << "record load json complete";
+    record_load_json();
+    log(info) << "record load json complete";
 
     
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
@@ -77,7 +77,18 @@ bool init_resource(void)
     // ((Systems *)g_record[ODATA_SYSTEM_ID])->Reset(reset_body);
     // system reset test end
 
-    // init_record();
+    // virtual media test
+    // json::value insert_body;
+    // insert_body["Image"] = json::value::string("10.0.6.92:/redfish");
+    // insert_body["UserName"] = json::value::string("test");
+    // insert_body["Password"] = json::value::string("");
+    // insert_body["WriteProtected"] = json::value::boolean(true); // default 
+    
+    // VirtualMedia *vm = new VirtualMedia("/redfish/v1/Systems/1/VirtualMedia/test");
+    // vm->InsertMedia(insert_body);
+    // log(info) << "mount completed..";
+    // vm->EjectMedia();
+    
     record_save_json();
     log(info) << "record save json complete";
     
@@ -111,11 +122,12 @@ void init_system(Collection *system_collection, string _id)
         system->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         system->ethernet->name = "Computer System Ethernet Interface Collection";
     
-        // init_ethernet(system->ethernet, "0");
-        for(uint8_t i = 0; i<4; i++){
+        int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        for (int i = 0; i < eth_num; i++){
             init_ethernet(system->ethernet, to_string(i));
         }
     }
+
     if (!record_is_exist(odata_id + "/LogServices")){
         system->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
         system->log_service->name = "Computer System Log Service Collection";
@@ -127,6 +139,12 @@ void init_system(Collection *system_collection, string _id)
         system->simple_storage->name = "Computer System Simple Storage Collection";
     
         init_simple_storage(system->simple_storage, "0");
+    }
+    if (!record_is_exist(odata_id + "/VirtualMedia")){
+        system->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
+        system->virtual_media->name = "VirtualMediaCollection";
+
+        insert_virtual_media(system->virtual_media, "EXT1_test");    // temp
     }
     if (!record_is_exist(odata_id + "/Bios")){
         system->bios = new Bios(odata_id + "/Bios", "Bios");
@@ -167,13 +185,77 @@ void init_memory(Collection *memory_collection, string _id)
 
 void init_ethernet(Collection *ethernet_collection, string _id)
 {
-    string odata_id = ethernet_collection->odata.id + "/" + _id;
+    string odata_id = ethernet_collection->odata.id + "/NIC";
+    if (_id != "0")
+        odata_id += _id;
 
     EthernetInterfaces *ethernet = new EthernetInterfaces(odata_id, _id);
     /**
      * @todo 여기에 ethernet 일반멤버변수값 넣어주기
      */
+    string eth_id = "eth" + _id;
+    ethernet->description = "Manager Ethernet Interface";
+    ethernet->link_status = "LinkDown";
+    if (get_popen_string("cat /sys/class/net/" + eth_id + "/operstate") == "up")
+        ethernet->link_status = "LinkUp";
 
+    ethernet->permanent_mac_address = get_popen_string("cat /sys/class/net/" + eth_id + "/address");
+    ethernet->mac_address = ethernet->permanent_mac_address;
+    ethernet->speed_Mbps = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/speed"));
+    ethernet->autoneg = true; // it can be set false. but not recommended. it sets speed and duplex automatically
+    ethernet->full_duplex = false;
+    if (get_popen_string("cat /sys/class/net/" + eth_id + "/duplex") == "full")
+        ethernet->full_duplex = true;
+    ethernet->mtu_size = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/mtu"));
+    ethernet->hostname = get_popen_string("cat /etc/hostname");
+    ethernet->fqdn = get_popen_string("hostname -f");
+    ethernet->name_servers = string_split(get_popen_string("cat /etc/resolv.conf"), ' ');
+    ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
+    
+    if (fs::exists(DHCPV4_CONF)){
+        log(warning) << "NOT IMPLEMENTED : read dhcpv4 conf";
+    }
+    if (fs::exists(DHCPV6_CONF)){
+        log(warning) << "NOT IMPLEMENTED : read dhcpv6 conf";
+    }
+
+    if (ethernet->link_status == "LinkUp"){
+        int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth0 | wc -l"));
+        
+        for (int i = 0; i < ipv4_num; i++){
+            string ipv4_alias = eth_id;
+            if (i != 0)
+                ipv4_alias += ":" + i;
+    
+            IPv4_Address ipv4;
+            ipv4.address = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "inet addr");
+            ipv4.address_origin = get_value_from_cmd_str("cat /etc/network/interfaces | grep \"iface " + ipv4_alias + "\"", "inet");
+            ipv4.subnet_mask = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "Mask");
+            ipv4.gateway = string_split(get_popen_string("ip r | grep default"), ' ')[2];
+            ethernet->v_ipv4.push_back(ipv4);
+    
+            IPv6_Address ipv6;
+            string ipv6_temp = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet6 addr\"", "inet6 addr");
+            ipv6.address = string_split(ipv6_temp, '/')[0];
+            log(info) << ipv6_temp;
+            ipv6.prefix_length = stoi(string_split(ipv6_temp, '/')[1]);
+            // ipv6.address_origin = 
+            // ipv6.address_state
+            ethernet->v_ipv6.push_back(ipv6);
+        }
+
+        if (fs::exists(VLAN_CONF)){
+            if (stoi(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id +" | wc -l"))){
+                Vlan v;
+                v.vlan_enable = true;
+                v.vlan_id = stoi(string_split(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id), '|')[1]);
+            }   
+        }
+    }
+    
+    ethernet->status.state = STATUS_STATE_ENABLED;
+    ethernet->status.health = STATUS_HEALTH_OK;
+    
     ethernet_collection->add_member(ethernet);
     return;
 }
@@ -242,6 +324,33 @@ void init_bios(Bios *bios)
     bios->attribute.proc_turbo_mode = "Enabled";
     bios->attribute.usb_control = "UsbEnabled";
 
+    return;
+}
+
+void insert_virtual_media(Collection *virtual_media_collection, string _id)
+{
+    string odata_id = virtual_media_collection->odata.id + "/" + _id;
+    VirtualMedia *virtual_media;
+
+    if (!record_is_exist(odata_id))
+        virtual_media = new VirtualMedia(odata_id);
+    
+    /**
+     * @todo 여기에 virtual_media 일반멤버변수값 넣어주기
+     */
+    virtual_media->id = _id;
+    virtual_media->name = "VirtualMedia";
+    virtual_media->image = "http://192.168.1.2/Core-current.iso";
+    virtual_media->image_name = "Core-current.iso";
+    virtual_media->media_type.push_back("CD");
+    virtual_media->media_type.push_back("DVD");
+    virtual_media->connected_via = "URI";
+    virtual_media->inserted = true;
+    virtual_media->write_protected = true;
+    virtual_media->user_name = "test";
+    virtual_media->passwword = "password";
+    
+    virtual_media_collection->add_member(virtual_media);
     return;
 }
 
@@ -450,15 +559,51 @@ void init_manager(Collection *manager_collection, string _id)
      */
 
     manager->network = new NetworkProtocol(odata_id + "/NetworkProtocol", "NetworkProtocol");
+    /**
+     * @todo 여기에 network 일반멤버변수값 넣어주기
+     */
+    manager->network->hostname = get_popen_string("cat /etc/hostname");
+    manager->network->description = "Manager Network Service";
+    manager->network->fqdn = get_popen_string("hostname -f");
     
+    manager->network->snmp_enabled = false;
+    manager->network->snmp_port = DEFAULT_SNMP_PORT;
+    
+    // cmm doesn't use ipmi 
+    manager->network->ipmi_enabled = false;
+    manager->network->ipmi_port = DEFAULT_IPMI_PORT;
+    
+    manager->network->ntp_enabled = false;
+    manager->network->ntp_port = DEFAULT_NTP_PORT;
+    // manager->network->v_netservers;
+    
+    manager->network->kvmip_enabled = true;
+    manager->network->kvmip_port = DEFAULT_KVMIP_PORT;
+    
+    manager->network->https_enabled = true;
+    manager->network->https_port = DEFAULT_HTTPS_PORT;
+    
+    manager->network->http_enabled = true;
+    manager->network->http_port = DEFAULT_HTTP_PORT;
+    
+    manager->network->virtual_media_enabled = true;
+    manager->network->virtual_media_port = DEFAULT_VIRTUAL_MEDIA_PORT;
+    
+    manager->network->ssh_enabled = true;
+    manager->network->ssh_port = DEFAULT_SSH_PORT;
+    
+    manager->network->status.state = STATUS_STATE_ENABLED;
+    manager->network->status.health = STATUS_HEALTH_OK;
     
     if (!record_is_exist(odata_id + "/EthernetInterfaces")){
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         manager->ethernet->name = "Manager Ethernet Interface Collection";
 
-        for(uint8_t i = 0; i<4; i++){
+        int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        for (int i = 0; i < eth_num; i++){
             init_ethernet(manager->ethernet, to_string(i));
         }
+    
     }
 
     if (!record_is_exist(odata_id + "/LogServices")){
@@ -467,6 +612,7 @@ void init_manager(Collection *manager_collection, string _id)
 
         init_log_service(manager->log_service, "Log1");
     }
+
     manager_collection->add_member(manager);
     return;
 }
@@ -2822,7 +2968,7 @@ json::value NetworkProtocol::get_json(void)
     if (j.is_null())
         return j;
     
-    json::value snmp,ipmi,ntp,kvmip,https,http;
+    json::value snmp,ipmi,ntp,kvmip,https,http,virtual_media,ssh;
     j[U("FQDN")] = json::value::string(U(this->fqdn));
     j[U("Id")] = json::value::string(U(this->id));
     j[U("HostName")] = json::value::string(U(this->hostname));
@@ -2840,6 +2986,14 @@ json::value NetworkProtocol::get_json(void)
     ipmi[U("ProtocolEnabled")] = json::value::boolean(this->ipmi_enabled);
     ipmi[U("Port")] = json::value::number(U(this->ipmi_port));
     j[U("IPMI")]=ipmi;
+
+    virtual_media[U("ProtocolEnabled")] = json::value::boolean(this->virtual_media_enabled);
+    virtual_media[U("Port")] = json::value::number(U(this->virtual_media_port));
+    j[U("VirtualMedia")]=virtual_media;
+
+    ssh[U("ProtocolEnabled")] = json::value::boolean(this->ssh_enabled);
+    ssh[U("Port")] = json::value::number(U(this->ssh_port));
+    j[U("SSH")]=ssh;
 
     kvmip[U("ProtocolEnabled")] = json::value::boolean(this->kvmip_enabled);
     kvmip[U("Port")] = json::value::number(U(this->kvmip_port));
@@ -3092,6 +3246,7 @@ json::value Systems::get_json(void)
     j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
     j["SimpleStorage"] = get_resource_odata_id_json(this->simple_storage, this->odata.id);
     j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
+    j["VirtualMedia"] = get_resource_odata_id_json(this->virtual_media, this->odata.id);
 
     j["Actions"] = get_action_info(this->actions);
     
@@ -4128,22 +4283,141 @@ void update_cert_with_pem(fs::path cert, Certificate *certificate)
 }
 // dy : certificate end
 
-
-// // 틀틀틀 복붙
-// json::value ProcessorSummary::get_json(void)
-// {
-//     auto j = this->Resource::get_json();
-    // if (j.is_null())
-    //     return j;
+// dy : virtual media start
+json::value VirtualMedia::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
     
-//     j[U("Id")] = json::value::string(U(this->id));
+    j["ConnectedVia"] = json::value::string(this->connected_via);
+    j["Id"] = json::value::string(this->id);
+    j["Image"] = json::value::string(this->image);
+    j["ImageName"] = json::value::string(this->image_name);
+    j["UserName"] = json::value::string(this->user_name);
+    j["Password"] = json::value::string(this->passwword);
+    j["Inserted"] = json::value::boolean(this->inserted);
+    j["WriteProtected"] = json::value::boolean(this->write_protected);
+    j["MediaTypes"] = json::value::array();
+    for(int i = 0; i < this->media_type.size(); i++)
+        j["MediaTypes"][i] = json::value::string(this->media_type[i]);
 
+    j["Actions"] = get_action_info(this->actions);
+    return j;
+}
 
-//     return j;
-// }
+bool VirtualMedia::load_json(json::value &j)
+{
+    json::value media_type;
+    try {
+        Resource::load_json(j);
+        get_value_from_json_key(j, "ConnectedVia", this->connected_via);
+        get_value_from_json_key(j, "Id", this->id);
+        get_value_from_json_key(j, "Image", this->image);
+        get_value_from_json_key(j, "ImageName", this->image_name);
+        get_value_from_json_key(j, "UserName", this->user_name);
+        get_value_from_json_key(j, "Password", this->passwword);
+        get_value_from_json_key(j, "Inserted", this->inserted);
+        get_value_from_json_key(j, "WriteProtected", this->write_protected);
+        get_value_from_json_key(j, "MediaTypes", media_type);
+        for (auto types : media_type.as_array())
+            this->media_type.push_back(types.as_string());
+    }
+    catch (json::json_exception &e)
+    {
+        return false;
+    }
 
+    return true;
+}
 
+/**
+ * @brief virtual media insert via nfs
+ * @author 김
+ * @return if insert failed, return json::value::null(). else return virtual media resource info  
+ */
+json::value VirtualMedia::InsertMedia(json::value body)
+{
+    // have to : odata.id 설정, media type를 어떻게 얻어올 지..
+    
+    int ret = 0;
 
+    string image, user_name, password;
+    bool write_protected;
+    
+    get_value_from_json_key(body, "Image", image);
+    get_value_from_json_key(body, "UserName", user_name);
+    get_value_from_json_key(body, "Password", password);
+    get_value_from_json_key(body, "WriteProtected", write_protected);
+
+    // #0 mount check
+    ret = umount();
+    if (ret == -1){
+        log(warning) << "umount error!";
+        return json::value::null();
+    }
+
+    // #1 mount
+    // #1-1 set mount point
+    if (!fs::exists("/etc/nfs"))
+        mkdir("/etc/nfs", 777);
+    
+    // #1-2 using nfs, 
+    string cmd = "mount -vt nfs " + image + " /etc/nfs";
+    ret = system(cmd.c_str());
+    if (ret == -1){
+        log(warning) << "mount error!";
+        return json::value::null();
+    }
+
+    // #2 make virtual media, insert
+    this->connected_via = "URI";
+    this->name = "VirtualMedia";
+    this->inserted = true;
+    this->image = image;
+    this->image_name = get_current_object_name(image, "/");
+    this->id = get_current_object_name(this->odata.id, "/");
+    this->write_protected = write_protected;
+    this->media_type.push_back("CD");
+    this->media_type.push_back("DVD");
+
+    ((Collection *)g_record[get_parent_object_uri(this->odata.id, "/")])->add_member(this);
+    
+    // #3 return resource
+    return this->get_json();
+}
+
+json::value VirtualMedia::EjectMedia(void)
+{
+    int ret;
+
+    // #1 unmount
+    ret = umount();
+    if (ret == -1)
+        return json::value::null();
+
+    // #2 connectedVia => notconnected, inserted => false, image => null  <? data는 보존한다는 얘기??>
+    this->connected_via = "NotConnected";
+    this->inserted = false;
+    this->image = "";
+    
+    // #3 return resource
+    return this->get_json();
+}
+
+static int umount()
+{   
+    if (stoi(get_popen_string("mount | grep /etc/nfs | wc -l")) > 0){
+        string cmd = "umount -l /etc/nfs > /dev/null 2>&1";
+        int ret = system(cmd.c_str());
+        if (ret == 0)
+            return 0;
+        else
+            return -1; 
+    }
+    return 0;
+}
+// dy : virtual media end
 
 // ServiceRoot start
 json::value ServiceRoot::get_json(void)

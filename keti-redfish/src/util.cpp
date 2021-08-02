@@ -248,6 +248,27 @@ char *get_popen_string(char *command)
     return temp;
 }
 
+/**
+ * @brief get popen string c++ style
+ * @author dyk
+ * @return string which command returns 
+ */
+string get_popen_string(string command)
+{
+    FILE *fp = popen(command.c_str(), "r");
+    char *temp = (char *)malloc(sizeof(char)*256);
+    if (fp != NULL){
+        while(fgets(temp, 256, fp) != NULL)
+        {
+        }
+        pclose(fp);
+    }
+    string str(temp);
+    if (str.back() == '\n')
+        str.pop_back();
+    return str;
+}
+
 string get_extracted_bmc_id_uri(string _uri)
 {
     vector<string> uri_tokens = string_split(_uri, '/');
@@ -356,3 +377,16 @@ void remove_if_exists(fs::path file)
     }
     return;
 }
+
+/**
+ * @brief read value(string) with key from string that cmd returns
+ * @author dyk
+ */
+string get_value_from_cmd_str(string cmd_str, string key)
+{
+    log(info) << "cmd_str : " << cmd_str;
+    string cmd_ret = get_popen_string(cmd_str);
+    string ret = cmd_ret.substr(cmd_ret.rfind(key) + key.size());
+    ret.erase(0,ret.find_first_not_of(" :\n\t"));
+    return string_split(ret, ' ')[0];
+}   

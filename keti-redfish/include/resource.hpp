@@ -100,7 +100,7 @@
 #define ODATA_SOFTWARE_INVENTORY_TYPE "#SoftwareInventory." ODATA_TYPE_VERSION ".SoftwareInventory" // @@@@ 추가
 #define ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE "#SoftwareInventoryCollection.SoftwareInventoryCollection" // @@@@ 추가
 
-// doyoung
+// dy : certificate
 #define ODATA_CERTIFICATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/CertificateService"
 #define ODATA_CERTIFICATE_SERVICE_TYPE "#CertificateService." ODATA_TYPE_VERSION ".CertificateService" // @@@@ 도영 추가
 #define ODATA_CERTIFICATE_LOCATION_ID ODATA_CERTIFICATE_SERVICE_ID "/CertificateLocations" 
@@ -108,6 +108,10 @@
 #define ODATA_CERTIFICATE_COLLECTION_TYPE "#CertificateCollection.CertificateCollection" // @@@@ 도영 추가
 #define ODATA_CERTIFICATE_ID "/Certificates"
 #define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate" // @@@@ 도영 추가
+
+// dy : virtual media
+#define ODATA_VIRTUAL_MEDIA_TYPE "#VirtualMedia" ODATA_TYPE_VERSION ".VirtualMedia"
+#define ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE "#VirtualMediaCollection.VirtualMediaCollection"
 
 #define NO_DATA_TYPE 0
 
@@ -225,7 +229,8 @@ enum RESOURCE_TYPE
     DESTINATION_TYPE,
     CERTIFICATE_TYPE,
     CERTIFICATE_LOCATION_TYPE,
-    CERTIFICATE_SERVICE_TYPE
+    CERTIFICATE_SERVICE_TYPE,
+    VIRTUAL_MEDIA_TYPE
 };
 
 enum ACTION_NAME
@@ -240,7 +245,9 @@ enum ACTION_NAME
     GENERATE_CSR,
     REPLACE_CERTIFICATE,
     SUBMIT_TEST_EVENT,
-    SIMPLE_UPDATE
+    SIMPLE_UPDATE,
+    INSERT_MEDIA,
+    EJECT_MEDIA
 };
 
 /**
@@ -1439,47 +1446,32 @@ class NetworkProtocol : public Resource
     bool kvmip_enabled;
     bool https_enabled;
     bool http_enabled;
+    bool virtual_media_enabled;
+    bool ssh_enabled;
     int snmp_port;
     int ipmi_port;
     int ntp_port;
     int kvmip_port;
     int https_port;
     int http_port;
+    int virtual_media_port;
+    int ssh_port;
+
+    //telnet, ssdp
+
     vector<string> v_netservers;
 
     Status status;
 
     NetworkProtocol(const string _odata_id) : Resource(NETWORK_PROTOCOL_TYPE, _odata_id, ODATA_NETWORK_PROTOCOL_TYPE)
     {
-        // this->id = "";
-        // this->fqdn = "web483-bmc.dmtf.org";
-        // this->description = "Manager Network Service";
-        // this->hostname = "web483-bmc";
-
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
-        // this->http_enabled = true;
-        // this->http_port = 80;
-        // this->https_enabled = true;
-        // this->https_port = 443;
-
-        // this->ipmi_enabled = true;
-        // this->ipmi_port = 623;
-        // this->snmp_enabled = true;
-        // this->snmp_port = 161;
-
-        // this->kvmip_enabled = true;
-        // this->kvmip_port = 5288;
-        // this->ntp_enabled = true;
-        // this->ntp_port = 77;
-
         g_record[_odata_id] = this;
     }
     NetworkProtocol(const string _odata_id, const string _network_id) : NetworkProtocol(_odata_id)
     {
-        this->id = _network_id;
-
+        this->id = "NIC";
+        if (_network_id != "0")
+            this->id += _network_id;
     };
     ~NetworkProtocol()
     {
@@ -1504,6 +1496,8 @@ public:
     unsigned int mtu_size;
     string hostname;
     string fqdn;
+    string ipv6_default_gateway;
+
     vector<string> name_servers;
     DHCP_v4 dhcp_v4;
     DHCP_v6 dhcp_v6;
@@ -1511,92 +1505,10 @@ public:
     vector<IPv6_Address> v_ipv6;
     Vlan vlan;
 
-    string ipv6_default_gateway;
-
     Status status;
-    // string address;
-    // string subnetMask;
-    // string gateway;
-    // string addressOrigin;
     
-
-    // string addressv6;
-    // string prefixLength;
-    // string addressOriginv6;
-    // string gatewayv6;
-    // int vlanid;
-    // bool vlan_enable;
-    
-    
-    int index;
-    
-    // vector<string> v_netservers;
-
     EthernetInterfaces(const string _odata_id) : Resource(ETHERNET_INTERFACE_TYPE, _odata_id, ODATA_ETHERNET_INTERFACE_TYPE)
-    {
-        // this->id = "";
-        // this->description = "Manager NIC 1";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // this->link_status = "LinkUp";
-        // this->permanent_mac_address = "12:44:6A:3B:04:11";
-        // this->mac_address = "12:44:6A:3B:04:11";
-        // this->speed_Mbps = 1000;
-        // this->autoneg = true;
-        // this->full_duplex = true;
-        // this->mtu_size = 1500;
-        // this->hostname = "web483";
-        // this->fqdn = "web483.contoso.com";
-        // this->name_servers.push_back("names.contoso.com");
-
-        // IPv4_Address add4;
-        // add4.address = "192.168.0.10";
-        // add4.subnet_mask = "255.255.252.0";
-        // add4.address_origin = "DHCP";
-        // add4.gateway = "192.168.0.1";
-        // this->v_ipv4.push_back(add4);
-
-        // IPv6_Address add6;
-        // add6.address = "fe80::1ec1:deff:fe6f:1e24";
-        // add6.address_origin = "SLAAC";
-        // add6.address_state = "Preferred";
-        // add6.prefix_length = 64;
-        // this->v_ipv6.push_back(add6);
-
-        // this->dhcp_v4.dhcp_enabled = true;
-        // this->dhcp_v4.use_dns_servers = true;
-        // this->dhcp_v4.use_ntp_servers = false;
-        // this->dhcp_v4.use_gateway = true;
-        // this->dhcp_v4.use_static_routes = true;
-        // this->dhcp_v4.use_domain_name = true;
-
-        // this->dhcp_v6.operating_mode = "Stateful";
-        // this->dhcp_v6.use_dns_servers = true;
-        // this->dhcp_v6.use_ntp_servers = false;
-        // this->dhcp_v6.use_domain_name = false;
-        // this->dhcp_v6.use_rapid_commit = false;
-
-        // this->vlan.vlan_enable = true;
-        // this->vlan.vlan_id = 101;
-
-
-        // 기존
-        // this->macaddress = "";
-        // this->description = "";
-        // this->mtusize = "";
-        // this->hostname = "";
-        // this->address = "";
-        // this->subnetMask = "";
-        // this->gateway = "";
-        // this->addressOrigin = "";
-        // this->linkstatus = "";
-
-        // this->addressv6 = "";
-        // this->prefixLength = "";
-        // this->addressOriginv6 = "";
-        // this->gatewayv6 = "";
-        
-
+    { 
         g_record[_odata_id] = this;
     }
     EthernetInterfaces(const string _odata_id, const string _ether_id) : EthernetInterfaces(_odata_id)
@@ -1610,8 +1522,6 @@ public:
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
-
 };
 
 class Manager : public Resource
@@ -1631,7 +1541,7 @@ public:
 
     Collection *ethernet;
     Collection *log_service;
-    
+
     AccountService *remote_account_service; // BMC의 계정정보를 관리하는 AccountService
     NetworkProtocol *network;
     
@@ -2690,6 +2600,7 @@ class Systems : public Resource
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
     Collection *simple_storage;
+    Collection *virtual_media;
 
     unordered_map <string, Actions> actions;
 
@@ -2824,6 +2735,49 @@ public:
     pplx::task<void> led_blinking(uint8_t _led_index);
 };
 
+class VirtualMedia : public Resource
+{
+    public:
+    string id;
+    string image;
+    string image_name;
+    vector<string> media_type;
+    string connected_via;
+    bool inserted;
+    bool write_protected;
+    string user_name;
+    string passwword;
+
+    unordered_map <string, Actions> actions;
+
+    VirtualMedia(const string _odata_id) : Resource(VIRTUAL_MEDIA_TYPE, _odata_id, ODATA_VIRTUAL_MEDIA_TYPE)
+    {
+        Actions insert_media;
+        insert_media.type = INSERT_MEDIA;
+        insert_media.name = "#VirtualMedia.InsertMedia";
+        insert_media.target = this->odata.id + "/Actions/VirtualMedia.InsertMedia";
+
+        Actions eject_media;
+        eject_media.type = EJECT_MEDIA;
+        eject_media.name = "#VirtualMedia.EjectMedia";
+        eject_media.target = this->odata.id + "/Actions/VirtualMedia.EjectMedia";
+
+        this->actions["InsertMedia"] = insert_media;
+        this->actions["EjectMedia"] = eject_media;
+
+        g_record[_odata_id] = this;
+    }
+    ~VirtualMedia()
+    {
+        g_record.erase(this->odata.id);
+    };
+
+    json::value get_json(void);
+    bool load_json(json::value &j);
+    json::value InsertMedia(json::value body);
+    json::value EjectMedia(void);    
+};
+
 void init_system(Collection *system_collection, string _id);
 void init_processor(Collection *processor_collection, string _id);
 void init_memory(Collection *memory_collection, string _id);
@@ -2844,7 +2798,7 @@ void init_event_service(EventService *event_service);
 void init_event_destination(Collection *event_destination_collection, string _id);
 void init_account_service(AccountService *account_service);
 void init_session_service(SessionService *session_service);
-
+void insert_virtual_media(Collection *virtual_media_collection, string _id);
 /**
  * @brief Root of redfish
  *        This resource create only once
@@ -2985,4 +2939,8 @@ void generate_ssl_private_key(fs::path key, string key_length);
 json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id);
 string file2str(string file_path);
 void update_cert_with_pem(fs::path cert, Certificate *certificate);
+
+// virtual media
+static int umount();
+
 #endif
