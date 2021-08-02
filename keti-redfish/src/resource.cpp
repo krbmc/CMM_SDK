@@ -163,6 +163,27 @@ void init_processor(Collection *processor_collection, string _id)
     /**
      * @todo 여기에 processor 일반멤버변수값 넣어주기
      */
+    processor->id = _id;
+    processor->name = "Processor";
+    processor->socket = _id;
+    processor->processor_type = "CPU";
+    processor->processor_architecture = get_value_from_cmd_str("lscpu | grep \"Architecture\" | head -1", "Architecture");
+    processor->instruction_set = get_popen_string("uname -m");
+    processor->manufacturer = get_value_from_cmd_str("lscpu | grep \"Vendor ID\" | head -1", "Vendor ID");
+    processor->model = ltrim(string_split(get_popen_string("cat /proc/cpuinfo | grep \"model name\" | head -1"), ':')[1]);
+    processor->max_speed_mhz = stof(get_value_from_cmd_str("lscpu | grep \"CPU max MHz\" | head -1", "CPU max MHz"));
+    processor->total_cores = stoi(get_value_from_cmd_str("lscpu | grep \"CPU(s)\" | head -1", "CPU(s)"));
+    processor->total_threads = stoi(get_value_from_cmd_str("lscpu | grep \"Thread(s) per core\" | head -1", "Thread(s) per core")) * processor->total_cores;
+    
+    processor->status.state = STATUS_STATE_ENABLED;
+    processor->status.health = STATUS_HEALTH_OK;
+
+    processor->p_id.vendor_id = processor->manufacturer;
+    processor->p_id.identification_registers = get_value_from_cmd_str("cat /proc/cpuinfo | grep \"Serial\" | head -1", "Serial");
+    processor->p_id.effective_family = get_value_from_cmd_str("cat /proc/cpuinfo | grep \"cpu family\" | head -1", "cpu family");
+    processor->p_id.effective_model = get_value_from_cmd_str("cat /proc/cpuinfo | grep \"model\" | grep -v \"model name\" | head -1", "model");
+    processor->p_id.step = get_value_from_cmd_str("cat /proc/cpuinfo | grep \"stepping\" | head -1", "stepping");
+    processor->p_id.microcode_info = get_value_from_cmd_str("cat /proc/cpuinfo | grep \"microcode\" | head -1", "microcode");
 
     processor_collection->add_member(processor);
     return;
