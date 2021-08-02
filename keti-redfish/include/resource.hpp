@@ -245,7 +245,9 @@ enum ACTION_NAME
     GENERATE_CSR,
     REPLACE_CERTIFICATE,
     SUBMIT_TEST_EVENT,
-    SIMPLE_UPDATE
+    SIMPLE_UPDATE,
+    INSERT_MEDIA,
+    EJECT_MEDIA
 };
 
 /**
@@ -2732,8 +2734,23 @@ class VirtualMedia : public Resource
     string user_name;
     string passwword;
 
+    unordered_map <string, Actions> actions;
+
     VirtualMedia(const string _odata_id) : Resource(VIRTUAL_MEDIA_TYPE, _odata_id, ODATA_VIRTUAL_MEDIA_TYPE)
     {
+        Actions insert_media;
+        insert_media.type = INSERT_MEDIA;
+        insert_media.name = "#VirtualMedia.InsertMedia";
+        insert_media.target = this->odata.id + "/Actions/VirtualMedia.InsertMedia";
+
+        Actions eject_media;
+        eject_media.type = EJECT_MEDIA;
+        eject_media.name = "#VirtualMedia.EjectMedia";
+        eject_media.target = this->odata.id + "/Actions/VirtualMedia.EjectMedia";
+
+        this->actions["InsertMedia"] = insert_media;
+        this->actions["EjectMedia"] = eject_media;
+
         g_record[_odata_id] = this;
     }
     ~VirtualMedia()
@@ -2743,6 +2760,8 @@ class VirtualMedia : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
+    json::value InsertMedia(json::value body);
+    json::value EjectMedia(void);    
 };
 
 void init_system(Collection *system_collection, string _id);
@@ -2906,4 +2925,8 @@ void generate_ssl_private_key(fs::path key, string key_length);
 json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id);
 string file2str(string file_path);
 void update_cert_with_pem(fs::path cert, Certificate *certificate);
+
+// virtual media
+static int umount();
+
 #endif
