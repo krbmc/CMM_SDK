@@ -75,7 +75,18 @@ bool init_resource(void)
     // ((Systems *)g_record[ODATA_SYSTEM_ID])->Reset(reset_body);
     // system reset test end
 
-    // init_record();
+    // virtual media test
+    // json::value insert_body;
+    // insert_body["Image"] = json::value::string("10.0.6.92:/redfish");
+    // insert_body["UserName"] = json::value::string("test");
+    // insert_body["Password"] = json::value::string("");
+    // insert_body["WriteProtected"] = json::value::boolean(true); // default 
+    
+    // VirtualMedia *vm = new VirtualMedia("/redfish/v1/Systems/1/VirtualMedia/test");
+    // vm->InsertMedia(insert_body);
+    // log(info) << "mount completed..";
+    // vm->EjectMedia();
+    
     record_save_json();
     log(info) << "record save json complete";
     
@@ -128,7 +139,7 @@ void init_system(Collection *system_collection, string _id)
         init_simple_storage(system->simple_storage, "0");
     }
     if (!record_is_exist(odata_id + "/VirtualMedia")){
-        system->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        system->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
         system->virtual_media->name = "VirtualMediaCollection";
 
         insert_virtual_media(system->virtual_media, "EXT1_test");    // temp
@@ -4191,6 +4202,7 @@ json::value VirtualMedia::get_json(void)
     for(int i = 0; i < this->media_type.size(); i++)
         j["MediaTypes"][i] = json::value::string(this->media_type[i]);
 
+    j["Actions"] = get_action_info(this->actions);
     return j;
 }
 
@@ -4217,6 +4229,93 @@ bool VirtualMedia::load_json(json::value &j)
     }
 
     return true;
+}
+
+/**
+ * @brief virtual media insert via nfs
+ * @author 김
+ * @return if insert failed, return json::value::null(). else return virtual media resource info  
+ */
+json::value VirtualMedia::InsertMedia(json::value body)
+{
+    // have to : odata.id 설정, media type를 어떻게 얻어올 지..
+    
+    int ret = 0;
+
+    string image, user_name, password;
+    bool write_protected;
+    
+    get_value_from_json_key(body, "Image", image);
+    get_value_from_json_key(body, "UserName", user_name);
+    get_value_from_json_key(body, "Password", password);
+    get_value_from_json_key(body, "WriteProtected", write_protected);
+
+    // #0 mount check
+    ret = umount();
+    if (ret == -1){
+        log(warning) << "umount error!";
+        return json::value::null();
+    }
+
+    // #1 mount
+    // #1-1 set mount point
+    if (!fs::exists("/etc/nfs"))
+        mkdir("/etc/nfs", 777);
+    
+    // #1-2 using nfs, 
+    string cmd = "mount -vt nfs " + image + " /etc/nfs";
+    ret = system(cmd.c_str());
+    if (ret == -1){
+        log(warning) << "mount error!";
+        return json::value::null();
+    }
+
+    // #2 make virtual media, insert
+    this->connected_via = "URI";
+    this->name = "VirtualMedia";
+    this->inserted = true;
+    this->image = image;
+    this->image_name = get_current_object_name(image, "/");
+    this->id = get_current_object_name(this->odata.id, "/");
+    this->write_protected = write_protected;
+    this->media_type.push_back("CD");
+    this->media_type.push_back("DVD");
+
+    ((Collection *)g_record[get_parent_object_uri(this->odata.id, "/")])->add_member(this);
+    
+    // #3 return resource
+    return this->get_json();
+}
+
+json::value VirtualMedia::EjectMedia(void)
+{
+    int ret;
+
+    // #1 unmount
+    ret = umount();
+    if (ret == -1)
+        return json::value::null();
+
+    // #2 connectedVia => notconnected, inserted => false, image => null  <? data는 보존한다는 얘기??>
+    this->connected_via = "NotConnected";
+    this->inserted = false;
+    this->image = "";
+    
+    // #3 return resource
+    return this->get_json();
+}
+
+static int umount()
+{   
+    if (stoi(get_popen_string("mount | grep /etc/nfs | wc -l")) > 0){
+        string cmd = "umount -l /etc/nfs > /dev/null 2>&1";
+        int ret = system(cmd.c_str());
+        if (ret == 0)
+            return 0;
+        else
+            return -1; 
+    }
+    return 0;
 }
 // dy : virtual media end
 

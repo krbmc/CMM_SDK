@@ -603,7 +603,6 @@ bool record_save_json(void)
     }
     
     // log(info) << "update/create complete";
-
     // delete file 현재 g_record에 존재하지 않는 record를 disk에서도 삭제.
     // 모두 json 파일.. 디렉토리는 남아있음
     for (auto const& iter : dir_list){
@@ -613,14 +612,11 @@ bool record_save_json(void)
         fs::remove(target_file);
     }
     dir_list.clear();
-
     
     // #3 업데이트 된 g_record dir_list에 저장 반복.
     for (auto it = g_record.begin(); it != g_record.end(); it++){
         dir_list.insert(it->second->odata.id);
     }
-    
-    log(info) << "record_save_json complete";
     return true;
 }
 
