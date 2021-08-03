@@ -2258,28 +2258,11 @@ class SimpleStorage : public Resource
     string description;
     string uefi_device_path;
     Status status;
-    // string file_system; // Device_info 안으로 들어감
-
-    Device_Info info;
+    
     vector<Device_Info> devices;
 
     SimpleStorage(const string _odata_id) : Resource(SIMPLE_STORAGE_TYPE, _odata_id, ODATA_SIMPLE_STORAGE_TYPE)
     {
-        // this->description = "System SATA";
-        // this->uefi_device_path = "Acpi(PNP0A03, 0) / Pci(1F|1) / Ata(Primary,Master) / HD(Part3, Sig00110011)";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // // this->file_system = "";
-
-        // this->info.capacity_KBytes = 8000000;
-        // this->info.manufacturer = "Contoso";
-        // this->info.model = "3000GT8";
-        // this->info.name = "SATA Bay 1";
-        // this->info.status.state = STATUS_STATE_ENABLED;
-        // this->info.status.health = STATUS_HEALTH_OK;
-
-        // this->devices.push_back(info);
-
         g_record[_odata_id] = this;
     }
     SimpleStorage(const string _odata_id, const string _simple_id) : SimpleStorage(_odata_id)
@@ -2494,27 +2477,6 @@ class Memory : public Resource
 
     Memory(const string _odata_id) : Resource(MEMORY_TYPE, _odata_id, ODATA_MEMORY_TYPE)
     {
-        // this->id = _memory_id;
-        // this->rank_count = 2;
-        // this->capacity_kib = 32768;
-        // this->data_width_bits = 64;
-        // this->bus_width_bits = 72;
-        // this->error_correction = "MultiBitECC";
-
-        // this->m_location.socket = 1;
-        // this->m_location.memory_controller = 1;
-        // this->m_location.channel = 1;
-        // this->m_location.slot = 1;
-
-        // this->memory_type = "DRAM";
-        // this->memory_device_type = "DDR4";
-        // this->base_module_type = "RDIMM";
-
-        // this->memory_media.push_back("DRAM");
-        // this->max_TDP_milliwatts.push_back(12000);
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
         g_record[_odata_id] = this;
     }
     Memory(const string _odata_id, const string _memory_id) : Memory(_odata_id)
@@ -2579,31 +2541,6 @@ class Systems : public Resource
 
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
-        this->id = "";
-        // this->sku = "";
-        this->system_type = "";
-        this->asset_tag = "";
-        this->manufacturer = "";
-        this->model = "";
-        this->serial_number = "";
-        this->part_number = "";
-        this->description = "";
-        this->uuid = "";
-        this->hostname = "";       
-        // this->hosting_roles.push_back("null");
-        this->indicator_led = LED_OFF;
-        this->power_state = "";
-        this->bios_version = "";
-        
-        this->status.state = "";
-        this->status.health = "";
-          
-        // Boot
-        this->boot.boot_source_override_enabled = "";
-        this->boot.boot_source_override_target = "";
-        this->boot.boot_source_override_mode = "";
-        this->boot.uefi_target_boot_source_override = "";
-
         // pointer
         this->bios = nullptr;
         this->processor = nullptr;
@@ -2611,6 +2548,7 @@ class Systems : public Resource
         this->ethernet = nullptr;
         this->log_service = nullptr;
         this->simple_storage = nullptr;
+        this->virtual_media = nullptr;
 
         Actions reset;
         reset.type = RESET_SYSTEM;

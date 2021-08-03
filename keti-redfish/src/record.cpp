@@ -578,6 +578,9 @@ bool record_save_json(void)
     // #2 저장 시,  기존에 존재했지만, 현재 저장되는 g_record에 존재하지 않는 파일 비교 및 삭제
     for (auto it = g_record.begin(); it != g_record.end(); it++)
     {
+        // log(info) << "uri : " << it->first << ", resource address : " << it->second;
+        // log(info) << "id : " << it->second->odata.id << ", type : " << it->second->odata.type << endl;
+    
         // Handling save exeception 
         if (it->second == 0){
             log(warning) << "what the fuck is this in record save json??" << endl;
@@ -598,8 +601,6 @@ bool record_save_json(void)
             log(info) << "create " << this_odata_id;
         }
 
-        // log(info) << "uri : " << it->first << ", resource address : " << it->second;
-        // log(info) << "id : " << it->second->odata.id << ", type : " << it->second->odata.type << endl;
     }
     
     // log(info) << "update/create complete";

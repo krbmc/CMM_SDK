@@ -257,16 +257,18 @@ string get_popen_string(string command)
 {
     FILE *fp = popen(command.c_str(), "r");
     char *temp = (char *)malloc(sizeof(char)*256);
+    string ret;
     if (fp != NULL){
         while(fgets(temp, 256, fp) != NULL)
         {
+            string str(temp);
+            ret += temp;
         }
         pclose(fp);
     }
-    string str(temp);
-    if (str.back() == '\n')
-        str.pop_back();
-    return str;
+    if (ret.back() == '\n')
+        ret.pop_back();
+    return ret;
 }
 
 string get_extracted_bmc_id_uri(string _uri)
