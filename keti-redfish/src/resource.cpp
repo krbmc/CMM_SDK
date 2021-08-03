@@ -15,7 +15,6 @@ bool init_resource(void)
     record_load_json();
     log(info) << "record load json complete";
 
-    
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
         g_service_root = new ServiceRoot();
     
@@ -100,9 +99,35 @@ void init_system(Collection *system_collection, string _id)
     Systems *system = new Systems(odata_id, _id);
     system->name = "CMM Computer System";
 
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    
     /**
      * @todo 여기에 system 일반멤버변수값 넣어주기
      */
+    system->id = _id;
+    // system->sku = "";
+    system->system_type = "Physical";
+    system->asset_tag = "NR422-SA1-001";
+    system->manufacturer = "KETI";
+    system->model = "";
+    system->serial_number = "PTW1N931P0001";
+    system->part_number = "KXAP-B0001";
+    system->description = "";
+    system->uuid = boost::uuids::to_string(uuid);
+    system->hostname = get_popen_string("hostname");       
+    // system->hosting_roles.push_back("null");
+    system->indicator_led = LED_OFF;
+    system->power_state = "On";
+    system->bios_version = "";
+    
+    system->status.state = STATUS_STATE_ENABLED;
+    system->status.health = STATUS_HEALTH_OK;
+        
+    // Boot
+    system->boot.boot_source_override_enabled = "";
+    system->boot.boot_source_override_target = "Legacy";
+    system->boot.boot_source_override_mode = "";
+    system->boot.uefi_target_boot_source_override = "None";
 
     if (!record_is_exist(odata_id + "/Processors")){
         system->processor = new Collection(odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
@@ -194,9 +219,31 @@ void init_memory(Collection *memory_collection, string _id)
     string odata_id = memory_collection->odata.id + "/" + _id;
 
     Memory *memory = new Memory(odata_id, _id);
+    
     /**
      * @todo 여기에 memory 일반멤버변수값 넣어주기
      */
+    memory->id = _id;
+    // memory->rank_count = 2;
+    memory->capacity_kib = stoi(get_value_from_cmd_str("free -k", "Mem"));
+    // memory->data_width_bits = 64;
+    // memory->bus_width_bits = 72;
+    // memory->error_correction = "MultiBitECC";
+
+    // memory->m_location.socket = 1;
+    // memory->m_location.memory_controller = 1;
+    // memory->m_location.channel = 1;
+    // memory->m_location.slot = 1;
+
+    // memory->memory_type = "DRAM";
+    // memory->memory_device_type = "DDR4";
+    // memory->base_module_type = "RDIMM";
+
+    // memory->memory_media.push_back("DRAM");
+    // memory->max_TDP_milliwatts.push_back(12000);
+    
+    memory->status.state = STATUS_STATE_ENABLED;
+    memory->status.health = STATUS_HEALTH_OK;
 
     memory_collection->add_member(memory);
     return;
@@ -256,7 +303,6 @@ void init_ethernet(Collection *ethernet_collection, string _id)
             IPv6_Address ipv6;
             string ipv6_temp = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet6 addr\"", "inet6 addr");
             ipv6.address = string_split(ipv6_temp, '/')[0];
-            log(info) << ipv6_temp;
             ipv6.prefix_length = stoi(string_split(ipv6_temp, '/')[1]);
             // ipv6.address_origin = 
             // ipv6.address_state
@@ -321,6 +367,36 @@ void init_simple_storage(Collection *simple_storage_collection, string _id)
      * @todo 여기에 simple_storage 일반멤버변수값 넣어주기
      */
 
+    // simple_storage->description = "System SATA";
+    // simple_storage->uefi_device_path = "Acpi(PNP0A03, 0) / Pci(1F|1) / Ata(Primary,Master) / HD(Part3, Sig00110011)";
+    vector<string> vec = string_split(get_popen_string("lsblk | grep disk"), '\n');
+    
+    for (auto str : vec){
+        Device_Info info;
+        vector<string> info_vec = string_split(str, ' ');
+
+        if (info_vec[3].back() == 'G'){
+            info_vec[3].pop_back();
+            info.capacity_KBytes = stoi(info_vec[3]) * 1024 * 1024;
+        }else if (info_vec[3].back() == 'M'){
+            info_vec[3].pop_back();
+            info.capacity_KBytes = stoi(info_vec[3]) * 1024;
+        }else{
+            log(warning) << "disk size is abnormal..";
+        } 
+        
+        info.name = info_vec[0];
+        info.manufacturer = get_popen_string("lsblk -o NAME,VENDOR | grep " + info_vec[0] + " | head -1 | awk \'{print $2}\'");
+        info.model = get_popen_string("lsblk -o NAME,MODEL | grep " + info_vec[0] + " | head -1 | awk \'{print $2}\'");
+        info.status.state = STATUS_STATE_ENABLED;
+        info.status.health = STATUS_HEALTH_OK;
+    
+        simple_storage->devices.push_back(info);
+    }
+    
+    simple_storage->status.state = STATUS_STATE_ENABLED;
+    simple_storage->status.health = STATUS_HEALTH_OK;
+    
     simple_storage_collection->add_member(simple_storage);
     return;
 }
