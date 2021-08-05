@@ -12,8 +12,19 @@
 #include <algorithm>
 #include <random>
 #include <functional>
+#include <set> 
+
+#include <unistd.h>
+#include <dirent.h>
+#include <time.h> 
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <limits.h> 
+
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
+#include <cpprest/http_client.h> 
+
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
@@ -29,14 +40,6 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <unistd.h>
-#include <dirent.h>
-#include <cpprest/http_client.h> // @@@@
-#include <time.h> // @@@@
-#include <sys/types.h> // @@@@
-#include <sys/stat.h> // @@@@
-#include <limits.h> // @@@@
-#include <set> // @@@@
 
 // default port define
 #define DEFAULT_SNMP_PORT 161
@@ -53,11 +56,12 @@
 #define DHCPV6_CONF "/etc/dhcp/dhcpd6.conf"
 #define DNS_CONF "/etc/resolv.conf"
 #define VLAN_CONF "/proc/net/vlan/config"
-using namespace web::http::client; // @@@@
+
 using namespace std;
 using namespace web;
 using namespace web::http;
 using namespace web::http::experimental::listener;
+using namespace web::http::client; 
 using namespace utility;
 
 namespace logging = boost::log;
@@ -118,6 +122,14 @@ string get_extracted_bmc_id_uri(string _uri);
 bool check_role_privileges(string _pri);
 string get_value_from_cmd_str(string cmd_str, string key);
 
+bool get_value_from_json_key(json::value body, string key, int& value);
+bool get_value_from_json_key(json::value body, string key, string& value);
+bool get_value_from_json_key(json::value body, string key, json::value& value);
+bool get_value_from_json_key(json::value body, string key, double& value);
+bool get_value_from_json_key(json::value body, string key, bool& value);
+
+string generate_uuid(void);
+
 /**
  * @brief Function of record
  */
@@ -127,7 +139,7 @@ json::value record_get_json(const string _uri);
 bool record_load_json(void);
 bool record_save_json(void);
 void record_print(void);
-void record_init_load(string _path); // @@@@@
+void record_init_load(string _path);
 
 /**
  * @brief Function of module_id
@@ -136,9 +148,4 @@ void save_module_id(void);
 void load_module_id(void);
 void remove_if_exists(fs::path file);
 
-bool get_value_from_json_key(json::value body, string key, int& value);
-bool get_value_from_json_key(json::value body, string key, string& value);
-bool get_value_from_json_key(json::value body, string key, json::value& value);
-bool get_value_from_json_key(json::value body, string key, double& value);
-bool get_value_from_json_key(json::value body, string key, bool& value);
 #endif
