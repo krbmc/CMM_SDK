@@ -321,7 +321,7 @@ bool get_value_from_json_key(json::value body, string key, string& value)
     }
     else{
         value = "";
-        log(warning) << "error with parsing " << key << " to string";
+        // log(warning) << "error with parsing " << key << " to string";
         return false;
     }
     return true;
@@ -401,4 +401,14 @@ string get_value_from_cmd_str(string cmd_str, string key)
 string ltrim(string str)
 {
     return str.erase(0, str.find_first_not_of(" :\n\t"));
+}
+
+/**
+ * @brief uuid string generate
+ * @author dyk
+ */
+string generate_uuid(void)
+{
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    return boost::uuids::to_string(uuid);
 }

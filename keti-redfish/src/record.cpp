@@ -171,14 +171,14 @@ json::value record_get_json(const string _uri)
  */
 bool record_load_json(void)
 {
+    log(info) << "[Record Load Json]start";
     vector<Resource*> dependency_object;
 
     init_record();
     record_init_load("/redfish");
-    log(info) << "init load complete"; // #1
+    log(info) << "[# 1]init load complete"; // #1
     
     // #2. => service root init 하기 전에 record init 하고, record가 없는 객체만 service root에서 생성하도록 구현하는 것이 효율적으로 보입니다.. 네~ 효율이 중요하죠..           
-
     for (auto it = g_record.begin(); it != g_record.end(); it++){
         json::value j;
         
@@ -560,35 +560,37 @@ bool record_load_json(void)
         }
     }
 
-    log(info) << "after 3";
-    // #4
+    log(info) << "[# 2] resource load complete";
+    
     for (auto object : dependency_object)
         dependency_injection(object);
     
-    log(info) << "after 4";
-    // #5
+    log(info) << "[# 3] dependency injection complete";
+    
     clear_gc();
-    log(info) << "garbage collection complete";
+    log(info) << "[# 4] garbage collection complete";
     return true;
 }
 
 bool record_save_json(void)
 {
+    log(info) << "[Record Save Json] start";
+
     // #1 redfish 디렉토리 순회 (init_resource)해서 모든 파일 이름 vector<string(odata.id)> dir_list 에 저장 => init_resource
     // #2 저장 시,  기존에 존재했지만, 현재 저장되는 g_record에 존재하지 않는 파일 비교 및 삭제
     for (auto it = g_record.begin(); it != g_record.end(); it++)
     {
-        // log(info) << "uri : " << it->first << ", resource address : " << it->second;
-        // log(info) << "id : " << it->second->odata.id << ", type : " << it->second->odata.type << endl;
-    
         // Handling save exeception 
         if (it->second == 0){
             log(warning) << "what the fuck is this in record save json??" << endl;
             continue;
         }
-
-        string this_odata_id = it->second->odata.id;
         
+        // log(info) << "uri : " << it->first << ", resource address : " << it->second;
+        // log(info) << "id : " << it->second->odata.id << ", type : " << it->second->odata.type << endl;
+    
+        string this_odata_id = it->second->odata.id;
+
         // update file
         auto iter = dir_list.find(this_odata_id);
         if (iter != dir_list.end()){
@@ -603,7 +605,8 @@ bool record_save_json(void)
 
     }
     
-    // log(info) << "update/create complete";
+    log(info) << "[# 1] record update/create complete";
+    
     // delete file 현재 g_record에 존재하지 않는 record를 disk에서도 삭제.
     // 모두 json 파일.. 디렉토리는 남아있음
     for (auto const& iter : dir_list){
@@ -614,10 +617,14 @@ bool record_save_json(void)
     }
     dir_list.clear();
     
+    log(info) << "[# 2] record delete complete";
+    
     // #3 업데이트 된 g_record dir_list에 저장 반복.
     for (auto it = g_record.begin(); it != g_record.end(); it++){
         dir_list.insert(it->second->odata.id);
     }
+
+    log(info) << "[Record Save Json] end";
     return true;
 }
 
@@ -715,7 +722,7 @@ void dependency_injection(Resource *res)
     string current_object_name = get_current_object_name(id, "/");
 
     // log(info) << id << " dependency injection start";
-    // log(info) << "parent : "<< parent_object_id;
+    // log(info) << "parent : "<< parent_object_id<<endl;
 
     switch (res->type)
     {
@@ -741,9 +748,9 @@ void dependency_injection(Resource *res)
         case COLLECTION_TYPE:{
         /*  == Collection location == 
             service root collection : systems, chassis, manager, update
-            systems collection : network_interfaces, storage, processor, virtual_media, memory, ethernet, log_service, simple_storage
+            systems collection : network_interfaces, storage, processor, memory, ethernet, log_service, simple_storage
             chassis collection : sensors
-            manager collection : ethernet_interfaces, log_service
+            manager collection : ethernet_interfaces, log_service, virtual_media
             log_service collection : log_entry 
             task_service collection : task
             session_service collection : session
@@ -779,8 +786,6 @@ void dependency_injection(Resource *res)
                         ((Systems *)g_record[parent_object_id])->log_service = (Collection *)res;
                     }else if (res->odata.type == ODATA_SIMPLE_STORAGE_COLLECTION_TYPE){
                         ((Systems *)g_record[parent_object_id])->simple_storage = (Collection *)res;
-                    }else if (res->odata.type == ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE){
-                        ((Systems *)g_record[parent_object_id])->virtual_media = (Collection *)res;
                     }else{
                         log(warning) << "\t\t dy : what is this in system? : " << id << " type : " << res->odata.type;
                     }
@@ -797,6 +802,8 @@ void dependency_injection(Resource *res)
                         ((Manager *)g_record[parent_object_id])->ethernet = (Collection *)res;
                     }else if (res->odata.type == ODATA_LOG_SERVICE_COLLECTION_TYPE){
                         ((Manager *)g_record[parent_object_id])->log_service = (Collection *)res;
+                    }else if (res->odata.type == ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE){
+                        ((Manager *)g_record[parent_object_id])->virtual_media = (Collection *)res;
                     }else{
                         log(warning) << "\t\t dy : what is this in manager? : " << id << " type : " << res->odata.type;
                     }
@@ -1015,7 +1022,6 @@ void dependency_injection(Resource *res)
  * @brief module_id_table save & load
  * @authors 강
  */
-
 void save_module_id(void)
 {
     string json_string;

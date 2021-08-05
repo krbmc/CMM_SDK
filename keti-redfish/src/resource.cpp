@@ -10,17 +10,17 @@ unordered_map<string, Event*> event_map;
  */
 bool init_resource(void)
 {
-    // load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
+    load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
     // 등록해버리고 table.json까지 수정해버림
     record_load_json();
-    log(info) << "record load json complete";
+    log(info) << "[Record Load Json] complete";
 
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
         g_service_root = new ServiceRoot();
-    
-    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    // cout << "\t\t dy : add new bmc complete" << endl;
+
+    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // log(info) << "add new bmc complete";
     
     // // generateCSR test
     // json::value rsp;
@@ -81,7 +81,7 @@ bool init_resource(void)
     // insert_body["Password"] = json::value::string("");
     // insert_body["WriteProtected"] = json::value::boolean(true); // default 
     
-    // VirtualMedia *vm = new VirtualMedia("/redfish/v1/Systems/1/VirtualMedia/test");
+    // VirtualMedia *vm = new VirtualMedia("/redfish/v1/Managers/1/VirtualMedia/test");
     // vm->InsertMedia(insert_body);
     // log(info) << "mount completed..";
     // vm->EjectMedia();
@@ -99,10 +99,8 @@ void init_system(Collection *system_collection, string _id)
     Systems *system = new Systems(odata_id, _id);
     system->name = "CMM Computer System";
 
-    boost::uuids::uuid uuid = boost::uuids::random_generator()();
-    
     /**
-     * @todo 여기에 system 일반멤버변수값 넣어주기
+     * Computer System Configuration
      */
     system->id = _id;
     // system->sku = "";
@@ -113,7 +111,7 @@ void init_system(Collection *system_collection, string _id)
     system->serial_number = "PTW1N931P0001";
     system->part_number = "KXAP-B0001";
     system->description = "";
-    system->uuid = boost::uuids::to_string(uuid);
+    system->uuid = generate_uuid();
     system->hostname = get_popen_string("hostname");       
     // system->hosting_roles.push_back("null");
     system->indicator_led = LED_OFF;
@@ -163,12 +161,6 @@ void init_system(Collection *system_collection, string _id)
     
         init_simple_storage(system->simple_storage, "0");
     }
-    if (!record_is_exist(odata_id + "/VirtualMedia")){
-        system->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
-        system->virtual_media->name = "VirtualMediaCollection";
-
-        insert_virtual_media(system->virtual_media, "EXT1_test");    // temp
-    }
     if (!record_is_exist(odata_id + "/Bios")){
         system->bios = new Bios(odata_id + "/Bios", "Bios");
         
@@ -186,7 +178,7 @@ void init_processor(Collection *processor_collection, string _id)
     Processors *processor = new Processors(odata_id, _id);
 
     /**
-     * @todo 여기에 processor 일반멤버변수값 넣어주기
+     * Processor Configuration
      */
     processor->id = _id;
     processor->name = "Processor";
@@ -221,7 +213,7 @@ void init_memory(Collection *memory_collection, string _id)
     Memory *memory = new Memory(odata_id, _id);
     
     /**
-     * @todo 여기에 memory 일반멤버변수값 넣어주기
+     * Memory Configuration
      */
     memory->id = _id;
     // memory->rank_count = 2;
@@ -256,8 +248,9 @@ void init_ethernet(Collection *ethernet_collection, string _id)
         odata_id += _id;
 
     EthernetInterfaces *ethernet = new EthernetInterfaces(odata_id, _id);
+    
     /**
-     * @todo 여기에 ethernet 일반멤버변수값 넣어주기
+     * Ethernet Interface Configuration
      */
     string eth_id = "eth" + _id;
     ethernet->description = "Manager Ethernet Interface";
@@ -330,10 +323,14 @@ void init_log_service(Collection *log_service_collection, string _id)
     string odata_id = log_service_collection->odata.id + "/" + _id;
 
     LogService *log_service = new LogService(odata_id, _id);
-    /**
-     * @todo 여기에 log_service 일반멤버변수값 넣어주기
-     */
-
+    log_service->max_number_of_records = 1000;
+    log_service->overwrite_policy = "WrapsWhenFull";
+    log_service->datetime_local_offset = "+09:00";
+    log_service->service_enabled = true;
+    
+    log_service->status.state = STATUS_STATE_ENABLED;
+    log_service->status.health = STATUS_HEALTH_OK;
+    
     if (!record_is_exist(odata_id + "/Entries")){
         log_service->entry = new Collection(odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
         log_service->entry->name = "Computer System Log Entry Collection";
@@ -350,10 +347,7 @@ void init_log_entry(Collection *log_entry_collection, string _id)
     string odata_id = log_entry_collection->odata.id + "/" + _id;
 
     LogEntry *log_entry = new LogEntry(odata_id, _id);
-    /**
-     * @todo 여기에 log_entry 일반멤버변수값 넣어주기
-     */
-
+    
     log_entry_collection->add_member(log_entry);
     return;
 }
@@ -363,10 +357,10 @@ void init_simple_storage(Collection *simple_storage_collection, string _id)
     string odata_id = simple_storage_collection->odata.id + "/" + _id;
 
     SimpleStorage *simple_storage = new SimpleStorage(odata_id, _id);
+    
     /**
-     * @todo 여기에 simple_storage 일반멤버변수값 넣어주기
+     * @todo SimpleStorage Configuration
      */
-
     // simple_storage->description = "System SATA";
     // simple_storage->uefi_device_path = "Acpi(PNP0A03, 0) / Pci(1F|1) / Ata(Primary,Master) / HD(Part3, Sig00110011)";
     vector<string> vec = string_split(get_popen_string("lsblk | grep disk"), '\n');
@@ -422,40 +416,15 @@ void init_bios(Bios *bios)
     return;
 }
 
-void insert_virtual_media(Collection *virtual_media_collection, string _id)
-{
-    string odata_id = virtual_media_collection->odata.id + "/" + _id;
-    VirtualMedia *virtual_media;
-
-    if (!record_is_exist(odata_id))
-        virtual_media = new VirtualMedia(odata_id);
-    
-    /**
-     * @todo 여기에 virtual_media 일반멤버변수값 넣어주기
-     */
-    virtual_media->id = _id;
-    virtual_media->name = "VirtualMedia";
-    virtual_media->image = "http://192.168.1.2/Core-current.iso";
-    virtual_media->image_name = "Core-current.iso";
-    virtual_media->media_type.push_back("CD");
-    virtual_media->media_type.push_back("DVD");
-    virtual_media->connected_via = "URI";
-    virtual_media->inserted = true;
-    virtual_media->write_protected = true;
-    virtual_media->user_name = "test";
-    virtual_media->passwword = "password";
-    
-    virtual_media_collection->add_member(virtual_media);
-    return;
-}
-
 void init_chassis(Collection *chassis_collection, string _id)
 {
     string odata_id = chassis_collection->odata.id + "/" + _id;
     Chassis *chassis;
 
-    if (!record_is_exist(odata_id))
-        chassis = new Chassis(odata_id, _id);
+    if (record_is_exist(odata_id))
+        return;
+    
+    chassis = new Chassis(odata_id, _id);
     
     /**
      * @todo 여기에 chassis 일반멤버변수값 넣어주기
@@ -518,8 +487,10 @@ void init_sensor(Collection *sensor_collection, string _id)
     string odata_id = sensor_collection->odata.id + "/" + _id;
     Sensor *sensor;
     
-    if (!record_is_exist(odata_id))
-        sensor = new Sensor(odata_id, _id);
+    if (record_is_exist(odata_id))
+        return;
+    
+    sensor = new Sensor(odata_id, _id);
     /**
      * @todo 여기에 sensor 일반멤버변수값 넣어주기
      */
@@ -641,21 +612,32 @@ void init_power(Power *power)
 void init_manager(Collection *manager_collection, string _id)
 {
     string odata_id = manager_collection->odata.id + "/" + _id;
-    Manager *manager;
     
-    if (!record_is_exist(odata_id))
-        manager = new Manager(odata_id, _id);
-        
-    manager->name = "CMM Manager";
-    manager->manager_type = "Enclosure";
-    manager->firmware_version = "v1";
+    if (record_is_exist(odata_id))
+        return;
+
+    Manager *manager = new Manager(odata_id, _id);
+    
     /**
-     * @todo 여기에 manager 일반멤버변수값 넣어주기
+     * Manager Configuration
      */
+    manager->name = "CMM Manager";
+    manager->manager_type = "EnclosureManager";
+    manager->firmware_version = "v1";
+    manager->uuid = generate_uuid();
+    manager->model = get_popen_string("uname -m");
+    manager->datetime = currentDateTime();
+    manager->datetime_offset = "+09:00";
+    manager->power_state = "";
+    manager->description = "";
+
+    manager->status.state = STATUS_STATE_ENABLED;
+    manager->status.health = STATUS_HEALTH_OK;
 
     manager->network = new NetworkProtocol(odata_id + "/NetworkProtocol", "NetworkProtocol");
+        
     /**
-     * @todo 여기에 network 일반멤버변수값 넣어주기
+     * Network Protocol Configuration
      */
     manager->network->hostname = get_popen_string("cat /etc/hostname");
     manager->network->description = "Manager Network Service";
@@ -698,7 +680,6 @@ void init_manager(Collection *manager_collection, string _id)
         for (int i = 0; i < eth_num; i++){
             init_ethernet(manager->ethernet, to_string(i));
         }
-    
     }
 
     if (!record_is_exist(odata_id + "/LogServices")){
@@ -707,8 +688,43 @@ void init_manager(Collection *manager_collection, string _id)
 
         init_log_service(manager->log_service, "Log1");
     }
+    if (!record_is_exist(odata_id + "/VirtualMedia")){
+        manager->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
+        manager->virtual_media->name = "VirtualMediaCollection";
 
+        insert_virtual_media(manager->virtual_media, "EXT1_test");    // temp
+    }
+    
     manager_collection->add_member(manager);
+    return;
+}
+
+void insert_virtual_media(Collection *virtual_media_collection, string _id)
+{
+    string odata_id = virtual_media_collection->odata.id + "/" + _id;
+    VirtualMedia *virtual_media;
+
+    if (record_is_exist(odata_id))
+        return;
+    
+    virtual_media = new VirtualMedia(odata_id);
+    
+    /**
+     * @todo 여기에 virtual_media 일반멤버변수값 넣어주기
+     */
+    virtual_media->id = _id;
+    virtual_media->name = "VirtualMedia";
+    virtual_media->image = "http://192.168.1.2/Core-current.iso";
+    virtual_media->image_name = "Core-current.iso";
+    virtual_media->media_type.push_back("CD");
+    virtual_media->media_type.push_back("DVD");
+    virtual_media->connected_via = "URI";
+    virtual_media->inserted = true;
+    virtual_media->write_protected = true;
+    virtual_media->user_name = "test";
+    virtual_media->passwword = "password";
+    
+    virtual_media_collection->add_member(virtual_media);
     return;
 }
 
@@ -717,10 +733,15 @@ void init_update_service(UpdateService *update_service)
     string odata_id = update_service->odata.id;
     
     /**
-     * @todo 여기에 update_service 일반멤버변수값 넣어주기
+     * Update Service Configuration
      */
-    
-    
+    update_service->id = "";
+    update_service->service_enabled = true;
+    update_service->http_push_uri = "";
+
+    update_service->status.state = STATUS_STATE_ENABLED;
+    update_service->status.health = STATUS_HEALTH_OK;
+
     if (!record_is_exist(odata_id + "/FirmwareInventory")){
         update_service->firmware_inventory = new Collection(odata_id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
         update_service->firmware_inventory->name = "Firmware Inventory Collection";
@@ -742,12 +763,19 @@ void init_software_inventory(Collection *software_inventory_collection, string _
     string odata_id = software_inventory_collection->odata.id + "/" + _id;
     SoftwareInventory *software_inventory;
     
-    if (!record_is_exist(odata_id))
-        software_inventory = new SoftwareInventory(odata_id, _id);
+    if (record_is_exist(odata_id))
+        return;
+    
+    software_inventory = new SoftwareInventory(odata_id, _id);
     /**
-     * @todo 여기에 software_inventory 일반멤버변수값 넣어주기
+     * Software Inventory Configuration
      */
+    software_inventory->updatable = true;
 
+    software_inventory->status.state = STATUS_STATE_ENABLED;
+    software_inventory->status.health = STATUS_HEALTH_OK;
+
+    
     software_inventory_collection->add_member(software_inventory);
     return;
 }
@@ -757,8 +785,15 @@ void init_task_service(TaskService *task_service)
     string odata_id = task_service->odata.id;
     
     /**
-     * @todo 여기에 task_service 일반멤버변수값 넣어주기
+     * Task Service Configuration
      */
+    task_service->name = "Task Service";
+    task_service->id = "TaskService";
+    task_service->service_enabled = true;
+    task_service->datetime = currentDateTime();
+
+    task_service->status.state = STATUS_STATE_ENABLED;
+    task_service->status.health = STATUS_HEALTH_OK;
     
     if (!record_is_exist(odata_id + "/Tasks")){
         task_service->task_collection = new Collection(odata_id + "/Tasks", ODATA_TASK_COLLECTION_TYPE);
@@ -772,9 +807,25 @@ void init_event_service(EventService *event_service)
     string odata_id = event_service->odata.id;
     
     /**
-     * @todo 여기에 event_service 일반멤버변수값 넣어주기
+     * event_service configuration
      */
-    
+    event_service->service_enabled = true;
+    event_service->delivery_retry_attempts = 3;
+    event_service->delivery_retry_interval_seconds = 60;
+
+    // event_service->sse.event_type = false;
+    event_service->sse.metric_report_definition = false;
+    event_service->sse.registry_prefix = false;
+    event_service->sse.resource_type = false;
+    event_service->sse.event_format_type = false;
+    event_service->sse.message_id = false;
+    event_service->sse.origin_resource = false;
+    event_service->sse.subordinate_resources = false;
+
+    event_service->status.state = STATUS_STATE_ENABLED;
+    event_service->status.health = STATUS_HEALTH_OK;
+
+
     if (!record_is_exist(odata_id + "/Subscriptions")){
         event_service->subscriptions = new Collection(odata_id + "/Subscriptions", ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
         event_service->subscriptions->name = "Subscription Collection";
@@ -789,12 +840,21 @@ void init_event_destination(Collection *event_destination_collection, string _id
     string odata_id = event_destination_collection->odata.id + "/" + _id;
     EventDestination *event_destination;
 
-    if (!record_is_exist(odata_id))
-        event_destination = new EventDestination(odata_id, _id);
+    if (record_is_exist(odata_id))
+        return;
+    
+    event_destination = new EventDestination(odata_id, _id);
 
     /**
-     * @todo 여기에 event_destination 일반멤버변수값 넣어주기
+     * Event Destination Configuration
      */
+    event_destination->subscription_type = "RedfishEvent";
+    event_destination->delivery_retry_policy = "TerminateAfterRetries";
+    event_destination->protocol = "Redfish";
+
+    event_destination->status.state = STATUS_STATE_ENABLED;
+    event_destination->status.health = STATUS_HEALTH_OK;
+        
 
     event_destination_collection->add_member(event_destination);
     return;
@@ -804,10 +864,19 @@ void init_account_service(AccountService *account_service)
 {
     string odata_id = account_service->odata.id;
     
-    /**
-     * @todo 여기에 account_service 일반멤버변수값 넣어주기
-     */
-    
+    // AccountService Configuration
+    account_service->name = "Account Service";
+    account_service->id = "AccountService";
+    account_service->status.state = STATUS_STATE_ENABLED;
+    account_service->status.health = STATUS_HEALTH_OK;
+    account_service->service_enabled = true;
+    account_service->auth_failure_logging_threshold = 0;
+    account_service->min_password_length = 6;
+    account_service->account_lockout_threshold = 0;
+    account_service->account_lockout_duration = 0;
+    account_service->account_lockout_counter_reset_after = 0;
+    account_service->account_lockout_counter_reset_enabled = true;
+
     if (!record_is_exist(odata_id + "/Roles")){
         account_service->role_collection = new Collection(odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
         account_service->role_collection->name = "Roles Collection";
@@ -867,14 +936,14 @@ void init_account_service(AccountService *account_service)
 
         // Root account configure
         Account *_root = new Account(acc_odata, acc_id, "Administrator");
-        // _root->id = "root";
+        _root->id = "root";
         _root->name = "User Account";
         _root->user_name = "root";
         _root->password = "ketilinux";
-        _root->enabled = true;
-        _root->locked = false;
+        
         _root->certificates = new Collection(certificate_collection_id, ODATA_CERTIFICATE_COLLECTION_TYPE);
         _root->certificates->add_member(cert);
+        
         account_service->account_collection->add_member(_root);
     }
     return;
@@ -885,9 +954,15 @@ void init_session_service(SessionService *session_service)
     string odata_id = session_service->odata.id;
     
     /**
-     * @todo 여기에 session_service 일반멤버변수값 넣어주기
+     * Session Service Configuration
      */
-    
+    session_service->name = "Session Service";
+    session_service->id = "SessionService";
+    session_service->status.state = STATUS_STATE_ENABLED;
+    session_service->status.health = STATUS_HEALTH_OK;
+    session_service->service_enabled = true;
+    session_service->session_timeout = 86400; // 30sec to 86400sec
+        
     if (!record_is_exist(odata_id + "/Sessions")){
         session_service->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);
         session_service->session_collection->name = "Session Collection";
@@ -1123,7 +1198,6 @@ void List::add_member(Resource *_resource)
     this->members.push_back(_resource);
 }
 
-// resource가 이미 존재하면 g_record에는 따로 저장하지 않음..?
 bool List::load_json(json::value &j)
 {
     json::value members;
@@ -1131,47 +1205,6 @@ bool List::load_json(json::value &j)
     try{
         Resource::load_json(j);
         this->member_type = j.at("MemberType").as_integer();
-        // members = j.at(this->name);
-        // for (json::value item : members.as_array()){
-        //     switch (this->member_type){
-        //         case TEMPERATURE_TYPE:
-        //             Temperature *t = new Temperature(item.at("@odata.id").as_string(), item.at("MemberId"));
-        //             if (!t.load_json(item))
-        //                 log(warning) << "temperature" << this->member_id << " load failed";
-        //             this->add_member(t);
-        //             break;
-        //         case FAN_TYPE:
-        //             Fan *f = new Fan(item.at("@odata.id").as_string(), item.at("MemberId"));
-        //             if (!f.load_json(item))
-        //                 log(warning) << "Fan" << this->member_id << " load failed";
-        //             this->add_member(f);
-        //             break;
-        //         case STORAGE_CONTROLLER_TYPE:
-        //             StorageControllers *sc = new StorageControllers(item.at("@odata.id").as_string(), item.at("MemberId"));
-        //             if (!sc.load_json(item))
-        //                 log(warning) << "Storage Controller" << this->member_id << " load failed";
-        //             this->add_member(sc);
-        //             break;
-        //         case POWER_CONTROL_TYPE:
-        //             PowerControl *pc = new PowerControl(item.at("@odata.id").as_string(), item.at("MemberId"));
-        //             if (!pc.load_json(item))
-        //                 log(warning) << "Power Control" << this->member_id << " load failed";
-        //             this->add_member(pc);
-        //             break;
-        //         case VOLTAGE_TYPE:
-        //             Voltage *v = new Voltage(item.at("@odata.id").as_string(), item.at("MemberId"));
-        //             if (!v.load_json(item))
-        //                 log(warning) << "Voltage" << this->member_id << " load failed";
-        //             this->add_member(v);
-        //             break;
-        //         case POWER_SUPPLY_TYPE:
-        //             PowerSupply *ps = new PowerSupply(item.at("@odata.id").as_string(), item.at("MemberId"));
-        //             if (!ps.load_json(item))
-        //                 log(warning) << "Power Supply" << this->member_id << " load failed";
-        //             this->add_member(ps);
-        //             break;
-        //     }
-        // }
     }
     catch (json::json_exception &e)
     {
@@ -1229,7 +1262,8 @@ json::value Account::get_json(void)
     else
     {
         j[U("RoleId")] = json::value::string(U(this->role->id));
-        k[U("Role")] = this->role->get_odata_id_json();
+        // k[U("Role")] = this->role->get_odata_id_json();
+        k[U("Role")] = get_resource_odata_id_json(this->role, this->odata.id);
     }
     j[U("Links")] = k;
     
@@ -1291,7 +1325,6 @@ bool Role::load_json(json::value &j)
     }
 
     return true;
-
 }
 // Role end
 
@@ -1400,9 +1433,13 @@ json::value Session::get_json(void)
         return j;
     
     j[U("Id")] = json::value::string(U(this->id));
-    // 연결된 account 없으면 session 소멸?
-    j[U("UserName")] = json::value::string(U(this->account->user_name));
-    // j[U("UserName")] = json::value::string("");
+    
+    // 연결된 account가 없는 Session이 있을수 있나?
+    if (this->account == nullptr)
+        j[U("UserName")] = json::value::string("");
+    else
+        j[U("UserName")] = json::value::string(U(this->account->user_name));
+    
     j[U("AccountId")] = json::value::string(this->account_id);
     j[U("AuthToken")] = json::value::string(this->x_token);
     
@@ -1681,9 +1718,6 @@ void LogEntry::add_message_args(string _val){
 void LogEntry::set_sensor_num(unsigned int _val){
     this->sensor_number = _val;
 }
-void LogEntry::set_created(string _val){
-    this->created = _val;
-}
 // Log Service & Log Entry end
 
 // Event Service & Event Destination start
@@ -1744,9 +1778,9 @@ json::value EventDestination::get_json(void)
     k[U("Health")] = json::value::string(U(this->status.health));
     j[U("Status")] = k;
 
-    j[U("EventTypes")] = json::value::array();
-    for(int i=0; i<this->event_types.size(); i++)
-        j[U("EventTypes")][i] = json::value::string(U(this->event_types[i]));
+    // j[U("EventTypes")] = json::value::array();
+    // for(int i=0; i<this->event_types.size(); i++)
+    //     j[U("EventTypes")][i] = json::value::string(U(this->event_types[i]));
 
 
     return j;
@@ -1766,9 +1800,9 @@ bool EventDestination::load_json(json::value &j)
         this->context = j.at("Context").as_string();
         this->protocol = j.at("Protocol").as_string();
         
-        event_types = j.at("EventTypes");
-        for(auto str : event_types.as_array())
-            this->event_types.push_back(str.as_string());
+        // event_types = j.at("EventTypes");
+        // for(auto str : event_types.as_array())
+        //     this->event_types.push_back(str.as_string());
         
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
@@ -1805,7 +1839,7 @@ json::value EventService::get_json(void)
         j[U("EventTypesForSubscription")][i] = json::value::string(U(this->event_types_for_subscription[i]));
 
     json::value j_sse;
-    j_sse[U("EventType")] = json::value::boolean(U(this->sse.event_type));
+    // j_sse[U("EventType")] = json::value::boolean(U(this->sse.event_type));
     j_sse[U("MetricReportDefinition")] = json::value::boolean(U(this->sse.metric_report_definition));
     j_sse[U("RegistryPrefix")] = json::value::boolean(U(this->sse.registry_prefix));
     j_sse[U("ResourceType")] = json::value::boolean(U(this->sse.resource_type));
@@ -1844,7 +1878,7 @@ bool EventService::load_json(json::value &j)
             this->event_types_for_subscription.push_back(str.as_string());
         
         sse = j.at("SSEFilterPropertiesSupported");
-        this->sse.event_type = sse.at("EventType").as_bool();
+        // this->sse.event_type = sse.at("EventType").as_bool();
         this->sse.metric_report_definition = sse.at("MetricReportDefinition").as_bool();
         this->sse.registry_prefix = sse.at("RegistryPrefix").as_bool();
         this->sse.resource_type = sse.at("ResourceType").as_bool();
@@ -1893,7 +1927,6 @@ json::value EventService::SubmitTestEvent(json::value body)
 // Event Service & Event Destination end
 
 // Update Service & Software Inventory start
-
 json::value UpdateService::get_json(void)
 {
     json::value j = this->Resource::get_json();
@@ -1935,7 +1968,6 @@ bool UpdateService::load_json(json::value &j)
     return true;
 }
 
-// image uri로 target update? 
 bool UpdateService::SimpleUpdate(json::value body)
 {
     string image_uri; // <bmc ip>/<path and image file name>
@@ -2014,7 +2046,6 @@ bool SoftwareInventory::load_json(json::value &j)
     return true;
 
 }
-
 // Update Service & Software Inventory end
 
 // Temperature start
@@ -2348,7 +2379,6 @@ bool Sensor::load_json(json::value &j)
 // Sensor end
 
 // Power &  PowerControl, Voltage, PowerSupply start
-
 json::value PowerSupply::get_json(void)
 {
     auto j = this->Resource::get_json(NO_DATA_TYPE);
@@ -2819,6 +2849,7 @@ json::value Manager::get_json(void)
     j["NetworkProtocol"] = get_resource_odata_id_json(this->network, this->odata.id);
     j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
     j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
+    j["VirtualMedia"] = get_resource_odata_id_json(this->virtual_media, this->odata.id);
 
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
@@ -2856,9 +2887,10 @@ bool Manager::load_json(json::value &j)
     }
 
     return true;
-
 }
+// Manager end
 
+// EthernetInterface start
 json::value EthernetInterfaces::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -3010,6 +3042,7 @@ bool EthernetInterfaces::load_json(json::value &j)
     return true;
 }
 
+// NetworkProtocol start
 json::value NetworkProtocol::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -3106,8 +3139,9 @@ bool NetworkProtocol::load_json(json::value &j)
         if (v_netservers != json::value::null()){
             for (auto str : v_netservers.as_array())
                 this->v_netservers.push_back(str.as_string());
-        }else
-            log(warning) << "NTPServers field empty in networkProtocol load..";
+        }
+        // else
+        //     log(warning) << "NTPServers field empty in networkProtocol load..";
     }
     catch (json::json_exception &e)
     {
@@ -3116,9 +3150,7 @@ bool NetworkProtocol::load_json(json::value &j)
 
     return true;
 }
-
-// Manager end
-
+// NerworkProtocol end
 
 // Task Service start
 json::value TaskService::get_json(void)
@@ -3160,7 +3192,6 @@ bool TaskService::load_json(json::value &j)
     }
 
     return true;
-    
 }
 // Task Service end
 
@@ -3294,8 +3325,7 @@ json::value Systems::get_json(void)
     j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
     j["SimpleStorage"] = get_resource_odata_id_json(this->simple_storage, this->odata.id);
     j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
-    j["VirtualMedia"] = get_resource_odata_id_json(this->virtual_media, this->odata.id);
-
+    
     j["Actions"] = get_action_info(this->actions);
     
     return j;
@@ -3391,7 +3421,7 @@ bool Systems::Reset(json::value body)
 }
 // System end
 
-// in System start
+// Processor start
 json::value Processors::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -3678,6 +3708,7 @@ bool SimpleStorage::load_json(json::value &j)
 
 }
 
+// Bios start
 json::value Bios::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -3758,6 +3789,7 @@ bool Bios::ChangePassword(string new_password, string old_password, string passw
     // #3 change password
 }
 
+// Memory start
 json::value Memory::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -3795,10 +3827,7 @@ json::value Memory::get_json(void)
     for(int i=0; i<this->memory_media.size(); i++)
         j[U("MemoryMedia")][i] = json::value::string(U(this->memory_media[i]));
 
-
-
-
-    return j;
+   return j;
 }
 
 bool Memory::load_json(json::value &j)
@@ -4440,25 +4469,6 @@ json::value ServiceRoot::get_json(void)
 
     return j;
 }
-
-// bool ServiceRoot::load_json(json::value &j)
-// {
-//     try
-//     {
-//         this->name = j.at("Name").as_string();
-//         this->id = j.at("Id").as_string();
-//         this->redfish_version = j.at("RedfishVersion").as_string();
-//         this->uuid = j.at("UUID").as_string();
-
-//     }
-//     catch (json::json_exception &e)
-//     {
-//         cout << "Error Parsing JSON file " + this->odata.id << endl;
-//         return false;
-//     }
-
-//     return true;
-// }
 // ServiceRoot end
 
 bool is_session_valid(const string _token)
@@ -4498,7 +4508,6 @@ bool is_session_valid(const string _token)
  * @details 토큰에 대한 session이 있는지 확인여부는 is_session_valid로 할것
  * 이 함수에서는 있다고 생각하고 odata를 얻기 위함임
  */
-
 string get_session_odata_id_by_token(string _token)
 {
     Collection *session_col = (Collection *)g_record[ODATA_SESSION_ID];
