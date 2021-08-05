@@ -20,11 +20,9 @@
 #define ODATA_CHASSIS_ID ODATA_SERVICE_ROOT_ID "/Chassis"
 #define ODATA_MANAGER_ID ODATA_SERVICE_ROOT_ID "/Managers"
 
-#define ODATA_ETHERNET_INTERFACE_ID ODATA_MANAGER_ID "/EthernetInterfaces" // @@@@ 추가
-
+#define ODATA_ETHERNET_INTERFACE_ID ODATA_MANAGER_ID "/EthernetInterfaces" 
 #define ODATA_TASK_SERVICE_ID ODATA_SERVICE_ROOT_ID "/TaskService"
-
-#define ODATA_TASK_ID ODATA_TASK_SERVICE_ID "/Tasks" // @@@@추가
+#define ODATA_TASK_ID ODATA_TASK_SERVICE_ID "/Tasks" 
 
 #define ODATA_SESSION_SERVICE_ID ODATA_SERVICE_ROOT_ID "/SessionService"
 #define ODATA_SESSION_ID ODATA_SESSION_SERVICE_ID "/Sessions"
@@ -35,7 +33,7 @@
 #define ODATA_EVENT_DESTINATION_ID ODATA_EVENT_SERVICE_ID "/Subscriptions"
 #define ODATA_UPDATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/UpdateService"
 
-#define ODATA_HEARTBEAT ODATA_SYSTEM_ID "/Heartbeat" // @@@@추가
+#define ODATA_HEARTBEAT ODATA_SYSTEM_ID "/Heartbeat" 
 
 // Open data protocol resource type
 #define ODATA_RESOURCE_TYPE "#Resource." ODATA_TYPE_VERSION ".Resource"
@@ -46,29 +44,28 @@
 #define ODATA_SYSTEM_TYPE "#ComputerSystem." ODATA_TYPE_VERSION ".ComputerSystem"
 #define ODATA_PROCESSOR_COLLECTION_TYPE "#ProcessorCollection.ProcessorCollection"
 #define ODATA_PROCESSOR_TYPE "#Processor." ODATA_TYPE_VERSION ".Processor"
-#define ODATA_MEMORY_COLLECTION_TYPE "#MemoryCollection.MemoryCollection" // @@@@ 추가
-#define ODATA_MEMORY_TYPE "#Memory." ODATA_TYPE_VERSION ".Memory" // @@@@ 추가
-#define ODATA_PROCESSOR_SUMMARY_TYPE "#ProcessorSummary." ODATA_TYPE_VERSION ".ProcessorSummary" // @@@@ 추가
-#define ODATA_NETWORK_INTERFACE_TYPE "#NetworkInterface." ODATA_TYPE_VERSION ".NetworkInterface" // @@@@ 추가
-#define ODATA_STORAGE_TYPE "#Storage." ODATA_TYPE_VERSION ".Storage" // @@@@ 추가
-#define ODATA_STORAGE_CONTROLLER_TYPE "#StorageController." ODATA_TYPE_VERSION ".StorageController" // @@@@ 추가
+#define ODATA_MEMORY_COLLECTION_TYPE "#MemoryCollection.MemoryCollection" 
+#define ODATA_MEMORY_TYPE "#Memory." ODATA_TYPE_VERSION ".Memory" 
+#define ODATA_PROCESSOR_SUMMARY_TYPE "#ProcessorSummary." ODATA_TYPE_VERSION ".ProcessorSummary" 
+#define ODATA_NETWORK_INTERFACE_TYPE "#NetworkInterface." ODATA_TYPE_VERSION ".NetworkInterface" 
+#define ODATA_STORAGE_TYPE "#Storage." ODATA_TYPE_VERSION ".Storage" 
+#define ODATA_STORAGE_CONTROLLER_TYPE "#StorageController." ODATA_TYPE_VERSION ".StorageController" 
 #define ODATA_STORAGE_COLLECTION_TYPE "#StorageCollection.StorageCollection" // @@@@@ 추가
-#define ODATA_BIOS_TYPE "#Bios." ODATA_TYPE_VERSION ".Bios" // @@@@ 추가
+#define ODATA_BIOS_TYPE "#Bios." ODATA_TYPE_VERSION ".Bios" 
 #define ODATA_SIMPLE_STORAGE_COLLECTION_TYPE "#SimpleStorageCollection.SimpleStorageCollection"
 #define ODATA_SIMPLE_STORAGE_TYPE "#SimpleStorage." ODATA_TYPE_VERSION ".SimpleStorage"
 #define ODATA_CHASSIS_COLLECTION_TYPE "#ChassisCollection.ChassisCollection"
 #define ODATA_CHASSIS_TYPE "#Chassis." ODATA_TYPE_VERSION ".Chassis"
-#define ODATA_SENSOR_TYPE "#Sensor." ODATA_TYPE_VERSION ".Sensor" // @@@@ 추가
-#define ODATA_SENSOR_COLLECTION_TYPE "#SensorCollection.SensorCollection" // @@@@ 추가
+#define ODATA_SENSOR_TYPE "#Sensor." ODATA_TYPE_VERSION ".Sensor" 
+#define ODATA_SENSOR_COLLECTION_TYPE "#SensorCollection.SensorCollection" 
 #define ODATA_THERMAL_TYPE "#Thermal." ODATA_TYPE_VERSION ".Thermal"
 #define ODATA_POWER_TYPE "#Power." ODATA_TYPE_VERSION ".Power"
 #define ODATA_MANAGER_COLLECTION_TYPE "#ManagerCollection.ManagerCollection"
 #define ODATA_MANAGER_TYPE "#Manager." ODATA_TYPE_VERSION ".Manager"
+#define ODATA_NETWORK_PROTOCOL_TYPE "#NetworkProtocol." ODATA_TYPE_VERSION ".NetworkProtocol" 
 
 #define ODATA_ACTIONS_TYPE "#Actions." ODATA_TYPE_VERSION ".Actions"
 #define ODATA_ACTIONS_COLLECTION_TYPE "#ActionsCollection.ActionsCollection"
-
-#define ODATA_NETWORK_PROTOCOL_TYPE "#NetworkProtocol." ODATA_TYPE_VERSION ".NetworkProtocol" // @@@@ 추가
 
 #define ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE "#EthernetInterfaceCollection.EthernetInterfaceCollection"
 #define ODATA_ETHERNET_INTERFACE_TYPE "#EthernetInterface." ODATA_TYPE_VERSION ".EthernetInterface"
@@ -79,7 +76,7 @@
 #define ODATA_TASK_SERVICE_TYPE "#TaskService." ODATA_TYPE_VERSION ".TaskService"
 #define ODATA_TASK_COLLECTION_TYPE "#TaskCollection.TaskCollection"
 
-#define ODATA_TASK_TYPE "#Task." ODATA_TYPE_VERSION ".Task" // @@@@추가
+#define ODATA_TASK_TYPE "#Task." ODATA_TYPE_VERSION ".Task" 
 
 #define ODATA_SESSION_SERVICE_TYPE "#SessionService." ODATA_TYPE_VERSION ".SessionService"
 #define ODATA_SESSION_COLLECTION_TYPE "#SessionCollection.SessionCollection"
@@ -90,24 +87,24 @@
 #define ODATA_ROLE_COLLECTION_TYPE "#RoleCollection.RoleCollection"
 #define ODATA_ROLE_TYPE "#Role." ODATA_TYPE_VERSION ".Role"
 #define ODATA_EVENT_SERVICE_TYPE "#EventService." ODATA_TYPE_VERSION ".EventService"
-#define ODATA_EVENT_DESTINATION_TYPE "#EventDestination." ODATA_TYPE_VERSION ".EventDestination" // @@@@ 추가
-#define ODATA_EVENT_DESTINATION_COLLECTION_TYPE "#EventDestinationCollection.EventDestinationCollection" // @@@@ 추가
+#define ODATA_EVENT_DESTINATION_TYPE "#EventDestination." ODATA_TYPE_VERSION ".EventDestination" 
+#define ODATA_EVENT_DESTINATION_COLLECTION_TYPE "#EventDestinationCollection.EventDestinationCollection" 
 #define ODATA_EVENT_TYPE "#Event." ODATA_TYPE_VERSION ".Event"
 // #define ODATA_DESTINATION_COLLECTION_TYPE "#EventDestinationCollection.EventDestinationCollection"
 // #define ODATA_DESTINATION_TYPE "#EventDestination." ODATA_TYPE_VERSION ".EventDestination"
-#define ODATA_UPDATE_SERVICE_TYPE "#UpdateService." ODATA_TYPE_VERSION ".UpdateService" // @@@@ 추가
-#define ODATA_UPDATE_SERVICE_COLLECTION_TYPE "#UpdateServiceCollection.UpdateServiceCollection" // @@@@ 추가
-#define ODATA_SOFTWARE_INVENTORY_TYPE "#SoftwareInventory." ODATA_TYPE_VERSION ".SoftwareInventory" // @@@@ 추가
-#define ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE "#SoftwareInventoryCollection.SoftwareInventoryCollection" // @@@@ 추가
+#define ODATA_UPDATE_SERVICE_TYPE "#UpdateService." ODATA_TYPE_VERSION ".UpdateService" 
+#define ODATA_UPDATE_SERVICE_COLLECTION_TYPE "#UpdateServiceCollection.UpdateServiceCollection" 
+#define ODATA_SOFTWARE_INVENTORY_TYPE "#SoftwareInventory." ODATA_TYPE_VERSION ".SoftwareInventory" 
+#define ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE "#SoftwareInventoryCollection.SoftwareInventoryCollection" 
 
 // dy : certificate
 #define ODATA_CERTIFICATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/CertificateService"
-#define ODATA_CERTIFICATE_SERVICE_TYPE "#CertificateService." ODATA_TYPE_VERSION ".CertificateService" // @@@@ 도영 추가
+#define ODATA_CERTIFICATE_SERVICE_TYPE "#CertificateService." ODATA_TYPE_VERSION ".CertificateService"
 #define ODATA_CERTIFICATE_LOCATION_ID ODATA_CERTIFICATE_SERVICE_ID "/CertificateLocations" 
-#define ODATA_CERTIFICATE_LOCATION_TYPE "#CertificateLocation." ODATA_TYPE_VERSION ".CertificateLocation" // @@@@ 도영 추가 
-#define ODATA_CERTIFICATE_COLLECTION_TYPE "#CertificateCollection.CertificateCollection" // @@@@ 도영 추가
+#define ODATA_CERTIFICATE_LOCATION_TYPE "#CertificateLocation." ODATA_TYPE_VERSION ".CertificateLocation" 
+#define ODATA_CERTIFICATE_COLLECTION_TYPE "#CertificateCollection.CertificateCollection"
 #define ODATA_CERTIFICATE_ID "/Certificates"
-#define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate" // @@@@ 도영 추가
+#define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate"
 
 // dy : virtual media
 #define ODATA_VIRTUAL_MEDIA_TYPE "#VirtualMedia" ODATA_TYPE_VERSION ".VirtualMedia"
@@ -163,6 +160,7 @@ const std::string currentDateTime();
  */
 #define CMM_ID "1"
 #define CMM_ADDRESS "https://10.0.6.107:443"
+
 /**
  * @brief Redfish Certificate Key Usage
  */
@@ -484,7 +482,7 @@ typedef struct _ProcessorId
 
 typedef struct _SSE_Filter_Properties_Supported
 {
-    bool event_type;
+    // bool event_type;
     bool metric_report_definition;
     bool registry_prefix;
     bool resource_type;
@@ -687,21 +685,11 @@ public:
 
     Role(const string _odata_id) : Resource(ROLE_TYPE, _odata_id, ODATA_ROLE_TYPE)
     {
-        this->id = "";
-        this->is_predefined = false;
-        // assigned_privileges.push_back("test");
-        // test용인거 같은데 나중에 빼줘야할듯 add_bmc하면 중복되네
-
-        // ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
-        // AccountService/Roles 에 그냥 붙으면 이렇게 생성자에서 add해줘도되는데
-        // Managers/[Bmc_id]/RemoteAccountService/Roles 면 이게 안되니까 AccountService에서 연결함
         g_record[_odata_id] = this;
     }
     Role(const string _odata_id, const string _role_id) : Role(_odata_id)
     {
         this->id = _role_id;
-        // =========================================================
-        // ((Collection *)g_record[ODATA_ROLE_ID])->add_member(this);
     }
     ~Role()
     {
@@ -730,11 +718,9 @@ public:
 
     Account(const string _odata_id) : Resource(ACCOUNT_TYPE, _odata_id, ODATA_ACCOUNT_TYPE)
     {
-        this->id = "";
-        this->enabled = false;
-        this->password = "";
-        this->user_name = "";
+        this->enabled = true;
         this->locked = false;
+        
         this->role = nullptr;
         this->certificates = nullptr;
 
@@ -872,18 +858,11 @@ public:
     }
     AccountService(const string _odata_id) : Resource(ACCOUNT_SERVICE_TYPE, _odata_id, ODATA_ACCOUNT_SERVICE_TYPE)
     {
-        // this->account_collection = new Collection(_odata_id + "/Accounts", ODATA_ACCOUNT_COLLECTION_TYPE);
-        // this->account_collection->name = "Remote Accounts Collection";
-
-        // this->role_collection = new Collection(_odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
-        // this->role_collection->name = "Remote Roles Collection";
-
         this->account_collection = nullptr;
         this->role_collection = nullptr;
 
         g_record[_odata_id] = this;
         // 매니저에 들어가는 리모트어카운트서비스의 생성자에 해당하게됨
-
     };
     ~AccountService()
     {
@@ -914,17 +893,9 @@ class LogEntry : public Resource
 
     LogEntry(const string _odata_id) : Resource(LOG_ENTRY_TYPE, _odata_id, ODATA_LOG_ENRTY_TYPE)
     {
-        // this->id = "";
-        // this->entry_type = "Event";
-        // this->severity = "OK";
-        // this->created = currentDateTime();
-        // this->sensor_number = 1;
-        // this->message = "Temperature threshold exceeded";
-        // this->message_id = "Contoso.1.0.TempAssert";
-        // this->message_args.push_back("42");
-
+        this->created = currentDateTime();
+    
         g_record[_odata_id] = this;
-
     }
     LogEntry(const string _odata_id, const string _entry_id) : LogEntry(_odata_id)
     {
@@ -943,9 +914,6 @@ class LogEntry : public Resource
     void set_message_id(string _val);
     void add_message_args(string _val);
     void set_sensor_num(unsigned int _val);
-    void set_created(string _val);
-
-
 };
 
 class LogService : public Resource
@@ -967,16 +935,6 @@ class LogService : public Resource
     
     LogService(const string _odata_id) : Resource(LOG_SERVICE_TYPE, _odata_id, ODATA_LOG_SERVICE_TYPE)
     {
-        this->id = "";
-        this->description = "This Log contains entries related to the operation of the host Computer System";
-        this->max_number_of_records = 1000;
-        this->overwrite_policy = "WrapsWhenFull";
-        this->datetime = currentDateTime();
-        this->datetime_local_offset = "+06:00";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->log_entry_type = "Event";
-        this->service_enabled = true;
         this->entry = nullptr;
 
         Actions clearlog;
@@ -1029,10 +987,7 @@ class Event
     Event(string id)
     {
         this->id = id;
-        this->name = "Redfish Event";
         this->type = ODATA_EVENT_TYPE;
-        this->context = "";
-        this->description = "";
     };
     ~Event(){};
     json::value get_json(void);
@@ -1045,7 +1000,13 @@ class EventDestination : public Resource
     string destination;
     string subscription_type;
     string delivery_retry_policy;
-    vector<string> event_types;
+    /*
+        available values..
+        RetryForever : 구독이 중지되거나 종료되지 않는다. 재전송 최대 횟수를 넘어도 계속 시도한다.
+        SuspendRetries : 재전송 최대 횟수를 넘으면 구독이 중지된다.
+        TerminateAfterRetries : 재전송 최대 횟수를 넘으면 구독이 종료된다.
+    */
+    // vector<string> event_types;
     string protocol;
     string context;
 
@@ -1053,25 +1014,11 @@ class EventDestination : public Resource
 
     EventDestination(const string _odata_id) : Resource(EVENT_DESTINATION_TYPE, _odata_id, ODATA_EVENT_DESTINATION_TYPE)
     {
-        this->id = "";
-        this->destination = "http://www.dnsname.com/Destination1";
-        this->subscription_type = "RedfishEvent";
-        this->delivery_retry_policy = "TerminateAfterRetries";
-        this->context = "WebUser3";
-        this->protocol = "Redfish";
-
-        // this->event_types.push_back("Alert");
-
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        
         g_record[_odata_id] = this;
-
     }
     EventDestination(const string _odata_id, const string _dest_id) : EventDestination(_odata_id)
     {
         this->id = _dest_id;
-        // ((Collection *)g_record[ODATA_EVENT_DESTINATION_ID])->add_member(this);
     };
     ~EventDestination()
     {
@@ -1080,7 +1027,6 @@ class EventDestination : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
 };
 
 class EventService : public Resource
@@ -1101,31 +1047,6 @@ class EventService : public Resource
     
     EventService() : Resource(EVENT_SERVICE_TYPE, ODATA_EVENT_SERVICE_ID, ODATA_EVENT_SERVICE_TYPE)
     {
-        this->id = "";
-        this->service_enabled = true;
-        this->delivery_retry_attempts = 3;
-        this->delivery_retry_interval_seconds = 60;
-
-        // this->event_types_for_subscription.push_back("StatusChange");
-        // this->event_types_for_subscription.push_back("ResourceUpdated");
-        // this->event_types_for_subscription.push_back("ResourceAdded");
-        // this->event_types_for_subscription.push_back("ResourceRemoved");
-        // this->event_types_for_subscription.push_back("Alert");
-
-        this->serversent_event_uri = "/redfish/v1/EventService/SSE";
-
-        this->sse.event_type = true;
-        this->sse.metric_report_definition = false;
-        this->sse.registry_prefix = true;
-        this->sse.resource_type = true;
-        this->sse.event_format_type = false;
-        this->sse.message_id = true;
-        this->sse.origin_resource = true;
-        this->sse.subordinate_resources = true;
-
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-
         this->subscriptions = nullptr;
 
         Actions submit_test_event;
@@ -1168,19 +1089,7 @@ class SoftwareInventory : public Resource
 
     SoftwareInventory(const string _odata_id) : Resource(SOFTWARE_INVENTORY_TYPE, _odata_id, ODATA_SOFTWARE_INVENTORY_TYPE)
     {
-        this->id = "";
-        this->updatable = true;
-        this->manufacturer = "";
-        this->release_date = "";
-        this->version = "";
-        this->software_id = "";
-        this->lowest_supported_version = "";
-
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-
         g_record[_odata_id] = this;
-
     }
     SoftwareInventory(const string _odata_id, const string _soft_id) : SoftwareInventory(_odata_id)
     {
@@ -1193,7 +1102,6 @@ class SoftwareInventory : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
 };
 
 class UpdateService : public Resource
@@ -1212,13 +1120,6 @@ class UpdateService : public Resource
     
     UpdateService(const string _odata_id) : Resource(UPDATE_SERVICE_TYPE, _odata_id, ODATA_UPDATE_SERVICE_TYPE)
     {
-        this->id = "";
-        this->service_enabled = true;
-        this->http_push_uri = "/FWUpdate";
-
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-
         this->firmware_inventory = nullptr;
         this->software_inventory = nullptr;
 
@@ -1543,6 +1444,7 @@ public:
 
     Collection *ethernet;
     Collection *log_service;
+    Collection *virtual_media;
 
     AccountService *remote_account_service; // BMC의 계정정보를 관리하는 AccountService
     NetworkProtocol *network;
@@ -1555,7 +1457,8 @@ public:
         this->log_service = nullptr;
         this->remote_account_service = nullptr;
         this->network = nullptr;
-        
+        this->virtual_media = nullptr;
+       
         Actions reset;
         reset.type = RESET_MANAGER;
         reset.name = "#Manager.Reset";
@@ -1585,6 +1488,7 @@ public:
     bool load_json(json::value &j);
     void new_log_service(string _service_id);
 
+    bool Reset(json::value body);
 };
 
 
@@ -1613,7 +1517,6 @@ class Task : public Resource
         // starttime, state, status는 임의로 넣어놓음
 
         g_record[_odata_id] = this;
-
     }
     Task(const string _odata_id, const string _task_id) : Task(_odata_id)
     {
@@ -1650,17 +1553,7 @@ public:
 
     TaskService() : Resource(TASK_SERVICE_TYPE, ODATA_TASK_SERVICE_ID, ODATA_TASK_SERVICE_TYPE)
     {
-        this->name = "Task Service";
-        this->id = "TaskService";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->service_enabled = true;
-        this->datetime = currentDateTime();
-
         this->task_collection = nullptr;
-
-        // this->task_collection = new Collection(ODATA_TASK_ID, ODATA_TASK_COLLECTION_TYPE);
-        // task_collection->name = "Task Collection";
 
         g_record[ODATA_TASK_SERVICE_ID] = this;
     };
@@ -1673,9 +1566,6 @@ public:
     bool load_json(json::value &j);
 
 };
-
-
-
 
 /**
  * @brief Redfish resource of session service
@@ -1692,14 +1582,6 @@ public:
     // Class constructor, destructor oveloading
     SessionService() : Resource(SESSION_SERVICE_TYPE, ODATA_SESSION_SERVICE_ID, ODATA_SESSION_SERVICE_TYPE)
     {
-        // AccountService configuration
-        this->name = "Session Service";
-        this->id = "SessionService";
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-        this->service_enabled = true;
-        this->session_timeout = 86400; // 30sec to 86400sec
-        
         this->session_collection = nullptr;
 
         g_record[ODATA_SESSION_SERVICE_ID] = this;
@@ -2267,28 +2149,11 @@ class SimpleStorage : public Resource
     string description;
     string uefi_device_path;
     Status status;
-    // string file_system; // Device_info 안으로 들어감
-
-    Device_Info info;
+    
     vector<Device_Info> devices;
 
     SimpleStorage(const string _odata_id) : Resource(SIMPLE_STORAGE_TYPE, _odata_id, ODATA_SIMPLE_STORAGE_TYPE)
     {
-        // this->description = "System SATA";
-        // this->uefi_device_path = "Acpi(PNP0A03, 0) / Pci(1F|1) / Ata(Primary,Master) / HD(Part3, Sig00110011)";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // // this->file_system = "";
-
-        // this->info.capacity_KBytes = 8000000;
-        // this->info.manufacturer = "Contoso";
-        // this->info.model = "3000GT8";
-        // this->info.name = "SATA Bay 1";
-        // this->info.status.state = STATUS_STATE_ENABLED;
-        // this->info.status.health = STATUS_HEALTH_OK;
-
-        // this->devices.push_back(info);
-
         g_record[_odata_id] = this;
     }
     SimpleStorage(const string _odata_id, const string _simple_id) : SimpleStorage(_odata_id)
@@ -2468,26 +2333,6 @@ class Processors : public Resource
 
     Processors(const string _odata_id) : Resource(PROCESSOR_TYPE, _odata_id, ODATA_PROCESSOR_TYPE)
     {
-        // this->id = "";
-        // this->socket = "CPU 1";
-        // this->processor_type = "CPU";
-        // this->processor_architecture = "x86";
-        // this->instruction_set = "x86-64";
-        // this->manufacturer = "Intel(R) Corporation";
-        // this->model = "Multi-Core Intel(R) Xeon(R) processor 7xxx Series";
-        // this->max_speed_mhz = 3700;
-        // this->total_cores = 8;
-        // this->total_threads = 16;
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
-        // this->p_id.vendor_id = "GenuineIntel";
-        // this->p_id.identification_registers = "0x34AC34DC8901274A";
-        // this->p_id.effective_family = "0x42";
-        // this->p_id.effective_model = "0x61";
-        // this->p_id.step = "0x1";
-        // this->p_id.microcode_info = "0x429943";
-
         g_record[_odata_id] = this;
     }
     Processors(const string _odata_id, const string _processor_id) : Processors(_odata_id)
@@ -2523,27 +2368,6 @@ class Memory : public Resource
 
     Memory(const string _odata_id) : Resource(MEMORY_TYPE, _odata_id, ODATA_MEMORY_TYPE)
     {
-        // this->id = _memory_id;
-        // this->rank_count = 2;
-        // this->capacity_kib = 32768;
-        // this->data_width_bits = 64;
-        // this->bus_width_bits = 72;
-        // this->error_correction = "MultiBitECC";
-
-        // this->m_location.socket = 1;
-        // this->m_location.memory_controller = 1;
-        // this->m_location.channel = 1;
-        // this->m_location.slot = 1;
-
-        // this->memory_type = "DRAM";
-        // this->memory_device_type = "DDR4";
-        // this->base_module_type = "RDIMM";
-
-        // this->memory_media.push_back("DRAM");
-        // this->max_TDP_milliwatts.push_back(12000);
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
         g_record[_odata_id] = this;
     }
     Memory(const string _odata_id, const string _memory_id) : Memory(_odata_id)
@@ -2602,38 +2426,11 @@ class Systems : public Resource
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
     Collection *simple_storage;
-    Collection *virtual_media;
 
     unordered_map <string, Actions> actions;
 
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
-        this->id = "";
-        // this->sku = "";
-        this->system_type = "";
-        this->asset_tag = "";
-        this->manufacturer = "";
-        this->model = "";
-        this->serial_number = "";
-        this->part_number = "";
-        this->description = "";
-        this->uuid = "";
-        this->hostname = "";       
-        // this->hosting_roles.push_back("null");
-        this->indicator_led = LED_OFF;
-        this->power_state = "";
-        this->bios_version = "";
-        
-        this->status.state = "";
-        this->status.health = "";
-          
-        // Boot
-        this->boot.boot_source_override_enabled = "";
-        this->boot.boot_source_override_target = "";
-        this->boot.boot_source_override_mode = "";
-        this->boot.uefi_target_boot_source_override = "";
-
-        // pointer
         this->bios = nullptr;
         this->processor = nullptr;
         this->memory = nullptr;
@@ -2657,13 +2454,13 @@ class Systems : public Resource
 
         this->actions["Reset"] = reset;
         
+        this->actions["Reset"] = reset; 
+
         g_record[_odata_id] = this;
     }
     Systems(const string _odata_id, const string _systems_id) : Systems(_odata_id)
     {
         this->id = _systems_id;
-        // ((Collection *)g_record[ODATA_SYSTEM_ID])->add_member(this);
-        // 이거 뺄거고 이거빼면 add_bmc에서도 처리해줘야함
     };
     ~Systems()
     {

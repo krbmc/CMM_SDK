@@ -257,16 +257,18 @@ string get_popen_string(string command)
 {
     FILE *fp = popen(command.c_str(), "r");
     char *temp = (char *)malloc(sizeof(char)*256);
+    string ret;
     if (fp != NULL){
         while(fgets(temp, 256, fp) != NULL)
         {
+            string str(temp);
+            ret += temp;
         }
         pclose(fp);
     }
-    string str(temp);
-    if (str.back() == '\n')
-        str.pop_back();
-    return str;
+    if (ret.back() == '\n')
+        ret.pop_back();
+    return ret;
 }
 
 string get_extracted_bmc_id_uri(string _uri)
@@ -334,7 +336,7 @@ bool get_value_from_json_key(json::value body, string key, string& value)
     }
     else{
         value = "";
-        log(warning) << "error with parsing " << key << " to string";
+        // log(warning) << "error with parsing " << key << " to string";
         return false;
     }
     return true;
@@ -399,9 +401,29 @@ void remove_if_exists(fs::path file)
  */
 string get_value_from_cmd_str(string cmd_str, string key)
 {
-    log(info) << "cmd_str : " << cmd_str;
     string cmd_ret = get_popen_string(cmd_str);
+    // log(warning) << cmd_str << " : " << cmd_ret;
+    if (cmd_ret.rfind(key) == string::npos)
+        return "";
     string ret = cmd_ret.substr(cmd_ret.rfind(key) + key.size());
-    ret.erase(0,ret.find_first_not_of(" :\n\t"));
-    return string_split(ret, ' ')[0];
-}   
+    return string_split(ltrim(ret), ' ')[0];
+}
+
+/**
+ * @brief string ltrim
+ * @author dyk
+ */
+string ltrim(string str)
+{
+    return str.erase(0, str.find_first_not_of(" :\n\t"));
+}
+
+/**
+ * @brief uuid string generate
+ * @author dyk
+ */
+string generate_uuid(void)
+{
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    return boost::uuids::to_string(uuid);
+}

@@ -12,8 +12,19 @@
 #include <algorithm>
 #include <random>
 #include <functional>
+#include <set> 
+
+#include <unistd.h>
+#include <dirent.h>
+#include <time.h> 
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <limits.h> 
+
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
+#include <cpprest/http_client.h> 
+
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
@@ -25,15 +36,10 @@
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <unistd.h>
-#include <dirent.h>
-#include <cpprest/http_client.h> // @@@@
-#include <time.h> // @@@@
-#include <sys/types.h> // @@@@
-#include <sys/stat.h> // @@@@
-#include <limits.h> // @@@@
-#include <set> // @@@@
 
 // default port define
 #define DEFAULT_SNMP_PORT 161
@@ -50,11 +56,12 @@
 #define DHCPV6_CONF "/etc/dhcp/dhcpd6.conf"
 #define DNS_CONF "/etc/resolv.conf"
 #define VLAN_CONF "/proc/net/vlan/config"
-using namespace web::http::client; // @@@@
+
 using namespace std;
 using namespace web;
 using namespace web::http;
 using namespace web::http::experimental::listener;
+using namespace web::http::client; 
 using namespace utility;
 
 namespace logging = boost::log;
@@ -107,6 +114,7 @@ void delete_session_num(unsigned int num);
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
+string ltrim(string str);
 
 char *get_popen_string(char *command);
 string get_popen_string(string command);
@@ -117,6 +125,8 @@ string get_value_from_cmd_str(string cmd_str, string key);
 void generate_logservice(string _res_odata, string _service_id);
 void generate_logentry(string _res_odata, string _entry_id);
 
+string generate_uuid(void);
+
 /**
  * @brief Function of record
  */
@@ -126,7 +136,7 @@ json::value record_get_json(const string _uri);
 bool record_load_json(void);
 bool record_save_json(void);
 void record_print(void);
-void record_init_load(string _path); // @@@@@
+void record_init_load(string _path);
 
 /**
  * @brief Function of module_id
