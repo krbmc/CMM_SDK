@@ -1112,76 +1112,6 @@ m_Request treat_uri_cmm_post(http_request _request, m_Request _msg, json::value 
     {
         _msg = do_actions(_request, _msg, _jv);
         return _msg;
-        // Actions전까지 딴  uri가 맞는리소스면 첫번째통과
-        // 그 리소스의 action맵에 target과 uri전체가 맞아떨어지면 두번째통과
-        // 그다음에 액션종류에 따라 나눠지기
-
-        // string uri_before_action = get_parent_object_uri(minus_one, "/"); // 액션리소스 uri가 될것임
-        // cout << "URI_BEFORE_ACTION : " << uri_before_action << endl;
-        // if(!record_is_exist(uri_before_action))
-        // {
-        //     _msg = reply_error(_request, _msg, "URI Input Error in action before(resource)", status_codes::BadRequest);
-        //     return _msg;
-        // }
-
-        // string uri_after_action = get_current_object_name(uri, "/");
-        // cout << "URI_AFTER_ACTION : " << uri_after_action << endl;
-
-        // string action_by, action_what;
-        // action_by = get_parent_object_uri(uri_after_action, ".");
-        // action_what = get_current_object_name(uri_after_action, ".");
-        // cout << "By : " << action_by << endl;
-        // cout << "What : " << action_what << endl;
-
-        // if(action_by == "Bios")
-        // {
-
-        // }
-        // else if(action_by == "Certificate")
-        // {}
-        // else if(action_by == "CertificateService")
-        // {}
-        // else if(action_by == "ComputerSystem")
-        // {}
-        // else if(action_by == "Chassis")
-        // {}
-        // else if(action_by == "Manager")
-        // {}
-        // else if(action_by == "EventService")
-        // {}
-        // else if(action_by == "LogService")
-        // {
-        //     LogService *log_service = (LogService *)g_record[uri_before_action];
-        //     if(log_service->actions.find(action_what) == log_service->actions.end())
-        //     {
-        //         // action_what에 해당하는 액션정보가 없음 error
-        //         _msg = reply_error(_request, _msg, "No Action in LogService", status_codes::BadRequest);
-        //         return _msg;
-        //     }
-        //     // cout << "BOOM!" << endl;
-        //     // 클리어로그밖에 없으니까 그냥 바로 실행
-        //     if(!(log_service->ClearLog()))
-        //     {
-        //         _msg = reply_error(_request, _msg, "Problem occur in ClearLog()", status_codes::BadRequest);
-        //         return _msg;
-        //     }
-
-        //     _msg = reply_success(_request, _msg, "", status_codes::OK);
-
-        // }
-        // else if(action_by == "UpdateService")
-        // {}
-        // else
-        // {
-        //     _msg = reply_error(_request, _msg, "URI Input Error in action_by check", status_codes::BadRequest);
-        //     return _msg;
-        // }
-
-        // // action_by로 캐스팅이 안돼서 action_by로 그냥 액션있는리소스들중에 뭔지 비교일일이 해야함
-        // // 그렇게 해서 리소스찾고 거기에 actions맵 에 actions[actions_what]으로 하면 해당 Actions구조체 접근가능
-        // // 액션왓으로 맵에 접근까지 되면 맞는 uri긴 하겟네 굳이 target하고inputuri랑 비교안해도될거같고
-        // // 찾으면 함수호출 ㅇㅋ
-
     }
 
     if(uri == ODATA_ACCOUNT_ID)
@@ -1212,6 +1142,11 @@ m_Request treat_uri_cmm_post(http_request _request, m_Request _msg, json::value 
         // 그러면 액션전까지만 딴 uri로 리소스접근하면 Actions맵이 있을테니깐 거기서 target하고 비교해
         // 그러면 uri == target해서 맞으면 맞는액션uri지 
 
+    }
+    else if(uri == ODATA_ROLE_ID)
+    {
+        _msg = make_role(_request, _msg, _jv);
+        return _msg;
     }
 
     // part화 해야겟네 시스템에서 매니저에서 로그만드는거 >> 핸들러로 필요없음
@@ -1245,10 +1180,16 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
         // /redfish/v1/AccountService 처리
         if(uri == ODATA_ACCOUNT_SERVICE_ID)
         {
-            patch_account_service(_jv, ODATA_ACCOUNT_SERVICE_ID);
-
-            _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
-            return _msg;
+            if(patch_account_service(_jv, ODATA_ACCOUNT_SERVICE_ID))
+            {
+                _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
+                return _msg;
+            }
+            else
+            {
+                 _msg = reply_error(_request, _msg, get_error_json("Error Occur in AccountService PATCH"), status_codes::BadRequest);
+                return _msg;
+            }
         }
 
         // /redfish/v1/AccountService/~~~ 관련처리부
@@ -1282,10 +1223,16 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
         // /redfish/v1/SessionService 처리
         if(uri == ODATA_SESSION_SERVICE_ID)
         {
-            patch_session_service(_jv);
-
-            _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
-            return _msg;
+            if(patch_session_service(_jv))
+            {
+                _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
+                return _msg;
+            }
+            else
+            {
+                _msg = reply_error(_request, _msg, get_error_json("Error Occur in SessionService PATCH"), status_codes::BadRequest);
+                return _msg;
+            }
         }
         else
         {
@@ -1603,12 +1550,20 @@ m_Request treat_uri_cmm_delete(http_request _request, m_Request _msg, json::valu
     }
     // uri_part에는 /redfish/v1/something 까지만
 
+    string minus_one = get_parent_object_uri(uri, "/");
+
     if(uri_part == ODATA_ACCOUNT_SERVICE_ID)
     {
         // /redfish/v1/AccountService/Accounts
         if(uri == ODATA_ACCOUNT_ID)
         {
             _msg = remove_account(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID);
+            return _msg;
+        }
+        
+        if(minus_one == ODATA_ROLE_ID)
+        {
+            _msg = remove_role(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID);
             return _msg;
         }
     }
@@ -1910,24 +1865,44 @@ m_Request make_account(http_request _request, m_Request _msg, json::value _jv)
     string role_id = "ReadOnly";
     Account *account;
     bool enabled = true;
-  
-    if(_jv.as_object().find("UserName") == _jv.as_object().end() 
-    || _jv.as_object().find("Password") == _jv.as_object().end())
+
+    if(((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    if(get_value_from_json_key(_jv, "UserName", user_name) == false
+    || get_value_from_json_key(_jv, "Password", password) == false)
     {
         _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
         return _msg;
     } // json request body에 UserName, Password없으면 BadRequest
+  
+    // if(_jv.as_object().find("UserName") == _jv.as_object().end() 
+    // || _jv.as_object().find("Password") == _jv.as_object().end())
+    // {
+    //     _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
+    //     return _msg;
+    // } // json request body에 UserName, Password없으면 BadRequest
 
-    user_name = _jv.at("UserName").as_string();
-    password = _jv.at("Password").as_string();
+    // user_name = _jv.at("UserName").as_string();
+    // password = _jv.at("Password").as_string();
     // 이거 입력 타입오류 try-catch? 어차피 입력하는곳 만드는 곳에서 입력란에것을 string으로 주게하면되긴함
 
     unsigned int min_pass_length = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->min_password_length;
+    unsigned int max_pass_length = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->max_password_length;
     if(password.size() < min_pass_length)
     {
         _msg = reply_error(_request, _msg, get_error_json("Password length must be at least " + to_string(min_pass_length)), status_codes::BadRequest);
         return _msg;
     }// password 길이가 짧으면 BadRequest
+
+    if(password.size() > max_pass_length)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Password length must not exceed " + to_string(max_pass_length)), status_codes::BadRequest);
+        return _msg;
+    }// password 길이가 길면 BadRequest
 
     // Collection col = *((Collection *)g_record[ODATA_ACCOUNT_ID]); // 이건 왜 터졌지?
     Collection *col = (Collection *)g_record[ODATA_ACCOUNT_ID];
@@ -2013,15 +1988,28 @@ m_Request make_session(http_request _request, m_Request _msg, json::value _jv)
     string odata_id;
     Account *account;
 
-    if(_jv.as_object().find("UserName") == _jv.as_object().end() 
-    || _jv.as_object().find("Password") == _jv.as_object().end())
+    if(((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    if(get_value_from_json_key(_jv, "UserName", user_name) == false
+    || get_value_from_json_key(_jv, "Password", password) == false)
     {
         _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
         return _msg;
     } // json request body에 UserName, Password없으면 BadRequest
 
-    user_name = _jv.at("UserName").as_string();
-    password = _jv.at("Password").as_string();
+    // if(_jv.as_object().find("UserName") == _jv.as_object().end() 
+    // || _jv.as_object().find("Password") == _jv.as_object().end())
+    // {
+    //     _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
+    //     return _msg;
+    // } // json request body에 UserName, Password없으면 BadRequest
+
+    // user_name = _jv.at("UserName").as_string();
+    // password = _jv.at("Password").as_string();
 
     Collection *col = (Collection *)g_record[ODATA_ACCOUNT_ID];
     std::vector<Resource *>::iterator iter;
@@ -2089,6 +2077,110 @@ m_Request make_session(http_request _request, m_Request _msg, json::value _jv)
     return _msg;
 }
 
+m_Request make_role(http_request _request, m_Request _msg, json::value _jv)
+{
+    if(((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    /* 어카운트 서비스 이용불가면 막히고 .. 관리자만 생성이가능하고.. role 이름(id)를 받아서 만들거고
+    그러면 롤이름 중복검사 해줘야하고 일단은 다 넣을수있게 할게 프리빌리지 어차피 나중에 권한별로 기능접근으로 수정하면
+    그때 바꾸는걸로..
+
+    */
+
+   if(!_request.headers().has("X-Auth-Token"))
+    {
+        // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
+        _msg = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    string session_token = _request.headers()["X-Auth-Token"];
+
+    if(!is_session_valid(session_token))
+    {
+        // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
+        _msg = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    string session_uri = get_session_odata_id_by_token(session_token);
+    // session_uri = session_uri + "/" + session_token;
+    cout << "SESSION ! : " << session_uri << endl;
+
+    // Session session = *((Session *)g_record[session_uri]);
+    Session *session = (Session *)g_record[session_uri];
+
+    string role_id;
+    json::value privileges = json::value::array();
+    if(session->account->role->id == "Administrator")
+    {
+        // 관리자만 가능
+        // RoleId 로 받을거고 중복검사후 프리빌리지검사 ㄱㄱ
+        // if(!(get_value_from_json_key(_jv, "RoleId", role_id)))
+        // {
+        //     // role id가 입력으로 안왔으니 에러
+        //     _msg = reply_error(_request, _msg, get_error_json("Need RoleId"), status_codes::BadRequest);
+        //     return _msg;
+        // }
+        get_value_from_json_key(_jv, "RoleId", role_id);
+
+        if(role_id == "")
+        {
+            // role id를 입력을 안해서 "" 가 들어왔거나 ""를 입력한거지 둘다 아웃으로 한번에 거르자
+            _msg = reply_error(_request, _msg, get_error_json("Need RoleId"), status_codes::BadRequest);
+            return _msg;
+        }
+
+        Collection *col = (Collection *)g_record[ODATA_ROLE_ID];
+        std::vector<Resource *>::iterator iter;
+        for(iter = col->members.begin(); iter != col->members.end(); iter++)
+        {
+            if(((Role *)(*iter))->id == role_id)
+            {
+                _msg = reply_error(_request, _msg, get_error_json("RoleId is already in use"), status_codes::BadRequest);
+                return _msg;
+            }
+        } // Role id 중복검사
+
+        vector<string> tmp_pri;
+        get_value_from_json_key(_jv, "Privileges", privileges);
+        for(int i=0; i<privileges.size(); i++)
+        {
+            if(!(check_role_privileges(privileges[i].as_string())))
+            {
+                _msg = reply_error(_request, _msg, get_error_json("Incorrect Privileges"), status_codes::BadRequest);
+                return _msg;
+            }
+            tmp_pri.push_back(privileges[i].as_string());
+        }
+
+        if(tmp_pri.size() == 0)
+        {
+            // 제대로 된 권한이 하나도 없었다는 것으로 아웃
+            _msg = reply_error(_request, _msg, get_error_json("Need Correct Privileges"), status_codes::BadRequest);
+            return _msg;
+        }
+
+        // 여기까지 통과했으면 롤아이디도 있고 프리빌리지도 1개이상이니깐 role 생성
+        Role *new_role = new Role(col->odata.id + "/" + role_id, role_id);
+        new_role->name = "User Role";
+        new_role->assigned_privileges = tmp_pri;
+        col->add_member(new_role);
+
+        _msg = reply_success(_request, _msg, record_get_json(new_role->odata.id), status_codes::Created);
+        return _msg;
+    }
+    else
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest);
+        return _msg;
+    }
+}
+
 m_Request make_logentry(http_request _request, m_Request _msg, json::value _jv)
 {
     string uri = _request.request_uri().to_string();
@@ -2130,6 +2222,15 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
     // 혹은 본인계정일때만 patch가능이지
     // 그걸 뚫으면 이제 비로소 변경가능
     // 변경하는 와중ㅇ에 유저네임은 중복검사해야하고 롤아이디는 롤존재하는지 검사해야함
+
+    // service enabled 검사할건데 일단은 지금은 ODATA_ACCOUNT_SERVICE_ID로 해놓음
+    // uri가 account id까지니깐 2번 get_parent해서 accountservice odata구해서 사용하면 bmc꺼도 적용 가능할 듯
+    if(((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
+
     if(!(record_is_exist(_uri)))
     {
         // 해당 계정이 없음
@@ -2173,11 +2274,11 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
 
     if(session->account->role->id == "Administrator")
     {
-        // 관리자만 롤 변경가능하게 설계해봄
-        if(_jv.as_object().find("RoleId") != _jv.as_object().end())
+        // 관리자만 role 변경가능하게 설계해봄
+        string role_id;
+        if(get_value_from_json_key(_jv, "RoleId", role_id))
         {
             role_odata = ODATA_ROLE_ID;
-            string role_id = _jv.at("RoleId").as_string();
             role_odata = role_odata + "/" + role_id;
 
             if(!record_is_exist(role_odata))
@@ -2186,24 +2287,15 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
                 _msg = reply_error(_request, _msg, get_error_json(role_id + " does not exist"), status_codes::BadRequest);
                 return _msg;
             }
-
-            // ((Account *)g_record[_uri])->role = ((Role *)g_record[role_odata]);
             op_role = true;
         }
     }
 
     if(session->account->role->id == "Administrator" || session->account->id == last)
     {
-        // 인증 다뚫음 수정 가능
-        if(_jv.as_object().find("UserName") != _jv.as_object().end())
+        // username, password 변경
+        if(get_value_from_json_key(_jv, "UserName", input_username))
         {
-            // username이 있어서 바꾸는데 유저네임을 바꾸면 그걸로 로그인한 세션정보도 바꿔줘야하는것이 아닌가
-            // 자동적으로 바뀔거같은데 세션안에 어카운트가 포인터고 그 포인터는 g_record꺼에 들어가있으니깐 
-            // 내가 수정하는건 g_record안의 account정보고
-            input_username = _jv.at("UserName").as_string();
-            // 아 이거 유저네임바꾸면 odata도 /redfish/v1/AccountService/Accounts/user_name이라 지금
-            // 저거 account_id로 바꿔야하나 ㅇㅇ 바꿔야겟네 바꾸는중 ..... 여기부터 ㄱㄱ
-
             Collection *col = (Collection *)g_record[ODATA_ACCOUNT_ID];
             std::vector<Resource *>::iterator iter;
             for(iter=col->members.begin(); iter!=col->members.end(); iter++)
@@ -2219,17 +2311,20 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
 
             } // user_name 중복검사
 
-            // ((Account *)g_record[_uri])->user_name = input_username;
             op_name = true;
         }
 
-        if(_jv.as_object().find("Password") != _jv.as_object().end())
+        if(get_value_from_json_key(_jv, "Password", input_password))
         {
-            input_password = _jv.at("Password").as_string();
-            // ((Account *)g_record[_uri])->password = _jv.at("Password").as_string();
-            op_pass = true;
+            unsigned int min = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->min_password_length;
+            unsigned int max = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->max_password_length;
+            if(input_password.length() < min || input_password.length() > max)
+            {
+                _msg = reply_error(_request, _msg, get_error_json("Password Range is " + to_string(min) + " ~ " + to_string(max)), status_codes::BadRequest);
+                return _msg;
+            } // password 길이 검사
+            op_pass = true;   
         }
-
 
     }
     // role_id로 하기엔 role을 생성할 수도 있는 거여서 나중에 role안에 privileges에 권한 확인하는걸로 바꿔야 할 수도있음
@@ -2243,8 +2338,10 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
         return _msg;
     }
 
-    if(op_role)
+    if(op_role){
         ((Account *)g_record[_uri])->role = ((Role *)g_record[role_odata]);
+        ((Account *)g_record[_uri])->role_id = ((Role *)g_record[role_odata])->odata.id;
+    }
     
     if(op_name)
         ((Account *)g_record[_uri])->user_name = input_username;
@@ -2260,18 +2357,6 @@ m_Request modify_account(http_request _request, m_Request _msg, json::value _jv,
     cout << record_get_json(session->account->odata.id) << endl;
 
     _msg = reply_success(_request, _msg, record_get_json(_uri), status_codes::OK);
-
-    // http_response response;
-    // json::value response_json;
-
-    // response_json = record_get_json(_uri);
-    // response.set_status_code(status_codes::OK);
-    // response.set_body(response_json);
-    // _msg.result.result_datetime = currentDateTime();
-    // _msg.result.result_response = response;
-    // _msg.result.result_status = WORK_SUCCESS;
-
-    // _request.reply(response);
     return _msg;
 }
 
@@ -2283,6 +2368,13 @@ m_Request modify_role(http_request _request, m_Request _msg, json::value _jv, st
     // 있으면 권한 변경은 관리자만 할수있게끔해야지
     // 로그인된 녀석이 관리자냐 확인하고
     // 뚫으면 변경하는데 변경할게 assignedprivileges 밖에 없음
+    string service_id = get_parent_object_uri(get_parent_object_uri(_uri, "/"), "/");
+    if(((AccountService *)g_record[service_id])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
+
 
     if(!(record_is_exist(_uri)))
     {
@@ -2384,15 +2476,28 @@ m_Request remove_account(http_request _request, m_Request _msg, json::value _jv,
 {
     string username, password, odata_id;
 
-    if(_jv.as_object().find("UserName") == _jv.as_object().end()
-    || _jv.as_object().find("Password") == _jv.as_object().end())
+    if(((AccountService *)g_record[_service_uri])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
+
+    if(get_value_from_json_key(_jv, "UserName", username) == false
+    || get_value_from_json_key(_jv, "Password", password) == false)
     {
         _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
         return _msg;
     } // json request body에 UserName, Password없으면 BadRequest
 
-    username = _jv.at("UserName").as_string();
-    password = _jv.at("Password").as_string();
+    // if(_jv.as_object().find("UserName") == _jv.as_object().end()
+    // || _jv.as_object().find("Password") == _jv.as_object().end())
+    // {
+    //     _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
+    //     return _msg;
+    // } // json request body에 UserName, Password없으면 BadRequest
+
+    // username = _jv.at("UserName").as_string();
+    // password = _jv.at("Password").as_string();
 
     bool exist=false;
     AccountService *acc_service = (AccountService *)g_record[_service_uri];
@@ -2440,13 +2545,19 @@ m_Request remove_account(http_request _request, m_Request _msg, json::value _jv,
     cout << "지워진놈 : " << odata_id << endl;
     cout << record_get_json(acc_service->account_collection->odata.id) << endl;
 
-    _msg = reply_success(_request, _msg, record_get_json(acc_service->account_collection->odata.id), status_codes::Gone);
+    _msg = reply_success(_request, _msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK);
     // status ok로 바꿔
     return _msg;
 }
 
 m_Request remove_session(http_request _request, m_Request _msg)
 {
+    if(((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
+
     // 아니근데 이거 x-auth-token가지고만 하면 a가 로그인한채로 b꺼 x토큰 보내서 로그아웃 시킬수도있는데??
     if(!(is_session_valid(_request.headers()["X-Auth-Token"])))
     {
@@ -2465,70 +2576,280 @@ m_Request remove_session(http_request _request, m_Request _msg)
     // cout << "YYYY : " << session->id << endl;
     session->_remain_expires_time = 1;
 
-    _msg = reply_success(_request, _msg, json::value::null(), status_codes::Gone);
+    _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
     // status ok로..
     return _msg;
 }
 
-void patch_account_service(json::value _jv, string _record_uri)
+m_Request remove_role(http_request _request, m_Request _msg, json::value _jv, string _service_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // 어카운트 서비스 이용가능여부 체크, 관리자만 할수있음
+    // uri는 /AccountService/Roles/[Role_id]로 들어올거라서 predefined true만 아니면
+    // 그냥 그 해당하는 role 지워버리면됨 레코드지우고 컬렉션에서지우고 제이슨지우고
+    // 근데 그 role로 만들어둔 계정이 있을거아님? 그래서 그 서비스에서 account컬렉션 한번만 돌아서 roleid비교해서
+    // 지워지는놈이면 ReadOnly로 걍 바꿔줄게 
+    string uri = _request.request_uri().to_string();
+    if(((AccountService *)g_record[_service_uri])->service_enabled == false)
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
+        return _msg;
+    }
 
-    if(_jv.as_object().find("ServiceEnabled") != _jv.as_object().end())
-        ((AccountService *)g_record[_record_uri])->service_enabled = _jv.at("ServiceEnabled").as_bool();
+    if(!_request.headers().has("X-Auth-Token"))
+    {
+        // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
+        _msg = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest);
+        return _msg;
+    }
 
-    if(_jv.as_object().find("AuthFailureLoggingThreshold") != _jv.as_object().end())
-        ((AccountService *)g_record[_record_uri])->auth_failure_logging_threshold = _jv.at("AuthFailureLoggingThreshold").as_integer();
+    string session_token = _request.headers()["X-Auth-Token"];
 
-    if(_jv.as_object().find("MinPasswordLength") != _jv.as_object().end())
-        ((AccountService *)g_record[_record_uri])->min_password_length = _jv.at("MinPasswordLength").as_integer();
+    if(!is_session_valid(session_token))
+    {
+        // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
+        _msg = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest);
+        return _msg;
+    }
 
-    if(_jv.as_object().find("AccountLockoutThreshold") != _jv.as_object().end())
-        ((AccountService *)g_record[_record_uri])->account_lockout_threshold = _jv.at("AccountLockoutThreshold").as_integer();
+    string session_uri = get_session_odata_id_by_token(session_token);
+    // session_uri = session_uri + "/" + session_token;
+    cout << "SESSION ! : " << session_uri << endl;
 
-    if(_jv.as_object().find("AccountLockoutDuration") != _jv.as_object().end())
-        ((AccountService *)g_record[_record_uri])->account_lockout_duration = _jv.at("AccountLockoutDuration").as_integer();
+    // Session session = *((Session *)g_record[session_uri]);
+    Session *session = (Session *)g_record[session_uri];
 
-    if(_jv.as_object().find("AccountLockoutCounterResetAfter") != _jv.as_object().end())
-        ((AccountService *)g_record[_record_uri])->account_lockout_counter_reset_after = _jv.at("AccountLockoutCounterResetAfter").as_integer();
+    if(session->account->role->id == "Administrator")
+    {
+        if(!record_is_exist(uri))
+        {
+            _msg = reply_error(_request, _msg, get_error_json("Role does not exist"), status_codes::BadRequest);
+            return _msg;
+        }
 
-    if(_jv.as_object().find("AccountLockoutCounterResetEnabled") != _jv.as_object().end())
-        ((AccountService *)g_record[_record_uri])->account_lockout_counter_reset_enabled = _jv.at("AccountLockoutCounterResetEnabled").as_bool();
+        Role *role = (Role *)g_record[uri];
+        if(role->is_predefined == true)
+        {
+            _msg = reply_error(_request, _msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest);
+            return _msg;
+        }
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+        string role_id = role->id;
+        AccountService *service = ((AccountService *)g_record[_service_uri]);
+        Collection *role_col = service->role_collection;
+        Collection *acc_col = service->account_collection;
+
+        vector<Resource *>::iterator iter;
+        bool exist=false;
+        for(iter = role_col->members.begin(); iter != role_col->members.end(); iter++)
+        {
+            if(((Role *)(*iter))->id == role_id)
+            {
+                exist = true;
+                break;
+            }
+        }
+
+        if(exist)
+        {
+            // 롤 지우기
+            delete(*iter);
+            role_col->members.erase(iter);
+        }
+
+        string odata = role_col->odata.id + "/ReadOnly";
+        Role *read_only = (Role *)g_record[odata];
+        for(iter = acc_col->members.begin(); iter != acc_col->members.end(); iter++)
+        {
+            if(((Account *)(*iter))->role_id == role_id)
+            {
+                ((Account *)(*iter))->role_id = read_only->id;
+                ((Account *)(*iter))->role = read_only;
+            }
+        }
+
+
+        _msg = reply_success(_request, _msg, record_get_json(role_col->odata.id), status_codes::OK);
+        return _msg;
+    }
+    else
+    {
+        _msg = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest);
+        return _msg;
+    }
+    
 }
 
-void patch_session_service(json::value _jv)
+bool patch_account_service(json::value _jv, string _record_uri)
+{
+    cout << "바뀌기전~~ " << endl;
+    cout << record_get_json(_record_uri) << endl;
+    cout << " $$$$$$$ " << endl;
+
+    bool result = false;
+
+    // Min & Max Password Length
+    unsigned int min_after;
+    unsigned int min_before = ((AccountService *)g_record[_record_uri])->min_password_length;
+    if(get_value_from_json_key(_jv, "MinPasswordLength", min_after))
+    {
+        // ((AccountService *)g_record[_record_uri])->min_password_length = min;
+        if(min_after == 0)
+        {
+            // 이건 minpassword가 입력으로 왔지만 0을 입력했다는걸로 오류
+            return false;
+        }
+        result = true;
+    }
+
+    unsigned int max_after;
+    unsigned int max_before = ((AccountService *)g_record[_record_uri])->max_password_length;
+    if(get_value_from_json_key(_jv, "MaxPasswordLength", max_after))
+    {
+        // ((AccountService *)g_record[_record_uri])->max_password_length = max;
+        if(max_after == 0)
+        {
+            // 이건 maxpassword가 입력으로 왔지만 0을 입력했다는걸로 오류
+            return false;
+        }
+        result = true;
+    }
+
+    // min max 둘다 0이면 변경안한거라 out min에는 0이 들어갈수도있는데아니지 1은 들어가야지 min도 ㅇㅋ
+    // min만 0이다 그럼 min_before랑 < max_after 비교처리
+    // max만 0이다 그럼 min_after랑 < max_before 비교처리
+    // 둘다 0아니다 그럼 min_after < max_after 비교처리
+    if(min_after == 0 && max_after == 0)
+    {
+        ;
+    }
+    else if(min_after == 0 && max_after != 0)
+    {
+        if(min_before <= max_after)
+        {
+            // ok max변경해
+            ((AccountService *)g_record[_record_uri])->max_password_length = max_after;
+        }
+        else
+        {
+            // 안돼 불가능
+            return false;
+        }
+    }
+    else if(min_after != 0 && max_after == 0)
+    {
+        if(min_after <= max_before)
+        {
+            // ok min변경해
+            ((AccountService *)g_record[_record_uri])->min_password_length = min_after;
+        }
+        else
+        {
+            // 안돼 불가능
+            return false;
+        }
+    }
+    else
+    {
+        if(min_after <= max_after)
+        {
+            // ok min,max변경해
+            ((AccountService *)g_record[_record_uri])->max_password_length = max_after;
+            ((AccountService *)g_record[_record_uri])->min_password_length = min_after;
+        }
+        else
+        {
+            // 안돼 불가능
+            return false;
+        }
+    }
+
+    // check_password_range(min_before, min_after, max_before, max_after)
+
+    
+    bool service_enabled;
+    if(get_value_from_json_key(_jv, "ServiceEnabled", service_enabled))
+    {
+        ((AccountService *)g_record[_record_uri])->service_enabled = service_enabled;
+        result = true;
+    }
+
+    unsigned int aflt;
+    if(get_value_from_json_key(_jv, "AuthFailureLoggingThreshold", aflt))
+    {
+        ((AccountService *)g_record[_record_uri])->auth_failure_logging_threshold = aflt;
+        result = true;
+    }
+
+    unsigned int alt;
+    if(get_value_from_json_key(_jv, "AccountLockoutThreshold", alt))
+    {
+        ((AccountService *)g_record[_record_uri])->account_lockout_threshold = alt;
+        result = true;
+    }
+
+    unsigned int ald;
+    if(get_value_from_json_key(_jv, "AccountLockoutDuration", ald))
+    {
+        ((AccountService *)g_record[_record_uri])->account_lockout_duration = ald;
+        result = true;
+    }
+
+    unsigned int alcra;
+    if(get_value_from_json_key(_jv, "AccountLockoutCounterResetAfter", alcra))
+    {
+        ((AccountService *)g_record[_record_uri])->account_lockout_counter_reset_after = alcra;
+        result = true;
+    }
+
+    bool alcre;
+    if(get_value_from_json_key(_jv, "AccountLockoutCounterResetEnabled", alcre))
+    {
+        ((AccountService *)g_record[_record_uri])->account_lockout_counter_reset_enabled = alcre;
+        result = true;
+    }
+
+    cout << "바꾼후~~ " << endl;
+    cout << record_get_json(_record_uri) << endl;
+
+    return result;
+}
+
+bool patch_session_service(json::value _jv)
 {
     cout << "바뀌기전~~ " << endl;
     cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
     cout << " $$$$$$$ " << endl;
 
-    unsigned int change_timeout;
-    if(_jv.as_object().find("SessionTimeout") != _jv.as_object().end())
-    {
-        change_timeout = _jv.at("SessionTimeout").as_integer();
-        ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout = change_timeout;
-        // ((SessionService *)g_record[_record_uri])->session_timeout = change_timeout;
-        // 세션은 _record_uri필요없겟는데?
-    }
-    // 타임아웃 시간 변경이 관리자가 할거 같긴한데 일단 권한검사는 추가안함
+    bool result = false;
 
-    Collection *col = (Collection *)g_record[ODATA_SESSION_ID];
-    std::vector<Resource *>::iterator iter;
-    for(iter=col->members.begin(); iter!=col->members.end(); iter++)
+    unsigned int change_timeout;
+    if(get_value_from_json_key(_jv, "SessionTimeout", change_timeout))
     {
-        if(((Session *)(*iter))->_remain_expires_time > change_timeout)
-            ((Session *)(*iter))->_remain_expires_time = change_timeout;
+        ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout = change_timeout;
+        // 타임아웃 시간 변경이 관리자가 할거 같긴한데 일단 권한검사는 추가안함
+        result = true;
+
+        Collection *col = (Collection *)g_record[ODATA_SESSION_ID];
+        std::vector<Resource *>::iterator iter;
+        for(iter=col->members.begin(); iter!=col->members.end(); iter++)
+        {
+            if(((Session *)(*iter))->_remain_expires_time > change_timeout)
+                ((Session *)(*iter))->_remain_expires_time = change_timeout;
+        }
+        // 타임아웃 시간을 변경한 것이 현재 만들어져있는 세션들에게도 적용되면 이 코드 적용
     }
-    // 타임아웃 시간을 변경한 것이 현재 만들어져있는 세션들에게도 적용되면 이 코드 적용
+
+    bool service_enabled;
+    if(get_value_from_json_key(_jv, "ServiceEnabled", service_enabled))
+    {
+        ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->service_enabled = service_enabled;
+        result = true;
+    }
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
 
+    return result;
 }
 
 void patch_manager(json::value _jv, string _record_uri)

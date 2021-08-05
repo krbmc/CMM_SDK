@@ -778,6 +778,7 @@ public:
     bool service_enabled;
     unsigned int auth_failure_logging_threshold;
     unsigned int min_password_length;
+    unsigned int max_password_length;
     unsigned int account_lockout_threshold;
     unsigned int account_lockout_duration;
     unsigned int account_lockout_counter_reset_after;
@@ -802,6 +803,7 @@ public:
         this->service_enabled = true;
         this->auth_failure_logging_threshold = 0;
         this->min_password_length = 6;
+        this->max_password_length = 35;
         this->account_lockout_threshold = 0;
         this->account_lockout_duration = 0;
         this->account_lockout_counter_reset_after = 0;

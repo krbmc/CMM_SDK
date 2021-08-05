@@ -584,6 +584,9 @@ bool record_save_json(void)
             continue;
         }
 
+        // log(info) << "uri : " << it->first << ", resource address : " << it->second;
+        // log(info) << "id : " << it->second->odata.id << ", type : " << it->second->odata.type << endl;
+
         string this_odata_id = it->second->odata.id;
         
         // update file
@@ -597,9 +600,6 @@ bool record_save_json(void)
             it->second->save_json();
             // log(info) << "create " << this_odata_id;
         }
-
-        // log(info) << "uri : " << it->first << ", resource address : " << it->second;
-        // log(info) << "id : " << it->second->odata.id << ", type : " << it->second->odata.type << endl;
     }
     
     // log(info) << "update/create complete";

@@ -12,7 +12,7 @@ extern unique_ptr<Handler> g_listener, HA_listener;
  */
 bool init_resource(void)
 {
-    // load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
+    load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
     // 등록해버리고 table.json까지 수정해버림
     record_load_json();
     log(info) << "record load json complete";
@@ -21,8 +21,10 @@ bool init_resource(void)
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
         g_service_root = new ServiceRoot();
     
-    add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
-    add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // record_print();
+
+    // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
+    // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // cout << "\t\t dy : add new bmc complete" << endl;
     
     // // generateCSR test
@@ -1215,6 +1217,7 @@ json::value AccountService::get_json(void)
     j[U("ServiceEnabled")] = json::value::boolean(U(this->service_enabled));
     j[U("AuthFailureLoggingThreshold")] = json::value::number(U(this->auth_failure_logging_threshold));
     j[U("MinPasswordLength")] = json::value::number(U(this->min_password_length));
+    j[U("MaxPasswordLength")] = json::value::number(U(this->max_password_length));
     j[U("AccountLockoutThreshold")] = json::value::number(U(this->account_lockout_threshold));
     j[U("AccountLockoutDuration")] = json::value::number(U(this->account_lockout_duration));
     j[U("AccountLockoutCounterResetAfter")] = json::value::number(U(this->account_lockout_counter_reset_after));
@@ -1236,6 +1239,7 @@ bool AccountService::load_json(json::value &j)
         this->service_enabled = j.at("ServiceEnabled").as_bool();
         this->auth_failure_logging_threshold = j.at("AuthFailureLoggingThreshold").as_integer();
         this->min_password_length = j.at("MinPasswordLength").as_integer();
+        this->max_password_length = j.at("MaxPasswordLength").as_integer();
         this->account_lockout_threshold = j.at("AccountLockoutThreshold").as_integer();
         this->account_lockout_duration = j.at("AccountLockoutDuration").as_integer();
         this->account_lockout_counter_reset_after = j.at("AccountLockoutCounterResetAfter").as_integer();
@@ -1396,13 +1400,14 @@ pplx::task<void> Session::start(void)
                 // session자체 객체삭제, g_record에서 삭제, session collection에서 삭제
 
                 record_save_json(); // 레코드 json파일 갱신
-                string json_path = path;
-                json_path = json_path + ".json";
-                if(remove(json_path.c_str()) < 0)
-                {
-                    cout << "delete error in session remove" << endl;
-                }
-                // session json파일 삭제
+                // string json_path = path;
+                // json_path = json_path + ".json";
+                // if(remove(json_path.c_str()) < 0)
+                // {
+                //     cout << "delete error in session remove" << endl;
+                // }
+                // session json파일 삭제 이거 record_save_json하면 레코드에 없는 녀석들의 json파일도
+                // 지워주게끔 되어있어서 중복됨
             }
 
             cout << "지운 후" << endl;

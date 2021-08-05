@@ -102,14 +102,15 @@ m_Request act_eventservice(http_request _request, m_Request _msg, json::value _j
 m_Request act_logservice(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
 m_Request make_account(http_request _request, m_Request _msg, json::value _jv);
 m_Request make_session(http_request _request, m_Request _msg, json::value _jv);
-m_Request make_logentry(http_request _request, m_Request _msg, json::value _jv);
+m_Request make_role(http_request _request, m_Request _msg, json::value _jv);
+m_Request make_logentry(http_request _request, m_Request _msg, json::value _jv); // 제거대상
 
 m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value _jv);
 m_Request treat_uri_bmc_patch(http_request _request, m_Request _msg, json::value _jv);
 m_Request modify_account(http_request _request, m_Request _msg, json::value _jv, string _uri);
 m_Request modify_role(http_request _request, m_Request _msg, json::value _jv, string _uri);
-void patch_account_service(json::value _jv, string _record_uri);
-void patch_session_service(json::value _jv);
+bool patch_account_service(json::value _jv, string _record_uri);
+bool patch_session_service(json::value _jv);
 void patch_manager(json::value _jv, string _record_uri);
 void patch_network_protocol(json::value _jv, string _record_uri);
 void patch_fan_mode(string _mode, string _record_uri);
@@ -121,6 +122,7 @@ void patch_power_control(json::value _jv, string _record_uri);
 m_Request treat_uri_cmm_delete(http_request _request, m_Request _msg, json::value _jv);
 m_Request remove_account(http_request _request, m_Request _msg, json::value _jv, string _service_uri);
 m_Request remove_session(http_request _request, m_Request _msg);//, json::value _jv, string _service_uri);
+m_Request remove_role(http_request _request, m_Request _msg, json::value _jv, string _service_uri);
 
 m_Request reply_error(http_request _request, m_Request _msg, json::value _jv, web::http::status_code _status);
 json::value get_error_json(string _message);

@@ -136,6 +136,7 @@ void load_module_id(void);
 void remove_if_exists(fs::path file);
 
 bool get_value_from_json_key(json::value body, string key, int& value);
+bool get_value_from_json_key(json::value body, string key, unsigned int& value);
 bool get_value_from_json_key(json::value body, string key, string& value);
 bool get_value_from_json_key(json::value body, string key, json::value& value);
 bool get_value_from_json_key(json::value body, string key, double& value);
