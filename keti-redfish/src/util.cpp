@@ -235,7 +235,6 @@ char *get_popen_string(char *command)
 {
     FILE *fp = popen(command, "r");
     char *temp = (char *)malloc(sizeof(char)*256);
-    //char *temp = new char[256];
     if(fp != NULL)
     {
         while(fgets(temp, 256, fp) != NULL)
@@ -255,6 +254,7 @@ char *get_popen_string(char *command)
  */
 string get_popen_string(string command)
 {
+    // log(warning) << command;
     FILE *fp = popen(command.c_str(), "r");
     char *temp = (char *)malloc(sizeof(char)*256);
     string ret;
@@ -268,6 +268,8 @@ string get_popen_string(string command)
     }
     if (ret.back() == '\n')
         ret.pop_back();
+        
+    // log(warning) << ret;
     return ret;
 }
 
@@ -321,7 +323,7 @@ bool get_value_from_json_key(json::value body, string key, string& value)
     }
     else{
         value = "";
-        // log(warning) << "error with parsing " << key << " to string";
+        log(warning) << "error with parsing " << key << " to string";
         return false;
     }
     return true;
@@ -386,8 +388,9 @@ void remove_if_exists(fs::path file)
  */
 string get_value_from_cmd_str(string cmd_str, string key)
 {
+    // log(warning) << cmd_str;
     string cmd_ret = get_popen_string(cmd_str);
-    // log(warning) << cmd_str << " : " << cmd_ret;
+    // log(warning) << cmd_ret;
     if (cmd_ret.rfind(key) == string::npos)
         return "";
     string ret = cmd_ret.substr(cmd_ret.rfind(key) + key.size());
@@ -400,7 +403,7 @@ string get_value_from_cmd_str(string cmd_str, string key)
  */
 string ltrim(string str)
 {
-    return str.erase(0, str.find_first_not_of(" :\n\t"));
+    return str.erase(0, str.find_first_not_of(" :\n\t`-|"));
 }
 
 /**
