@@ -110,6 +110,12 @@
 #define ODATA_VIRTUAL_MEDIA_TYPE "#VirtualMedia" ODATA_TYPE_VERSION ".VirtualMedia"
 #define ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE "#VirtualMediaCollection.VirtualMediaCollection"
 
+// dy : storage (drive, volume)
+#define ODATA_DRIVE_TYPE "#Drive" ODATA_TYPE_VERSION ".Drive"
+#define ODATA_DRIVE_COLLECTION_TYPE "#Drive.Drive"
+#define ODATA_VOLUME_TYPE "#Volume" ODATA_TYPE_VERSION ".Volume"
+#define ODATA_VOLUME_COLLECTION_TYPE "#Volume.Volume"
+
 #define NO_DATA_TYPE 0
 
 /**
@@ -228,7 +234,9 @@ enum RESOURCE_TYPE
     CERTIFICATE_TYPE,
     CERTIFICATE_LOCATION_TYPE,
     CERTIFICATE_SERVICE_TYPE,
-    VIRTUAL_MEDIA_TYPE
+    VIRTUAL_MEDIA_TYPE,
+    DRIVE_TYPE,
+    VOLUME_TYPE
 };
 
 enum ACTION_NAME
@@ -558,6 +566,18 @@ typedef struct _Event_Info{
     string origin_of_condition;
     vector<string> message_args;
 } Event_Info;
+
+typedef struct _Part_Location{
+    int location_ordinal_value;
+    string location_type; // Bay 
+    string service_label; // the service label of this drive
+} Part_Location;
+
+typedef struct _Physical_Location{
+    Part_Location part_location;
+    string info; // slot number of the drive. if storage is host bus adaptoer or Raid, this property will be displayed
+    string info_format; // Slot Number. if storage is host bus adaptoer or Raid, this property will be displayed
+} Physical_Location;
 
 /**
  * @brief Resource of redfish schema
@@ -2107,23 +2127,6 @@ class StorageControllers : public Resource
 
     StorageControllers(const string _odata_id) : Resource(STORAGE_CONTROLLER_TYPE, _odata_id, ODATA_STORAGE_CONTROLLER_TYPE)
     {
-        this->id = "";
-        this->manufacturer = "storage controller manufacturer";
-        this->model = "storage controller model";
-        this->serial_number = "storage controller serial";
-        this->part_number = "storage controller part";
-        this->speed_gbps = 0;
-        this->firmware_version = "storage controller firmversion";
-        this->identifier.durable_name = "iden durable name";
-        this->identifier.durable_name_format = "iden durable format";
-
-        this->support_controller_protocols.push_back("PCIe");
-        this->support_device_protocols.push_back("SAS");
-        this->support_device_protocols.push_back("SATA");
-
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-
         g_record[_odata_id] = this;
     }
     StorageControllers(const string _odata_id, const string _controller_id) : StorageControllers(_odata_id)
@@ -2146,6 +2149,8 @@ class Storage : public Resource
     string description;
     Status status;
     List *controller;
+    Collection *drives; // physical
+    Collection *volumes; // logical
 
     Storage(const string _odata_id) : Resource(STORAGE_TYPE, _odata_id, ODATA_STORAGE_TYPE)
     {
@@ -2155,10 +2160,12 @@ class Storage : public Resource
         this->status.state = STATUS_STATE_ENABLED;
 
         this->controller = nullptr;
+        this->drives = nullptr;
+        this->volumes = nullptr;
 
         g_record[_odata_id] = this;
 
-    }
+    };
     Storage(const string _odata_id, const string _storage_id) : Storage(_odata_id)
     {
         this->id = _storage_id;
@@ -2169,6 +2176,90 @@ class Storage : public Resource
     };
 
     json::value get_json(void); // 이거 할때 컨트롤러 리스트기때문에 Thermal-temperature 참고할것
+    bool load_json(json::value &j);
+};
+
+class Drive : public Resource
+{
+    public:
+    string id;
+    string asset_tag;
+    string description;
+    string encryption_ability; // One of ("None", "SelfEncryptingDrive")
+    string encryption_status; // One of ("Unlocked", "Locked", "Unencrypted")
+    string hotspare_type; // One of ("None", "Global")
+    string manufacturer;
+    string media_type;
+    string model;
+    string name;
+    string sku;
+    string status_indicator;
+    string part_number;
+    string protocol;
+    string revision;
+    string serial_number;
+    
+    int block_size_bytes;
+    int capable_speed_Gbs;
+    int negotiated_speed_Gbs;
+    int predicted_media_life_left_percent;
+    int rotation_speed_RPM;
+    
+    bool failure_predicted;
+    
+    vector<Identifier> identifier;
+    Physical_Location physical_location;
+
+    Status status;
+
+    Drive(const string _odata_id) : Resource(DRIVE_TYPE, _odata_id, ODATA_DRIVE_TYPE)
+    {
+        g_record[_odata_id] = this;
+    };
+    Drive(const string _odata_id, string _id) : Drive(_odata_id)
+    {
+        this->id = _id;
+    };
+    ~Drive()
+    {
+        g_record.erase(this->odata.id);
+    };
+
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
+
+class Volume : public Resource
+{
+    public:
+    string id;
+    string description;
+    string RAID_type;
+    string name;
+    string read_cache_policy;
+    string write_cache_policy;
+    string strip_size_bytes;
+    string display_name;
+    int block_size_bytes;
+    int capacity_bytes;
+    
+    vector<string> access_capabilities;
+
+    Status status;
+
+    Volume(const string _odata_id) : Resource(VOLUME_TYPE, _odata_id, ODATA_VOLUME_TYPE)
+    {
+        g_record[_odata_id] = this;
+    };
+    Volume(const string _odata_id, string _id) : Volume(_odata_id)
+    {
+        this->id = _id;
+    };
+    ~Volume()
+    {
+        g_record.erase(this->odata.id);
+    };
+    json::value get_json(void);
     bool load_json(json::value &j);
 };
 
@@ -2340,18 +2431,19 @@ class Systems : public Resource
     Bios *bios; // resource Bios
     
     // Collection *network; // resource NetworkInterfaces // 일단 없음
-    // Collection *storage; // resource Storages
+    Collection *storage; // resource Storages
     Collection *processor; // resource Processors
     Collection *memory; // resource Memory
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
-    Collection *simple_storage;
+    Collection *simple_storage; // resource SimpleStorage
 
     unordered_map <string, Actions> actions;
 
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
         this->bios = nullptr;
+        this->storage = nullptr;
         this->processor = nullptr;
         this->memory = nullptr;
         this->ethernet = nullptr;
@@ -2491,17 +2583,26 @@ class VirtualMedia : public Resource
 };
 
 void init_system(Collection *system_collection, string _id);
+void init_storage(Collection *storage_collection, string _id);
+void init_storage_controller(List *storage_controllers_list, string _id);
 void init_processor(Collection *processor_collection, string _id);
 void init_memory(Collection *memory_collection, string _id);
 void init_ethernet(Collection *ethernet_collection, string _id);
 void init_log_service(Collection *log_service_collection, string _id);
 void init_log_entry(Collection *log_entry_collection, string _id);
 void init_simple_storage(Collection *simple_storage_collection, string _id);
+void init_drive(Collection *drive_collection, string _id);
+void init_volume(Collection *volume_collection, string _id);
 void init_bios(Bios *bios);
 void init_chassis(Collection *chassis_collection, string _id);
 void init_sensor(Collection *sensor_collection, string _id);
 void init_thermal(Thermal *thermal);
 void init_power(Power *power);
+void init_temperature(List *temperatures_list, string _id);
+void init_fan(List *fans_list, string _id);
+void init_power_control(List *power_control_list, string _id);
+void init_voltage(List *voltages_list, string _id);
+void init_power_supply(List *power_supplies_list, string _id);
 void init_manager(Collection *manager_collection, string _id);
 void init_update_service(UpdateService *update_service);
 void init_software_inventory(Collection *software_inventory_collection, string _id);

@@ -13,7 +13,7 @@ bool init_resource(void)
     load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
     // 등록해버리고 table.json까지 수정해버림
     record_load_json();
-    log(info) << "[Record Load Json] complete";
+    log(info) << "[Record Load Json] complete" << endl;
 
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
         g_service_root = new ServiceRoot();
@@ -87,7 +87,7 @@ bool init_resource(void)
     // vm->EjectMedia();
     
     record_save_json();
-    log(info) << "record save json complete";
+    log(info) << "[Record Save Json] complete" << endl;
     
     return true;
 }
@@ -127,6 +127,12 @@ void init_system(Collection *system_collection, string _id)
     system->boot.boot_source_override_mode = "";
     system->boot.uefi_target_boot_source_override = "None";
 
+    if (!record_is_exist(odata_id + "/Storage")){
+        system->storage = new Collection(odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
+        system->storage->name = "Computer System Storage Collection";
+    
+        init_storage(system->storage, "1");
+    }
     if (!record_is_exist(odata_id + "/Processors")){
         system->processor = new Collection(odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
         system->processor->name = "Computer System Processor Collection";
@@ -168,6 +174,165 @@ void init_system(Collection *system_collection, string _id)
     }
 
     system_collection->add_member(system);
+    return;
+}
+
+void init_storage(Collection *storage_collection, string _id)
+{
+    string odata_id = storage_collection->odata.id + "/" + _id;
+
+    Storage *storage = new Storage(odata_id, _id);
+    
+    /**
+     * storage Configuration
+     */
+    storage->id = _id;
+    storage->description = "This resource is used to represent a drive for a Redfish implementation.";
+    storage->status.state = STATUS_STATE_ENABLED;
+    storage->status.health = STATUS_HEALTH_OK;
+    
+    if (!record_is_exist(odata_id + "/StorageControllers")){
+        storage->controller = new List(odata_id + "/StorageControllers", STORAGE_CONTROLLER_TYPE);
+        storage->controller->name = "Storage Controllers List";
+
+        int storage_num = stoi(get_popen_string("lsblk -o NAME -n | wc -l"));
+        vector<string> storage_name = string_split(get_popen_string("lsblk -o NAME -n | head -" + to_string(storage_num)), '\n');
+                        
+        for(auto str : storage_name){
+            init_storage_controller(storage->controller, ltrim(str));
+        }
+    }
+
+    if (!record_is_exist(odata_id + "/Drives")){
+        storage->drives = new Collection(odata_id + "/Drives", ODATA_DRIVE_COLLECTION_TYPE);
+        storage->drives->name = "Storage Drive Collection";
+    
+        init_drive(storage->drives, "0");
+    }
+
+    if (!record_is_exist(odata_id + "/Volumes")){
+        storage->volumes = new Collection(odata_id + "/Volumes", ODATA_VOLUME_COLLECTION_TYPE);
+        storage->volumes->name = "Storage Volume Collection";
+    
+        init_volume(storage->volumes, "0");
+    }
+
+    storage_collection->add_member(storage);
+    return;
+}
+
+void init_storage_controller(List *storage_controllers_list, string _id)
+{
+    string odata_id = storage_controllers_list->odata.id + "/" + _id;
+
+    StorageControllers *sc = new StorageControllers(odata_id, _id);
+    
+    /**
+     * @todo : Storage Controllers Configuration
+     */
+
+    sc->id = _id;
+    sc->manufacturer = get_popen_string("lsblk -o NAME,VENDOR | grep \"" + _id + "\" | head -1 | awk \'{print $2}\'");
+    sc->model = get_popen_string("lsblk -o NAME,MODEL | grep \"" + _id + "\" | head -1 | awk \'{print $2}\'");
+    sc->serial_number = get_popen_string("lsblk -o NAME,SERIAL | grep \"" + _id + "\" | head -1 | awk \'{print $2}\'");
+    sc->part_number = get_popen_string("lsblk -o NAME,PARTUUID | grep \"" + _id + "\" | head -1 | awk \'{print $2}\'");
+    sc->speed_gbps = 0; // 
+    sc->firmware_version = ""; //
+    
+    sc->identifier.durable_name = get_value_from_cmd_str("fdisk -l | grep \"Disk identifier\"", "Disk identifier");
+    sc->identifier.durable_name_format = "UUID";
+    
+    sc->support_controller_protocols.push_back("PCIe"); //
+    sc->support_device_protocols.push_back("SAS"); //
+    sc->support_device_protocols.push_back("SATA"); //
+
+    sc->status.state = STATUS_STATE_ENABLED;
+    sc->status.health = STATUS_HEALTH_OK;
+
+    storage_controllers_list->add_member(sc);
+    return;
+}
+
+void init_drive(Collection *drive_collection, string _id)
+{
+    string odata_id = drive_collection->odata.id + "/" + _id;
+
+    Drive *drive = new Drive(odata_id, _id);
+
+    /**
+     * drive Configuration
+     */
+    drive->id = _id;
+    drive->asset_tag = "";
+    drive->description = "This resource is used to represent a drive for a Redfish implementation.";
+    drive->encryption_ability = "";
+    drive->encryption_status = "";
+    drive->hotspare_type = "";
+    drive->manufacturer = "";
+    drive->media_type = "";
+    drive->model = "";
+    drive->name = "";
+    drive->sku = "";
+    drive->status_indicator = "";
+    drive->part_number = "";
+    drive->protocol = "";
+    drive->revision = "";
+    drive->serial_number = "";
+
+    drive->block_size_bytes = 512;
+    drive->capable_speed_Gbs = 12;
+    drive->negotiated_speed_Gbs = 12;
+    drive->predicted_media_life_left_percent = 100;
+    drive->rotation_speed_RPM = 10500;
+
+    drive->failure_predicted = false;
+
+    Identifier i;
+    i.durable_name = "";
+    i.durable_name_format = "UUID";
+    drive->identifier.push_back(i);
+
+    drive->physical_location.part_location.service_label = "";
+    drive->physical_location.part_location.location_type = "";
+    drive->physical_location.part_location.location_ordinal_value = 1;
+    drive->physical_location.info = "";
+    drive->physical_location.info_format = "SLOT NUMBER";
+
+    drive->status.state = STATUS_STATE_ENABLED;
+    drive->status.health = STATUS_HEALTH_OK;
+
+    drive_collection->add_member(drive);
+    return;
+}
+
+void init_volume(Collection *volume_collection, string _id)
+{
+    string odata_id = volume_collection->odata.id + "/" + _id;
+
+    Volume *volume = new Volume(odata_id, _id);
+
+    /**
+     * volume Configuration
+     */
+    volume->id = _id;
+    volume->description = "This resource is used to represent a volume for a Redfish implementation.";
+    volume->RAID_type = "";
+    volume->name = "";
+    volume->read_cache_policy = "";
+    volume->write_cache_policy = "";
+    volume->strip_size_bytes = "";
+    volume->display_name = "";
+    volume->block_size_bytes = 512;
+    volume->capacity_bytes = 238999830528;
+
+    volume->access_capabilities.push_back("Write");
+    volume->access_capabilities.push_back("Read");
+        
+
+    volume->status.state = STATUS_STATE_ENABLED;
+    volume->status.health = STATUS_HEALTH_OK;
+
+    volume_collection->add_member(volume);
     return;
 }
 
@@ -511,64 +676,97 @@ void init_thermal(Thermal *thermal)
         thermal->temperatures = new List(odata_id + "/Temperatures", TEMPERATURE_TYPE);
         thermal->temperatures->name = "Chassis Temperatures";
 
-        double temp[2] = {0};
-        if (get_intake_temperature_config(temp)) {
-            log(info) << "Chassis temperature min value = " << temp[0];
-            log(info) << "Chassis temperature max value = " << temp[1];
-        }
-        // 이거 순서 바뀐거같은데 temp[0]이 maxvalue인듯
-
-        for (uint8_t i = 0; i < 4; i++)
-        {
-            /**
-             * @todo 여기에 temperatures 일반멤버변수값 넣어주기
-             */
-            ostringstream s;
-            s << thermal->temperatures->odata.id << "/" << to_string(i);
-            Temperature *intake_temperature = new Temperature(s.str(), to_string(i));
-            intake_temperature->name = "Chassis Intake Temperature";
-            intake_temperature->physical_context = "Intake";
-            intake_temperature->min_reading_range_temp = temp[0];
-            intake_temperature->max_reading_range_temp = temp[1];
-            intake_temperature->upper_threshold_non_critical = round(temp[1] * 0.6);
-            intake_temperature->upper_threshold_critical = round(temp[1] * 0.7);
-            intake_temperature->upper_threshold_fatal = round(temp[1] * 0.85);
-            intake_temperature->read(i, INTAKE_CONTEXT);
-            intake_temperature->sensor_num = i;
-            thermal->temperatures->add_member(intake_temperature);
-        }
-
-        ostringstream s;
-        s << thermal->temperatures->odata.id << "/" << to_string(thermal->temperatures->members.size());
-        Temperature *cpu_temperature = new Temperature(s.str(), to_string(thermal->temperatures->members.size()));
-        cpu_temperature->name = "Chassis Manager CPU Temperature";
-        cpu_temperature->physical_context = "CPU";
-        cpu_temperature->min_reading_range_temp = 0;
-        cpu_temperature->max_reading_range_temp = 100;
-        cpu_temperature->upper_threshold_non_critical = round(cpu_temperature->max_reading_range_temp * 0.7);
-        cpu_temperature->upper_threshold_critical = round(cpu_temperature->max_reading_range_temp * 0.75);
-        cpu_temperature->upper_threshold_fatal = round(cpu_temperature->max_reading_range_temp * 0.8);
-        cpu_temperature->read(thermal->temperatures->members.size(), CPU_CONTEXT);
-        cpu_temperature->sensor_num = thermal->temperatures->members.size();
-        thermal->temperatures->add_member(cpu_temperature);
+        init_temperature(thermal->temperatures, "0");
     }
+
     if (!record_is_exist(odata_id + "/Fans")){
         thermal->fans = new List(odata_id + "/Fans", FAN_TYPE);
         thermal->fans->name = "Chassis Fans";
 
-        for(int i=0; i<2; i++)
-        {
-            ostringstream os;
-            os << thermal->fans->odata.id << "/" << to_string(i);// << "0";
-            Fan *chassis_f = new Fan(os.str(), to_string(i));
-            chassis_f->max_reading_range = 3000 * (i+1);
-            chassis_f->sensor_num = i;
-            thermal->fans->add_member(chassis_f);
-        }
-
+        init_temperature(thermal->fans, "0");
     }
     return;
 }
+
+void init_temperature(List *temperatures_list, string _id)
+{
+    string odata_id = temperatures_list->odata.id + "/" + _id;
+
+    Temperature *temper = new Temperature(odata_id, _id);
+
+    /**
+     * Temperature Configuration
+     */
+    // double temp[2] = {0};
+    //     if (get_intake_temperature_config(temp)) {
+    //         log(info) << "Chassis temperature min value = " << temp[0];
+    //         log(info) << "Chassis temperature max value = " << temp[1];
+    //     }
+    //     // 이거 순서 바뀐거같은데 temp[0]이 maxvalue인듯
+
+    //     for (uint8_t i = 0; i < 4; i++)
+    //     {
+    //         /**
+    //          * @todo 여기에 temperatures 일반멤버변수값 넣어주기
+    //          */
+    //         ostringstream s;
+    //         s << thermal->temperatures->odata.id << "/" << to_string(i);
+    //         Temperature *intake_temperature = new Temperature(s.str(), to_string(i));
+    //         intake_temperature->name = "Chassis Intake Temperature";
+    //         intake_temperature->physical_context = "Intake";
+    //         intake_temperature->min_reading_range_temp = temp[0];
+    //         intake_temperature->max_reading_range_temp = temp[1];
+    //         intake_temperature->upper_threshold_non_critical = round(temp[1] * 0.6);
+    //         intake_temperature->upper_threshold_critical = round(temp[1] * 0.7);
+    //         intake_temperature->upper_threshold_fatal = round(temp[1] * 0.85);
+    //         intake_temperature->read(i, INTAKE_CONTEXT);
+    //         intake_temperature->sensor_num = i;
+    //         thermal->temperatures->add_member(intake_temperature);
+    //     }
+
+    //     ostringstream s;
+    //     s << thermal->temperatures->odata.id << "/" << to_string(thermal->temperatures->members.size());
+    //     Temperature *cpu_temperature = new Temperature(s.str(), to_string(thermal->temperatures->members.size()));
+    //     cpu_temperature->name = "Chassis Manager CPU Temperature";
+    //     cpu_temperature->physical_context = "CPU";
+    //     cpu_temperature->min_reading_range_temp = 0;
+    //     cpu_temperature->max_reading_range_temp = 100;
+    //     cpu_temperature->upper_threshold_non_critical = round(cpu_temperature->max_reading_range_temp * 0.7);
+    //     cpu_temperature->upper_threshold_critical = round(cpu_temperature->max_reading_range_temp * 0.75);
+    //     cpu_temperature->upper_threshold_fatal = round(cpu_temperature->max_reading_range_temp * 0.8);
+    //     cpu_temperature->read(thermal->temperatures->members.size(), CPU_CONTEXT);
+    //     cpu_temperature->sensor_num = thermal->temperatures->members.size();
+    //     thermal->temperatures->add_member(cpu_temperature);
+
+    temperatures_list->add_member(temper);
+    return;
+}
+
+void init_fan(List *fans_list, string _id)
+{
+    string odata_id = fans_list->odata.id + "/" + _id;
+
+    Fan *fan = new Fan(odata_id, _id);
+
+    /**
+     * Fan Configuration
+     */
+    
+    // for(int i=0; i<2; i++)
+    // {
+    //     ostringstream os;
+    //     os << thermal->fans->odata.id << "/" << to_string(i);// << "0";
+    //     Fan *chassis_f = new Fan(os.str(), to_string(i));
+    //     chassis_f->max_reading_range = 3000 * (i+1);
+    //     chassis_f->sensor_num = i;
+    //     thermal->fans->add_member(chassis_f);
+    // }
+
+    
+    fans_list->add_member(fan);
+    return;
+}
+
 
 void init_power(Power *power)
 {
@@ -583,29 +781,74 @@ void init_power(Power *power)
         power->power_control = new List(odata_id + "/PowerControl", POWER_CONTROL_TYPE);
         power->power_control->name = "Chassis PowerControl";
 
-        os.str("");
-        os << power->power_control->odata.id << "/0";
-        PowerControl *chassis_pc = new PowerControl(os.str(), "0~~");
-        power->power_control->add_member(chassis_pc);
+        init_power_control(power->power_control, "0");
     }
     if (!record_is_exist(odata_id + "/Voltages")){
         power->voltages = new List(odata_id + "/Voltages", VOLTAGE_TYPE);
         power->voltages->name = "Chassis Voltages";
 
-        os.str("");
-        os << power->voltages->odata.id << "/0";
-        Voltage *chassis_volt = new Voltage(os.str(), "0~~");
-        power->voltages->add_member(chassis_volt);
+        init_voltage(power->voltages, "0");
     }
     if (!record_is_exist(odata_id + "/PowerSupplies")){
         power->power_supplies = new List(odata_id + "/PowerSupplies", POWER_SUPPLY_TYPE);
         power->power_supplies->name = "Chassis PowerSupplies";
 
-        os.str("");
-        os << power->power_supplies->odata.id << "/0";
-        PowerSupply *chassis_ps = new PowerSupply(os.str(), "0~~");
-        power->power_supplies->add_member(chassis_ps);
+        init_power_supply(power->power_supplies, "0");
     }
+    return;
+}
+
+void init_power_control(List *power_control_list, string _id)
+{
+    string odata_id = power_control_list->odata.id + "/" + _id;
+
+    PowerControl *pc = new PowerControl(odata_id, _id);
+
+    /**
+     * Power Control Configuration
+     */
+    // os.str("");
+    // os << power->power_control->odata.id << "/0";
+    // PowerControl *chassis_pc = new PowerControl(os.str(), "0~~");
+    // power->power_control->add_member(chassis_pc);
+
+    power_control_list->add_member(pc);
+    return;
+}
+
+void init_voltage(List *voltages_list, string _id)
+{
+    string odata_id = voltages_list->odata.id + "/" + _id;
+
+    Voltage *v = new Voltage(odata_id, _id);
+
+    /**
+     * Voltage Configuration
+     */
+    // os.str("");
+    // os << power->voltages->odata.id << "/0";
+    // Voltage *chassis_volt = new Voltage(os.str(), "0~~");
+    // power->voltages->add_member(chassis_volt);
+
+    voltages_list->add_member(v);
+    return;
+}
+
+void init_power_supply(List *power_supplies_list, string _id)
+{
+    string odata_id = power_supplies_list->odata.id + "/" + _id;
+
+    PowerSupply *ps = new PowerSupply(odata_id, _id);
+
+    /**
+     * PowerSupply Configuration
+     */
+    // os.str("");
+    // os << power->power_supplies->odata.id << "/0";
+    // PowerSupply *chassis_ps = new PowerSupply(os.str(), "0~~");
+    // power->power_supplies->add_member(chassis_ps);
+
+    power_supplies_list->add_member(ps);
     return;
 }
 
@@ -3511,6 +3754,7 @@ bool Processors::load_json(json::value &j)
 //     return j;
 // }
 
+// storage start
 json::value Storage::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -3529,6 +3773,8 @@ json::value Storage::get_json(void)
     for(int i=0; i<this->controller->members.size(); i++)
         j[U("StorageControllers")][i] = ((StorageControllers *)this->controller->members[i])->get_json();
 
+    j["Drives"] = get_resource_odata_id_json(this->drives, this->odata.id);
+    j["Volumes"] = get_resource_odata_id_json(this->volumes, this->odata.id);
 
     return j;
 }
@@ -3596,6 +3842,7 @@ bool StorageControllers::load_json(json::value &j)
 {
     json::value status, identifier;
     json::value support_controller_protocols, support_device_protocols;
+    int step = 0;
 
     try{
         Resource::load_json(j);
@@ -3606,26 +3853,33 @@ bool StorageControllers::load_json(json::value &j)
         this->part_number = j.at("PartNumber").as_string();
         this->speed_gbps = j.at("SpeedGbps").as_double();
         this->firmware_version = j.at("FirmwareVersion").as_string();
+        
+        step = 1;
 
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
 
-        identifier = j.at("Identifier");
+        step = 2;
+
+        identifier = j.at("Identifiers");
         this->identifier.durable_name = identifier.at("DurableName").as_string();
         this->identifier.durable_name_format = identifier.at("DurableNameFormat").as_string();
+
+        step = 3;
 
         support_controller_protocols = j.at("SupportedControllerProtocols");
         for (auto str : support_controller_protocols.as_array())
             this->support_controller_protocols.push_back(str.as_string());
 
+        step = 4;
         support_device_protocols = j.at("SupportedDeviceProtocols");
         for (auto str : support_device_protocols.as_array())
             this->support_device_protocols.push_back(str.as_string());   
     }   
     catch (json::json_exception &e)
     {
-        log(warning) << "read something failed in storage controllers";
+        log(warning) << "read something failed in storage controllers " << this->odata.id << " at step " << step;
         return true;
     }
 
@@ -3707,6 +3961,157 @@ bool SimpleStorage::load_json(json::value &j)
     return true;
 
 }
+
+json::value Drive::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
+    
+    j["Id"] = json::value::string(this->id);
+    j["AssetTag"] = json::value::string(this->asset_tag);
+    j["Description"] = json::value::string(this->description);
+    j["EncryptionAbility"] = json::value::string(this->encryption_ability);
+    j["EncryptionStatus"] = json::value::string(this->encryption_status);
+    j["HotspareType"] = json::value::string(this->hotspare_type);
+    j["Manufacturer"] = json::value::string(this->manufacturer);
+    j["MediaType"] = json::value::string(this->media_type);
+    j["Model"] = json::value::string(this->model);
+    j["Name"] = json::value::string(this->name);
+    j["SKU"] = json::value::string(this->sku);
+    j["StatusIndicator"] = json::value::string(this->status_indicator);
+    j["PartNumber"] = json::value::string(this->part_number);
+    j["Protocol"] = json::value::string(this->protocol);
+    j["Revision"] = json::value::string(this->revision);
+    j["SerialNumber"] = json::value::string(this->serial_number);
+    j["BlockSizeBytes"] = json::value::number(this->block_size_bytes);
+    j["CapableSpeedGbs"] = json::value::number(this->capable_speed_Gbs);
+    j["NegotiatedSpeedGbs"] = json::value::number(this->negotiated_speed_Gbs);
+    j["PredictedMediaLifeLeftPercent"] = json::value::number(this->predicted_media_life_left_percent);
+    j["RotationSpeedRPM"] = json::value::number(this->rotation_speed_RPM);
+    j["FailurePredicted"] = json::value::boolean(this->failure_predicted);
+
+    vector<json::value> vec;
+    for (auto idnt : this->identifier){
+        json::value k = json::value::object();
+        j["DurableName"] = json::value::string(idnt.durable_name);
+        j["DurableNameFormat"] = json::value::string(idnt.durable_name_format);
+        vec.push_back(k);
+    }
+    j["Identifiers"] = json::value::array(vec);
+    
+    json::value PhysicalLocation, PartLocation;
+    PartLocation["LocationType"] = json::value::string(this->physical_location.part_location.location_type);
+    PartLocation["ServiceLabel"] = json::value::string(this->physical_location.part_location.service_label);
+    PartLocation["LocationOrdinalValue"] = json::value::number(this->physical_location.part_location.location_ordinal_value);
+    PhysicalLocation["PartLocation"] = PartLocation;
+    PhysicalLocation["InfoFormat"] = json::value::string(this->physical_location.info_format);
+    PhysicalLocation["Info"] = json::value::string(this->physical_location.info);
+    j["PhysicalLocation"] = PhysicalLocation;
+
+    json::value l;
+    l[U("State")] = json::value::string(U(this->status.state));
+    l[U("Health")] = json::value::string(U(this->status.health));
+    j[U("Status")] = l;
+
+    return j;
+}
+
+bool Drive::load_json(json::value &j)
+{
+    try{
+        Resource::load_json(j);
+        get_value_from_json_key(j, "Id", this->id);
+        get_value_from_json_key(j, "AssetTag", this->asset_tag);
+        get_value_from_json_key(j, "Description", this->description);
+        get_value_from_json_key(j, "EncryptionAbility", this->encryption_ability);
+        get_value_from_json_key(j, "EncryptionStatus", this->encryption_status);
+        get_value_from_json_key(j, "HotspareType", this->hotspare_type);
+        get_value_from_json_key(j, "Manufacturer", this->manufacturer);
+        get_value_from_json_key(j, "Model", this->model);
+        get_value_from_json_key(j, "Name", this->name);
+        get_value_from_json_key(j, "SKU", this->sku);
+        get_value_from_json_key(j, "StatusIndicator", this->status_indicator);
+        get_value_from_json_key(j, "PartNumber", this->part_number);
+        get_value_from_json_key(j, "Protocol", this->protocol);
+        get_value_from_json_key(j, "Revision", this->revision);
+        get_value_from_json_key(j, "SerialNumber", this->serial_number);
+        get_value_from_json_key(j, "BlockSizeBytes", this->block_size_bytes);
+        get_value_from_json_key(j, "CapableSpeedGbs", this->capable_speed_Gbs);
+        get_value_from_json_key(j, "NegotiatedSpeedGbs", this->negotiated_speed_Gbs);
+        get_value_from_json_key(j, "PredictedMediaLifeLeftPercent", this->predicted_media_life_left_percent);
+        get_value_from_json_key(j, "RotationSpeedRPM", this->rotation_speed_RPM);
+        get_value_from_json_key(j, "FailurePredicted", this->failure_predicted);
+        
+        json::value PhysicalLocation, PartLocation;
+        get_value_from_json_key(j, "PhysicalLocation", PhysicalLocation);
+        get_value_from_json_key(PhysicalLocation, "PartLocation", PartLocation);
+        get_value_from_json_key(PhysicalLocation, "Info", this->physical_location.info);
+        get_value_from_json_key(PhysicalLocation, "InfoFormat", this->physical_location.info_format);
+        get_value_from_json_key(PartLocation, "LocationOrdinalValue", this->physical_location.part_location.location_ordinal_value);
+        get_value_from_json_key(PartLocation, "ServiceLabel", this->physical_location.part_location.service_label);
+        get_value_from_json_key(PartLocation, "LocationType", this->physical_location.part_location.location_type);
+        
+        json::value status;
+        status = j.at("Status");
+        this->status.state = status.at("State").as_string();
+        this->status.health = status.at("Health").as_string();
+    
+    }
+    catch (json::json_exception &e)
+    {
+        return false;
+    }
+
+    return true;
+
+}
+
+json::value Volume::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
+
+    j["Id"] = json::value::string(this->id);
+    j["Description"] = json::value::string(this->description);
+    j["RAIDType"] = json::value::string(this->RAID_type);
+    j["Name"] = json::value::string(this->name);
+    j["ReadCachePolicy"] = json::value::string(this->read_cache_policy);
+    j["WriteCachePolicy"] = json::value::string(this->write_cache_policy);
+    j["StripSizeBytes"] = json::value::string(this->strip_size_bytes);
+    j["DisplayName"] = json::value::string(this->display_name);
+    j["BlockSizeBytes"] = json::value::number(this->block_size_bytes);
+    j["CapacityBytes"] = json::value::number(this->capacity_bytes);
+    
+    vector<json::value> vec;
+    for (auto k : this->access_capabilities)
+        vec.push_back(json::value::string(k));
+    j["AccessCapabilities"] = json::value::array(vec);
+
+    json::value l;
+    l[U("State")] = json::value::string(U(this->status.state));
+    l[U("Health")] = json::value::string(U(this->status.health));
+    j[U("Status")] = l;
+
+    return j;
+}
+
+bool Volume::load_json(json::value &j)
+{
+    try{
+        Resource::load_json(j);
+    }
+    catch (json::json_exception &e)
+    {
+        return false;
+    }
+
+    return true;
+    
+}
+
+// Storage end
 
 // Bios start
 json::value Bios::get_json(void)
