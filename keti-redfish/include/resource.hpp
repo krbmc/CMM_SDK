@@ -1308,9 +1308,12 @@ class NetworkProtocol : public Resource
 
     Status status;
 
+    Collection *certificates;
+
     NetworkProtocol(const string _odata_id) : Resource(NETWORK_PROTOCOL_TYPE, _odata_id, ODATA_NETWORK_PROTOCOL_TYPE)
     {
         g_record[_odata_id] = this;
+        this->certificates = nullptr;
     }
     NetworkProtocol(const string _odata_id, const string _network_id) : NetworkProtocol(_odata_id)
     {
@@ -2510,14 +2513,15 @@ public:
     // TODO 리소스 변경 필요
     Thermal *thermal;
     Power *power;
+    Storage *storage;
     Collection *sensors;
-
 
     // TODO Contains, ManagedBy 추가 필요
     Chassis(const string _odata_id) : Resource(CHASSIS_TYPE, _odata_id, ODATA_CHASSIS_TYPE)
     {
         this->thermal = nullptr;
         this->power = nullptr;
+        this->storage = nullptr;
         this->sensors = nullptr;
 
         g_record[_odata_id] = this;
@@ -2583,7 +2587,8 @@ class VirtualMedia : public Resource
 };
 
 void init_system(Collection *system_collection, string _id);
-void init_storage(Collection *storage_collection, string _id);
+void init_storage_collection(Collection *storage_collection, string _id);
+void init_storage(Storage *storage);
 void init_storage_controller(List *storage_controllers_list, string _id);
 void init_processor(Collection *processor_collection, string _id);
 void init_memory(Collection *memory_collection, string _id);
