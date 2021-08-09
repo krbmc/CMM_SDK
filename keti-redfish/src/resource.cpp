@@ -131,7 +131,7 @@ void init_system(Collection *system_collection, string _id)
         system->storage = new Collection(odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
         system->storage->name = "Computer System Storage Collection";
     
-        init_storage(system->storage, "1");
+        init_storage_collection(system->storage, "1");
     }
     if (!record_is_exist(odata_id + "/Processors")){
         system->processor = new Collection(odata_id + "/Processors", ODATA_PROCESSOR_COLLECTION_TYPE);
@@ -177,16 +177,24 @@ void init_system(Collection *system_collection, string _id)
     return;
 }
 
-void init_storage(Collection *storage_collection, string _id)
+void init_storage_collection(Collection *storage_collection, string _id)
 {
     string odata_id = storage_collection->odata.id + "/" + _id;
 
     Storage *storage = new Storage(odata_id, _id);
+    storage->id = _id;
+    init_storage(storage);
     
+    storage_collection->add_member(storage);
+    return;
+}
+
+void init_storage(Storage *storage)
+{
+    string odata_id = storage->odata.id;
     /**
      * storage Configuration
      */
-    storage->id = _id;
     storage->description = "This resource is used to represent a drive for a Redfish implementation.";
     storage->status.state = STATUS_STATE_ENABLED;
     storage->status.health = STATUS_HEALTH_OK;
@@ -217,8 +225,6 @@ void init_storage(Collection *storage_collection, string _id)
         init_volume(storage->volumes, "0");
     }
 
-    storage_collection->add_member(storage);
-    return;
 }
 
 void init_storage_controller(List *storage_controllers_list, string _id)
@@ -635,6 +641,12 @@ void init_chassis(Collection *chassis_collection, string _id)
         chassis->thermal->name = "CMM Chassis Thermal";
 
         init_thermal(chassis->thermal);
+    }
+    if (!record_is_exist(odata_id + "/Storage")){
+        chassis->storage = new Storage(odata_id + "/Storage");
+        chassis->storage->name = "CMM Chassis Storage";
+        chassis->storage->id = "/Storage";
+        init_storage(chassis->storage);
     }
     if (!record_is_exist(odata_id + "/Power")){
         chassis->power = new Power(odata_id + "/Power");
@@ -2937,9 +2949,9 @@ json::value Chassis::get_json(void)
     k[U("Placement")] = l;
     j[U("Location")] = k;
 
-    // TODO Thermal, Power 추가 필요
     j["Thermal"] = get_resource_odata_id_json(this->thermal, this->odata.id);
     j["Power"] = get_resource_odata_id_json(this->power, this->odata.id);
+    j["Storage"] = get_resource_odata_id_json(this->storage, this->odata.id);
     j["Sensors"] = get_resource_odata_id_json(this->sensors, this->odata.id);
 
     return j;
@@ -2990,8 +3002,6 @@ bool Chassis::load_json(json::value &j)
         this->location.placement.rack = placement.at("Rack").as_string();
         this->location.placement.rack_offset_units = placement.at("RackOffsetUnits").as_string();
         this->location.placement.rack_offset = placement.at("RackOffset").as_integer();
-
-        // Thermal, Power, Sensor 주소 추가 필요
     }
     catch (json::json_exception &e)
     {
@@ -3332,9 +3342,12 @@ json::value NetworkProtocol::get_json(void)
     j[U("HTTPS")]=https;
 
     ntp[U("ProtocolEnabled")] = json::value::boolean(this->ntp_enabled);
+    ntp["NTPServers"] = json::value::array();
     for (unsigned int i = 0; i < this->v_netservers.size(); i++)
         ntp[U("NTPServers")][i] = json::value::string(this->v_netservers[i]);
     j[U("NTP")]=ntp;
+
+    j["Certificates"] = get_resource_odata_id_json(this->certificates, this->odata.id);
     return j;
 }
 
@@ -3383,8 +3396,6 @@ bool NetworkProtocol::load_json(json::value &j)
             for (auto str : v_netservers.as_array())
                 this->v_netservers.push_back(str.as_string());
         }
-        // else
-        //     log(warning) << "NTPServers field empty in networkProtocol load..";
     }
     catch (json::json_exception &e)
     {
@@ -4950,7 +4961,7 @@ const std::string currentDateTime(void)
 json::value get_resource_odata_id_json(Resource *res, string loc)
 {
     if (res == nullptr){
-        log(warning) << "null pointer error at " << loc;
+        log(warning) << "null pointer warning at " << loc;
         return json::value::null();
     }else
         return res->get_odata_id_json();

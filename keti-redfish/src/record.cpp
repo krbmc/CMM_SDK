@@ -780,6 +780,7 @@ void dependency_injection(Resource *res)
             session_service collection : session
             account_service collection : account, role
             account collection : certificates
+            network_protocol collection : certificates
             event_service collection : event_destination
             update_service collection : software_inventory, frimware_inventory
             Storage collection : drive, volume 
@@ -870,6 +871,13 @@ void dependency_injection(Resource *res)
                         log(warning) << "\t\t dy : what is this in account? : " << id << " type : " << res->odata.type;
                     }
                     break;
+                case NETWORK_PROTOCOL_TYPE:
+                    if (res->odata.type == ODATA_CERTIFICATE_COLLECTION_TYPE){
+                        ((NetworkProtocol *)g_record[parent_object_id])->certificates = (Collection *)res;
+                    }else{
+                        log(warning) << "\t\t dy : what is this in NetworkProtocol? : " << id << " type : " << res->odata.type;
+                    }
+                    break;
                 case EVENT_SERVICE_TYPE:
                     if (res->odata.type == ODATA_EVENT_DESTINATION_COLLECTION_TYPE){
                         ((EventService *)g_record[parent_object_id])->subscriptions = (Collection *)res;
@@ -912,7 +920,16 @@ void dependency_injection(Resource *res)
             break;
         // case NETWORK_INTERFACE_TYPE:
         case STORAGE_TYPE:
-            ((Collection *)g_record[parent_object_id])->add_member((Storage *)res);
+            switch (g_record[parent_object_id]->type){
+                case COLLECTION_TYPE:
+                    ((Collection *)g_record[parent_object_id])->add_member((Storage *)res);
+                    break;
+                case CHASSIS_TYPE:
+                    ((Chassis *)g_record[parent_object_id])->storage = ((Storage *)res);
+                    break;
+                default:
+                    log(warning) << "\t\t dy : what is this in Storage : " << id << " type : " << res->odata.type;
+            }
             break;
         case DRIVE_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Drive *)res);
