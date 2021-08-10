@@ -648,7 +648,7 @@ bool record_save_json(void)
         dir_list.insert(it->second->odata.id);
     }
 
-    log(info) << "[Record Save Json] end";
+    log(info) << "[Record Save Json] end" << endl;
     return true;
 }
 
