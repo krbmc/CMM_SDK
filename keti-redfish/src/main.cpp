@@ -10,9 +10,9 @@ ServiceRoot *g_service_root;
 Value_About_HA ha_value;
 int heart_beat_cycle;
 map<string, string> module_id_table;
-
 // unordered_map<string, unordered_map<string, Task *> > task_map;
 unordered_map<uint8_t, Task_Manager *> task_map;
+string uuid_str;
 
 /**
  * @brief 
@@ -46,7 +46,7 @@ int main(int _argc, char *_argv[])
     if (init_resource())
         log(info) << "Redfish resource initialization complete";
 
-
+    uuid_str = generate_uuid();
     // @@@@@ cmm이 요청보내는 것 테스트용
     // json::value ddd;
     // ddd = redfish_request_get("/redfish", "http://10.0.6.104:443");
