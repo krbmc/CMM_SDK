@@ -14,6 +14,7 @@
  * @brief Open data protocol information
  */
 #define ODATA_TYPE_VERSION REDFISH_VERSION "_0_0"
+
 // Open data protocol path
 #define ODATA_SERVICE_ROOT_ID "/redfish/" REDFISH_VERSION
 #define ODATA_SYSTEM_ID ODATA_SERVICE_ROOT_ID "/Systems"
@@ -23,7 +24,6 @@
 #define ODATA_ETHERNET_INTERFACE_ID ODATA_MANAGER_ID "/EthernetInterfaces" 
 #define ODATA_TASK_SERVICE_ID ODATA_SERVICE_ROOT_ID "/TaskService"
 #define ODATA_TASK_ID ODATA_TASK_SERVICE_ID "/Tasks" 
-
 #define ODATA_SESSION_SERVICE_ID ODATA_SERVICE_ROOT_ID "/SessionService"
 #define ODATA_SESSION_ID ODATA_SESSION_SERVICE_ID "/Sessions"
 #define ODATA_ACCOUNT_SERVICE_ID ODATA_SERVICE_ROOT_ID "/AccountService"
@@ -63,10 +63,6 @@
 #define ODATA_MANAGER_COLLECTION_TYPE "#ManagerCollection.ManagerCollection"
 #define ODATA_MANAGER_TYPE "#Manager." ODATA_TYPE_VERSION ".Manager"
 #define ODATA_NETWORK_PROTOCOL_TYPE "#NetworkProtocol." ODATA_TYPE_VERSION ".NetworkProtocol" 
-
-#define ODATA_ACTIONS_TYPE "#Actions." ODATA_TYPE_VERSION ".Actions"
-#define ODATA_ACTIONS_COLLECTION_TYPE "#ActionsCollection.ActionsCollection"
-
 #define ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE "#EthernetInterfaceCollection.EthernetInterfaceCollection"
 #define ODATA_ETHERNET_INTERFACE_TYPE "#EthernetInterface." ODATA_TYPE_VERSION ".EthernetInterface"
 #define ODATA_LOG_SERVICE_COLLECTION_TYPE "#LogServiceCollection.LogServiceCollection"
@@ -75,9 +71,7 @@
 #define ODATA_LOG_ENRTY_TYPE "#LogEntry." ODATA_TYPE_VERSION ".LogEntry"
 #define ODATA_TASK_SERVICE_TYPE "#TaskService." ODATA_TYPE_VERSION ".TaskService"
 #define ODATA_TASK_COLLECTION_TYPE "#TaskCollection.TaskCollection"
-
 #define ODATA_TASK_TYPE "#Task." ODATA_TYPE_VERSION ".Task" 
-
 #define ODATA_SESSION_SERVICE_TYPE "#SessionService." ODATA_TYPE_VERSION ".SessionService"
 #define ODATA_SESSION_COLLECTION_TYPE "#SessionCollection.SessionCollection"
 #define ODATA_SESSION_TYPE "#Session." ODATA_TYPE_VERSION ".Session"
@@ -109,6 +103,12 @@
 // dy : virtual media
 #define ODATA_VIRTUAL_MEDIA_TYPE "#VirtualMedia" ODATA_TYPE_VERSION ".VirtualMedia"
 #define ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE "#VirtualMediaCollection.VirtualMediaCollection"
+
+// dy : storage (drive, volume)
+#define ODATA_DRIVE_TYPE "#Drive" ODATA_TYPE_VERSION ".Drive"
+#define ODATA_DRIVE_COLLECTION_TYPE "#Drive.Drive"
+#define ODATA_VOLUME_TYPE "#Volume" ODATA_TYPE_VERSION ".Volume"
+#define ODATA_VOLUME_COLLECTION_TYPE "#Volume.Volume"
 
 #define NO_DATA_TYPE 0
 
@@ -228,7 +228,9 @@ enum RESOURCE_TYPE
     CERTIFICATE_TYPE,
     CERTIFICATE_LOCATION_TYPE,
     CERTIFICATE_SERVICE_TYPE,
-    VIRTUAL_MEDIA_TYPE
+    VIRTUAL_MEDIA_TYPE,
+    DRIVE_TYPE,
+    VOLUME_TYPE
 };
 
 enum ACTION_NAME
@@ -571,6 +573,18 @@ typedef struct _Event_Info{
     vector<string> message_args;
 } Event_Info;
 
+typedef struct _Part_Location{
+    int location_ordinal_value;
+    string location_type; // Bay 
+    string service_label; // the service label of this drive
+} Part_Location;
+
+typedef struct _Physical_Location{
+    Part_Location part_location;
+    string info; // slot number of the drive. if storage is host bus adaptoer or Raid, this property will be displayed
+    string info_format; // Slot Number. if storage is host bus adaptoer or Raid, this property will be displayed
+} Physical_Location;
+
 /**
  * @brief Resource of redfish schema
  */
@@ -618,6 +632,8 @@ public:
  */
 extern unordered_map<string, Resource *> g_record;
 extern map<string, string> module_id_table;
+extern string uuid_str;
+
 // extern unordered_map<string, unordered_map<string, Task *> > task_map;
 
 /**
@@ -885,7 +901,6 @@ public:
     bool load_json(json::value &j);
 };
 
-
 /**
  * @brief Redfish resource of Log Service
  * @authors 강
@@ -982,8 +997,8 @@ class LogService : public Resource
 };
 
 /**
- * @brief Redfish resource of Event Service
- * @authors 강
+ * @brief Redfish resource of Event
+ * @authors 김
  */
 class Event
 {
@@ -1084,7 +1099,6 @@ class EventService : public Resource
  * @brief Redfish resource of Update Service
  * @authors 강
  */
-
 class SoftwareInventory : public Resource
 {
     public:
@@ -1166,11 +1180,10 @@ class UpdateService : public Resource
     bool SimpleUpdate(json::value body);
 };
 
-// /**
-//  * @brief Redfish resource of Certificate
-//  * @authors 김
-//  */
-
+/**
+ * @brief Redfish resource of Certificate
+ * @authors 김
+ */
 class Certificate : public Resource
 {
     public:
@@ -1190,26 +1203,6 @@ class Certificate : public Resource
 
     Certificate(const string _odata_id) : Resource(CERTIFICATE_TYPE, _odata_id, ODATA_CERTIFICATE_TYPE)
     {
-        this->id = "";
-        this->certificateString = "";
-        this->certificateType = "";
-
-        this->issuer.city = "";
-        this->issuer.commonName = "";
-        this->issuer.country = "";
-        this->issuer.email = "";
-        this->issuer.organization = "";
-        this->issuer.organizationUnit = "";
-        this->issuer.state = "";
-
-        this->subject.city = "";
-        this->subject.commonName = "";
-        this->subject.country = "";
-        this->subject.email = "";
-        this->subject.organization = "";
-        this->subject.organizationUnit = "";
-        this->subject.state = "";
-
         Actions rekey;
         rekey.type = RE_KEY;
         rekey.name = "#Certificate.Rekey";
@@ -1347,7 +1340,6 @@ class CertificateService : public Resource
  * @authors 강
  * @details 
  */
-
 class NetworkProtocol : public Resource
 {
     public:
@@ -1355,6 +1347,7 @@ class NetworkProtocol : public Resource
     string hostname;
     string description;
     string fqdn;
+    string name;
     bool snmp_enabled;
     bool ipmi_enabled;
     bool ntp_enabled;
@@ -1378,9 +1371,12 @@ class NetworkProtocol : public Resource
 
     Status status;
 
+    Collection *certificates;
+
     NetworkProtocol(const string _odata_id) : Resource(NETWORK_PROTOCOL_TYPE, _odata_id, ODATA_NETWORK_PROTOCOL_TYPE)
     {
         g_record[_odata_id] = this;
+        this->certificates = nullptr;
     }
     NetworkProtocol(const string _odata_id, const string _network_id) : NetworkProtocol(_odata_id)
     {
@@ -1401,6 +1397,7 @@ class EthernetInterfaces : public Resource
 {
 public:
     string id;
+    string name;
     string description;
     string link_status;
     string permanent_mac_address;
@@ -1443,6 +1440,7 @@ class Manager : public Resource
 {
 public:
     string id;
+    string name;
     string manager_type;
     string description;
     string uuid;
@@ -1496,7 +1494,7 @@ public:
         g_record.erase(this->odata.id);
     };
 
-    json::value get_json(void);
+    json::value get_json(void); 
     bool load_json(json::value &j);
     void new_log_service(string _service_id);
 
@@ -1648,8 +1646,6 @@ public:
     json::value get_json(void);
     bool load_json(json::value &j);
     pplx::task<void> start(void);
-
-private:
 };
 
 /**
@@ -1675,23 +1671,6 @@ public:
     // Class constructor, destructor oveloading
     Temperature(const string _odata_id) : Resource(TEMPERATURE_TYPE, _odata_id, ODATA_THERMAL_TYPE)
     {
-        // this->member_id = "";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
-        // this->sensor_num = 0;
-        // this->reading_celsius = 0;
-        // this->upper_threshold_non_critical = 0;
-        // this->upper_threshold_critical = 0;
-        // this->upper_threshold_fatal = 0;
-        // this->lower_threshold_non_critical = 0;
-        // this->lower_threshold_critical = 0;
-        // this->lower_threshold_fatal = 0;
-        // this->min_reading_range_temp = 0;
-        // this->max_reading_range_temp = 0;
-        // this->physical_context = "CPU";
-        // this->thread = false;
-
         g_record[_odata_id] = this;
     }
     Temperature(const string _odata_id, const string _member_id) : Temperature(_odata_id)
@@ -1715,7 +1694,6 @@ private:
 /**
  * @brief Redfish resource of temperature
  */
-
 class Sensor : public Resource
 {
     public:
@@ -1737,28 +1715,6 @@ class Sensor : public Resource
 
     Sensor(const string _odata_id) : Resource(SENSOR_TYPE, _odata_id, ODATA_SENSOR_TYPE)
     {
-        // this->id = "";
-        // this->reading_type = "Such as Temperature";
-        // this->reading_time = "Reading Time";
-        // this->reading = 30.6;
-
-        // this->reading_units = "C";
-        // this->reading_range_min = 0;
-        // this->reading_range_max = 70;
-        // this->accuracy = 0.25;
-        // this->precision = 1;
-        // this->sensing_interval = "PT3S ???";
-        // this->physical_context = "Chassis";
-        // this->thresh.upper_caution.activation = "Increasing";
-        // this->thresh.upper_caution.reading = 35;
-        // this->thresh.upper_critical.activation = "Increasing";
-        // this->thresh.upper_critical.reading = 40;
-        // this->thresh.lower_caution.activation = "Increasing";
-        // this->thresh.lower_caution.reading = 10;
-
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
         g_record[_odata_id] = this;
     }
     Sensor(const string _odata_id, const string _sensor_id) : Sensor(_odata_id)
@@ -1774,14 +1730,12 @@ class Sensor : public Resource
     bool load_json(json::value &j);
 };
 
-
 class Fan : public Resource
 {
 public:
     string member_id;
     Status status;
     int sensor_num;
-    
     int reading;
     string reading_units;
     
@@ -1798,25 +1752,6 @@ public:
     // Class constructor, destructor oveloading
     Fan(const string _odata_id) : Resource(FAN_TYPE, _odata_id)
     {
-        // this->member_id = "";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
-        // this->sensor_num = 0;
-        // this->reading = 0;
-        // this->reading_units = "RPM";
-
-        // this->lower_threshold_fatal = 0;
-        // this->lower_threshold_critical = 0;
-        // this->lower_threshold_non_critical = 0;
-        // this->upper_threshold_fatal = 0;
-        // this->upper_threshold_critical = 0;
-        // this->upper_threshold_non_critical = 0;
-
-        // this->min_reading_range = 0;
-        // this->max_reading_range = 0;
-        // this->physical_context = "CPU";
-
         g_record[_odata_id] = this;
     }
     Fan(const string _odata_id, const string _member_id) : Fan(_odata_id)
@@ -1850,14 +1785,6 @@ public:
         this->temperatures = nullptr;
         this->fans = nullptr;
 
-        // // Temperatures configuration
-        // this->temperatures = new List(this->odata.id + "/Temperatures", TEMPERATURE_TYPE);
-        // this->temperatures->name = "Chassis Temperatures";
-
-        // // Fans configuration
-        // this->fans = new List(this->odata.id + "/Fans", FAN_TYPE);
-        // this->fans->name = "Chassis Fans";
-
         g_record[_odata_id] = this;
     };
     ~Thermal()
@@ -1873,7 +1800,6 @@ public:
  * @brief Power 관련 resource
  * @authors 강
  */
-
 class Voltage : public Resource
 {
     public:
@@ -1894,22 +1820,6 @@ class Voltage : public Resource
 
     Voltage(const string _odata_id) : Resource(VOLTAGE_TYPE, _odata_id, ODATA_POWER_TYPE)
     {
-        // this->member_id = "";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-
-        // this->sensor_num = 11;
-        // this->reading_volts = 12;
-        // this->upper_threshold_non_critical = 12.5;
-        // this->upper_threshold_critical = 13;
-        // this->upper_threshold_fatal = 15;
-        // this->lower_threshold_non_critical = 11.5;
-        // this->lower_threshold_critical = 11;
-        // this->lower_threshold_fatal = 10;
-        // this->min_reading_range = 0;
-        // this->max_reading_range = 20;
-        // this->physical_context = "VoltageRegulator";
-
         g_record[_odata_id] = this;
 
     }
@@ -1949,38 +1859,7 @@ class PowerSupply : public Resource
 
     PowerSupply(const string _odata_id) : Resource(POWER_SUPPLY_TYPE, _odata_id, ODATA_POWER_TYPE)
     {
-        // this->member_id = "";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        
-        this->power_supply_type = "AC";
-        this->line_input_voltage_type = "ACWideRange";
-        this->line_input_voltage = 120;
-        this->power_capacity_watts = 800;
-        this->last_power_output_watts = 325;
-
-        this->model = "";
-        this->manufacturer = "";
-        this->firmware_version = "";
-        this->serial_number = "";
-        this->part_number = "";
-        this->spare_part_number = "";
-
-        // InputRange input;
-        // input.input_type = "AC";
-        // input.minimum_voltage = 100;
-        // input.maximum_voltage = 120;
-        // input.output_wattage = 800;
-        // this->input_ranges.push_back(input);
-
-        // input.input_type = "AC";
-        // input.minimum_voltage = 200;
-        // input.maximum_voltage = 240;
-        // input.output_wattage = 1300;
-        // this->input_ranges.push_back(input);
-
         g_record[_odata_id] = this;
-
     }
     PowerSupply(const string _odata_id, const string _member_id) : PowerSupply(_odata_id)
     {
@@ -2012,24 +1891,6 @@ class PowerControl : public Resource
 
     PowerControl(const string _odata_id) : Resource(POWER_CONTROL_TYPE, _odata_id, ODATA_POWER_TYPE)
     {
-        // this->member_id = "";
-        // this->status.state = STATUS_STATE_ENABLED;
-        // this->status.health = STATUS_HEALTH_OK;
-        // this->power_consumed_watts = 0;
-        // this->power_requested_watts = 0;
-        // this->power_available_watts = 0;
-        // this->power_capacity_watts = 0;
-        // this->power_allocated_watts = 0;
-
-        // this->power_limit.limit_in_watts = 0;
-        // this->power_limit.limit_exception = "LogEventOnly";
-        // this->power_limit.correction_in_ms = 0;
-
-        // this->power_metrics.interval_in_min = 0;
-        // this->power_metrics.min_consumed_watts = 0;
-        // this->power_metrics.max_consumed_watts = 0;
-        // this->power_metrics.avg_consumed_watts = 0;
-
         g_record[_odata_id] = this;
     }
     PowerControl(const string _odata_id, const string _member_id) : PowerControl(_odata_id)
@@ -2061,19 +1922,6 @@ class Power : public Resource
         this->voltages = nullptr;
         this->power_supplies = nullptr;
 
-        // this->power_control = new List(this->odata.id + "/PowerControl", POWER_CONTROL_TYPE);
-        // this->power_control->name = "PowerControl";
-
-        // this->voltages = new List(this->odata.id + "/Voltages", VOLTAGE_TYPE);
-        // this->voltages->name = "Voltages";
-
-        // this->power_supplies = new List(this->odata.id + "/PowerSupplies", POWER_SUPPLY_TYPE);
-        // this->power_supplies->name = "PowerSupplies";
-
-        this->power_control = nullptr;
-        this->voltages = nullptr;
-        this->power_supplies = nullptr;
-
         g_record[_odata_id] = this;
     };
     ~Power()
@@ -2086,13 +1934,11 @@ class Power : public Resource
 
 };
 
-
 /**
  * @brief 시스템 리소스에 필요한 storage, bios, simplestorage, processors..  processorsummary,networkinterface는뺌
  * @authors 강
  * 
  */
-
 class Bios : public Resource
 {
     public:
@@ -2179,7 +2025,6 @@ class SimpleStorage : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
 };
 
 class StorageControllers : public Resource
@@ -2199,23 +2044,6 @@ class StorageControllers : public Resource
 
     StorageControllers(const string _odata_id) : Resource(STORAGE_CONTROLLER_TYPE, _odata_id, ODATA_STORAGE_CONTROLLER_TYPE)
     {
-        this->id = "";
-        this->manufacturer = "storage controller manufacturer";
-        this->model = "storage controller model";
-        this->serial_number = "storage controller serial";
-        this->part_number = "storage controller part";
-        this->speed_gbps = 0;
-        this->firmware_version = "storage controller firmversion";
-        this->identifier.durable_name = "iden durable name";
-        this->identifier.durable_name_format = "iden durable format";
-
-        this->support_controller_protocols.push_back("PCIe");
-        this->support_device_protocols.push_back("SAS");
-        this->support_device_protocols.push_back("SATA");
-
-        this->status.state = STATUS_STATE_ENABLED;
-        this->status.health = STATUS_HEALTH_OK;
-
         g_record[_odata_id] = this;
     }
     StorageControllers(const string _odata_id, const string _controller_id) : StorageControllers(_odata_id)
@@ -2238,6 +2066,8 @@ class Storage : public Resource
     string description;
     Status status;
     List *controller;
+    Collection *drives; // physical
+    Collection *volumes; // logical
 
     Storage(const string _odata_id) : Resource(STORAGE_TYPE, _odata_id, ODATA_STORAGE_TYPE)
     {
@@ -2247,10 +2077,12 @@ class Storage : public Resource
         this->status.state = STATUS_STATE_ENABLED;
 
         this->controller = nullptr;
+        this->drives = nullptr;
+        this->volumes = nullptr;
 
         g_record[_odata_id] = this;
 
-    }
+    };
     Storage(const string _odata_id, const string _storage_id) : Storage(_odata_id)
     {
         this->id = _storage_id;
@@ -2261,6 +2093,90 @@ class Storage : public Resource
     };
 
     json::value get_json(void); // 이거 할때 컨트롤러 리스트기때문에 Thermal-temperature 참고할것
+    bool load_json(json::value &j);
+};
+
+class Drive : public Resource
+{
+    public:
+    string id;
+    string asset_tag;
+    string description;
+    string encryption_ability; // One of ("None", "SelfEncryptingDrive")
+    string encryption_status; // One of ("Unlocked", "Locked", "Unencrypted")
+    string hotspare_type; // One of ("None", "Global")
+    string manufacturer;
+    string media_type;
+    string model;
+    string name;
+    string sku;
+    string status_indicator;
+    string part_number;
+    string protocol;
+    string revision;
+    string serial_number;
+    
+    int block_size_bytes;
+    int capable_speed_Gbs;
+    int negotiated_speed_Gbs;
+    int predicted_media_life_left_percent;
+    int rotation_speed_RPM;
+    
+    bool failure_predicted;
+    
+    vector<Identifier> identifier;
+    Physical_Location physical_location;
+
+    Status status;
+
+    Drive(const string _odata_id) : Resource(DRIVE_TYPE, _odata_id, ODATA_DRIVE_TYPE)
+    {
+        g_record[_odata_id] = this;
+    };
+    Drive(const string _odata_id, string _id) : Drive(_odata_id)
+    {
+        this->id = _id;
+    };
+    ~Drive()
+    {
+        g_record.erase(this->odata.id);
+    };
+
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
+
+class Volume : public Resource
+{
+    public:
+    string id;
+    string description;
+    string RAID_type;
+    string name;
+    string read_cache_policy;
+    string write_cache_policy;
+    string strip_size_bytes;
+    string display_name;
+    int block_size_bytes;
+    int capacity_bytes;
+    
+    vector<string> access_capabilities;
+
+    Status status;
+
+    Volume(const string _odata_id) : Resource(VOLUME_TYPE, _odata_id, ODATA_VOLUME_TYPE)
+    {
+        g_record[_odata_id] = this;
+    };
+    Volume(const string _odata_id, string _id) : Volume(_odata_id)
+    {
+        this->id = _id;
+    };
+    ~Volume()
+    {
+        g_record.erase(this->odata.id);
+    };
+    json::value get_json(void);
     bool load_json(json::value &j);
 };
 
@@ -2358,7 +2274,6 @@ class Processors : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
 };
 
 class Memory : public Resource
@@ -2393,14 +2308,11 @@ class Memory : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-
 };
 
 /**
  * @brief Redfish resource of Systems
- * 
  */
-
 class Systems : public Resource
 {
     public :
@@ -2419,10 +2331,7 @@ class Systems : public Resource
     string power_state;
     uint8_t indicator_led;
     string bios_version;
-
-    Status status;
     string uuid;
-    Boot boot;
     // Ipmifru *fru_this;
     // Location location;
     // Thermal *thermal;
@@ -2430,20 +2339,23 @@ class Systems : public Resource
     // ProcessorSummary *ps; // 구조체로 바꿔야할듯 현재리소슨데
     // MemorySummary ms;
     Bios *bios; // resource Bios
+    Status status;
+    Boot boot;
     
     // Collection *network; // resource NetworkInterfaces // 일단 없음
-    // Collection *storage; // resource Storages
+    Collection *storage; // resource Storages
     Collection *processor; // resource Processors
     Collection *memory; // resource Memory
     Collection *ethernet; // resource EthernetInterfaces
     Collection *log_service; // resource LogService
-    Collection *simple_storage;
+    Collection *simple_storage; // resource SimpleStorage
 
     unordered_map <string, Actions> actions;
 
     Systems(const string _odata_id) : Resource(SYSTEM_TYPE, _odata_id, ODATA_SYSTEM_TYPE)
     {
         this->bios = nullptr;
+        this->storage = nullptr;
         this->processor = nullptr;
         this->memory = nullptr;
         this->ethernet = nullptr;
@@ -2513,16 +2425,17 @@ public:
     // TODO 리소스 변경 필요
     Thermal *thermal;
     Power *power;
+    Storage *storage;
     Collection *sensors;
     Collection *log_service;
     // 로그서비스 나중에 추가한거라서 get_json, load_json 이런곳에 없을거임
-
 
     // TODO Contains, ManagedBy 추가 필요
     Chassis(const string _odata_id) : Resource(CHASSIS_TYPE, _odata_id, ODATA_CHASSIS_TYPE)
     {
         this->thermal = nullptr;
         this->power = nullptr;
+        this->storage = nullptr;
         this->sensors = nullptr;
         this->log_service = nullptr;
 
@@ -2590,17 +2503,27 @@ class VirtualMedia : public Resource
 };
 
 void init_system(Collection *system_collection, string _id);
+void init_storage_collection(Collection *storage_collection, string _id);
+void init_storage(Storage *storage);
+void init_storage_controller(List *storage_controllers_list, string _id);
 void init_processor(Collection *processor_collection, string _id);
 void init_memory(Collection *memory_collection, string _id);
 void init_ethernet(Collection *ethernet_collection, string _id);
 void init_log_service(Collection *log_service_collection, string _id);
 void init_log_entry(Collection *log_entry_collection, string _id);
 void init_simple_storage(Collection *simple_storage_collection, string _id);
+void init_drive(Collection *drive_collection, string _id);
+void init_volume(Collection *volume_collection, string _id);
 void init_bios(Bios *bios);
 void init_chassis(Collection *chassis_collection, string _id);
 void init_sensor(Collection *sensor_collection, string _id);
 void init_thermal(Thermal *thermal);
 void init_power(Power *power);
+void init_temperature(List *temperatures_list, string _id);
+void init_fan(List *fans_list, string _id);
+void init_power_control(List *power_control_list, string _id);
+void init_voltage(List *voltages_list, string _id);
+void init_power_supply(List *power_supplies_list, string _id);
 void init_manager(Collection *manager_collection, string _id);
 void init_update_service(UpdateService *update_service);
 void init_software_inventory(Collection *software_inventory_collection, string _id);
@@ -2641,7 +2564,7 @@ public:
         this->id = "RootService";
         this->name = "Root Service";
         this->redfish_version = "1.0.0";
-        this->uuid = "";
+        this->uuid = uuid_str;
 
         // CMM ID와 주소 등록
         if(module_id_table.find(CMM_ID) == module_id_table.end()) // 없으면 등록
@@ -2658,7 +2581,7 @@ public:
         
         // Collection Generate in ServiceRoot
         if (!record_is_exist(ODATA_SYSTEM_ID)){
-            log(info) << "System init";
+            log(info) << "[...]System init";
             system_collection = new Collection(ODATA_SYSTEM_ID, ODATA_SYSTEM_COLLECTION_TYPE);
             system_collection->name = "Computer System Collection";
 
@@ -2666,7 +2589,7 @@ public:
         }
 
         if (!record_is_exist(ODATA_CHASSIS_ID)){
-            log(info) << "Chassis init";
+            log(info) << "[...]Chassis init";
             chassis_collection = new Collection(ODATA_CHASSIS_ID, ODATA_CHASSIS_COLLECTION_TYPE);
             chassis_collection->name = "Chassis Collection";
         
@@ -2674,7 +2597,7 @@ public:
         }
 
         if (!record_is_exist(ODATA_MANAGER_ID)){
-            log(info) << "Manager init";
+            log(info) << "[...]Manager init";
             manager_collection = new Collection(ODATA_MANAGER_ID, ODATA_MANAGER_COLLECTION_TYPE);
             manager_collection->name = "Manager Collection";
 
@@ -2683,14 +2606,14 @@ public:
         
         // UpdateService configuration
         if (!record_is_exist(ODATA_UPDATE_SERVICE_ID)){
-            log(info) << "Update Service init";
+            log(info) << "[...]Update Service init";
             update_service = new UpdateService(ODATA_UPDATE_SERVICE_ID);
             
             init_update_service(update_service);
         }
         // TaskService configuration
         if (!record_is_exist(ODATA_TASK_SERVICE_ID)){
-            log(info) << "Task Service init";
+            log(info) << "[...]Task Service init";
             task_service = new TaskService();
         
             init_task_service(task_service);
@@ -2698,27 +2621,27 @@ public:
 
         // EventService configuration
         if (!record_is_exist(ODATA_EVENT_SERVICE_ID)){
-            log(info) << "Event Service init";
+            log(info) << "[...]Event Service init";
             event_service = new EventService();
 
             init_event_service(event_service);
         }
         if (!record_is_exist(ODATA_CERTIFICATE_SERVICE_ID)){
-            log(info) << "Certificate Service init";
+            log(info) << "[...]Certificate Service init";
             certificate_service = new CertificateService();
             certificate_service->certificate_location = new CertificateLocation();
         }
         
         // AccountService configuration
         if (!record_is_exist(ODATA_ACCOUNT_SERVICE_ID)){
-            log(info) << "Account Service init";
+            log(info) << "[...]Account Service init";
             account_service = new AccountService();
 
             init_account_service(account_service);
         }
         // SessionService configuration
         if (!record_is_exist(ODATA_SESSION_SERVICE_ID)){
-            log(info) << "Session Service init";
+            log(info) << "[...]Session Service init";
             session_service = new SessionService();
 
             init_session_service(session_service);

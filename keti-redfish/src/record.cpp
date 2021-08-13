@@ -51,14 +51,20 @@ json::value record_get_json(const string _uri)
         // case PROCESSOR_SUMMARY_TYPE:
         //     j = ((ProcessorSummary *)g_record[_uri])->get_json();
         //     break;
-        // case STORAGE_TYPE:
-        //     j = ((Storage *)g_record[_uri])->get_json();
-        //     break;
-        // case STORAGE_CONTROLLER_TYPE:
-        //     j = ((StorageControllers *)g_record[_uri])->get_json();
-        //     break;
+        case STORAGE_TYPE:
+            j = ((Storage *)g_record[_uri])->get_json();
+            break;
+        case STORAGE_CONTROLLER_TYPE:
+            j = ((StorageControllers *)g_record[_uri])->get_json();
+            break;
+        case DRIVE_TYPE:
+            j = ((Drive *)g_record[_uri])->get_json();
+            break;
         case BIOS_TYPE:
             j = ((Bios *)g_record[_uri])->get_json();
+            break;
+        case VOLUME_TYPE:
+            j = ((Volume *)g_record[_uri])->get_json();
             break;
         case MEMORY_TYPE:
             j = ((Memory *)g_record[_uri])->get_json();
@@ -237,23 +243,23 @@ bool record_load_json(void)
                 break;
             }
             case STORAGE_TYPE:{
-                // string this_odata_id = it->second->odata.id;
+                string this_odata_id = it->second->odata.id;
                 gc.push_back(it->second);
-                // Storage *storage = new Storage(this_odata_id);
-                // if (!storage->load_json(j))
-                //     log(warning) << "load Storage failed";
-                // else
-                //     dependency_object.push_back(storage);
+                Storage *storage = new Storage(this_odata_id);
+                if (!storage->load_json(j))
+                    log(warning) << "load Storage failed";
+                else
+                    dependency_object.push_back(storage);
                 break;
             }
             case STORAGE_CONTROLLER_TYPE:{
-                // string this_odata_id = it->second->odata.id;
+                string this_odata_id = it->second->odata.id;
                 gc.push_back(it->second);
-                // StorageControllers *storage_controllers = new StorageControllers(this_odata_id);
-                // if (!storage_controllers->load_json(j))
-                //     log(warning) << "load Storage Controllers failed";
-                // else
-                //     dependency_object.push_back(storage_controllers);
+                StorageControllers *storage_controllers = new StorageControllers(this_odata_id);
+                if (!storage_controllers->load_json(j))
+                    log(warning) << "load Storage Controllers failed";
+                else
+                    dependency_object.push_back(storage_controllers);
                 break;
             }
             case SIMPLE_STORAGE_TYPE:{
@@ -263,6 +269,24 @@ bool record_load_json(void)
                 if (!simple_storage->load_json(j))
                     log(warning) << "load Simple Storage failed";
                 dependency_object.push_back(simple_storage);
+                break;
+            }
+            case DRIVE_TYPE:{
+                string this_odata_id = it->second->odata.id;
+                gc.push_back(it->second);
+                Drive *drive = new Drive(this_odata_id);
+                if (!drive->load_json(j))
+                    log(warning) << "load Drive failed";
+                dependency_object.push_back(drive);
+                break;
+            }
+            case VOLUME_TYPE:{
+                string this_odata_id = it->second->odata.id;
+                gc.push_back(it->second);
+                Volume *volume = new Volume(this_odata_id);
+                if (!volume->load_json(j))
+                    log(warning) << "load Volume failed";
+                dependency_object.push_back(volume);
                 break;
             }
             case BIOS_TYPE:{
@@ -623,7 +647,7 @@ bool record_save_json(void)
         dir_list.insert(it->second->odata.id);
     }
 
-    log(info) << "[Record Save Json] end";
+    log(info) << "[Record Save Json] end" << endl;
     return true;
 }
 
@@ -755,8 +779,10 @@ void dependency_injection(Resource *res)
             session_service collection : session
             account_service collection : account, role
             account collection : certificates
+            network_protocol collection : certificates
             event_service collection : event_destination
             update_service collection : software_inventory, frimware_inventory
+            Storage collection : drive, volume 
         */
             switch (g_record[parent_object_id]->type){
                 case SERVICE_ROOT_TYPE:
@@ -775,8 +801,8 @@ void dependency_injection(Resource *res)
                         ((Systems *)g_record[parent_object_id])->processor = (Collection *)res;
                     // }else if (res->odata.type == ODATA_NETWORK_INTERFACE_TYPE){
                     //     ((Systems *)g_record[parent_object_id])->network = (Collection *)res;
-                    // }else if (res->odata.type == ODATA_STORAGE_COLLECTION_TYPE){
-                    //     ((Systems *)g_record[parent_object_id])->storage = (Collection *)res;
+                    }else if (res->odata.type == ODATA_STORAGE_COLLECTION_TYPE){
+                        ((Systems *)g_record[parent_object_id])->storage = (Collection *)res;
                     }else if (res->odata.type == ODATA_MEMORY_COLLECTION_TYPE){
                         ((Systems *)g_record[parent_object_id])->memory = (Collection *)res;
                     }else if (res->odata.type == ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE){
@@ -844,6 +870,13 @@ void dependency_injection(Resource *res)
                         log(warning) << "\t\t dy : what is this in account? : " << id << " type : " << res->odata.type;
                     }
                     break;
+                case NETWORK_PROTOCOL_TYPE:
+                    if (res->odata.type == ODATA_CERTIFICATE_COLLECTION_TYPE){
+                        ((NetworkProtocol *)g_record[parent_object_id])->certificates = (Collection *)res;
+                    }else{
+                        log(warning) << "\t\t dy : what is this in NetworkProtocol? : " << id << " type : " << res->odata.type;
+                    }
+                    break;
                 case EVENT_SERVICE_TYPE:
                     if (res->odata.type == ODATA_EVENT_DESTINATION_COLLECTION_TYPE){
                         ((EventService *)g_record[parent_object_id])->subscriptions = (Collection *)res;
@@ -858,6 +891,15 @@ void dependency_injection(Resource *res)
                         ((UpdateService *)g_record[parent_object_id])->software_inventory = (Collection *)res;
                     }else{
                         log(warning) << "\t\t dy : what is this in update_service? : " << id << " type : " << res->odata.type;
+                    }
+                    break;
+                case STORAGE_TYPE:
+                    if (res->odata.type == ODATA_DRIVE_COLLECTION_TYPE){
+                        ((Storage *)g_record[parent_object_id])->drives = (Collection *)res;
+                    }else if (res->odata.type == ODATA_VOLUME_COLLECTION_TYPE){
+                        ((Storage *)g_record[parent_object_id])->volumes = (Collection *)res;
+                    }else{
+                        log(warning) << "\t\t dy : what is this in storage? : " << id << " type : " << res->odata.type;
                     }
                     break;
                 default:
@@ -876,9 +918,24 @@ void dependency_injection(Resource *res)
             ((Collection *)g_record[parent_object_id])->add_member((Manager *)res);
             break;
         // case NETWORK_INTERFACE_TYPE:
-        // case STORAGE_TYPE:
-        //     ((Collection *)g_record[parent_object_id])->add_member((Storage *)res);
-        //     break;
+        case STORAGE_TYPE:
+            switch (g_record[parent_object_id]->type){
+                case COLLECTION_TYPE:
+                    ((Collection *)g_record[parent_object_id])->add_member((Storage *)res);
+                    break;
+                case CHASSIS_TYPE:
+                    ((Chassis *)g_record[parent_object_id])->storage = ((Storage *)res);
+                    break;
+                default:
+                    log(warning) << "\t\t dy : what is this in Storage : " << id << " type : " << res->odata.type;
+            }
+            break;
+        case DRIVE_TYPE:
+            ((Collection *)g_record[parent_object_id])->add_member((Drive *)res);
+            break;
+        case VOLUME_TYPE:
+            ((Collection *)g_record[parent_object_id])->add_member((Volume *)res);
+            break;
         case PROCESSOR_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Processors *)res);
             break;
@@ -937,7 +994,6 @@ void dependency_injection(Resource *res)
             ((Collection *)g_record[parent_object_id])->add_member((Certificate *)res);
             ((CertificateLocation *)g_record[ODATA_CERTIFICATE_LOCATION_ID])->certificates.push_back((Certificate *)res);
             break;
-        
         case LIST_TYPE:{
         /*  == List location ==
             storage list : storage_controller
@@ -945,9 +1001,9 @@ void dependency_injection(Resource *res)
             power list : power_control, voltages, power_supplies
         */
             switch (((List *)res)->member_type){
-                // case STORAGE_CONTROLLER_TYPE:
-                //     ((Storage *)g_record[parent_object_id])->controller = (List *)res;
-                //     break;
+                case STORAGE_CONTROLLER_TYPE:
+                    ((Storage *)g_record[parent_object_id])->controller = (List *)res;
+                    break;
                 case TEMPERATURE_TYPE:
                     ((Thermal *)g_record[parent_object_id])->temperatures = (List *)res;
                     break;
@@ -969,9 +1025,9 @@ void dependency_injection(Resource *res)
             }
             break;
         }
-        // case STORAGE_CONTROLLER_TYPE:
-        //     ((List *)g_record[parent_object_id])->add_member((StorageControllers *)res);
-        //     break;            
+        case STORAGE_CONTROLLER_TYPE:
+            ((List *)g_record[parent_object_id])->add_member((StorageControllers *)res);
+            break;            
         case TEMPERATURE_TYPE:
             ((List *)g_record[parent_object_id])->add_member((Temperature *)res);
             break;            

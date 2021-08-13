@@ -10,9 +10,9 @@ ServiceRoot *g_service_root;
 Value_About_HA ha_value;
 int heart_beat_cycle;
 map<string, string> module_id_table;
-
 // unordered_map<string, unordered_map<string, Task *> > task_map;
 unordered_map<uint8_t, Task_Manager *> task_map;
+string uuid_str;
 
 /**
  * @brief 
@@ -56,7 +56,8 @@ int main(int _argc, char *_argv[])
     // generate_logentry(sys, "YAM");
     // record_save_json();
     // generate 로그서비스,엔트리 테스트
-
+    uuid_str = generate_uuid();
+    
     pplx::create_task([]{
         sleep(3);
         string cmm_chassis = ODATA_CHASSIS_ID;
