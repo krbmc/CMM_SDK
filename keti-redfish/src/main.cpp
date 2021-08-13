@@ -62,6 +62,13 @@ int main(int _argc, char *_argv[])
         string cmm_chassis = ODATA_CHASSIS_ID;
         cmm_chassis = cmm_chassis + "/" + CMM_ID;
         ((Chassis *)g_record[cmm_chassis])->led_lit(LED_GREEN);
+        // ((Temperature *)(((Chassis *)g_record[cmm_chassis])->thermal->temperatures->members[0]))->read(0, INTAKE_CONTEXT);
+        // cout << "ASDFASDFASDF : " << ((Temperature *)(((Chassis *)g_record[cmm_chassis])->thermal->temperatures->members[0]))->reading_celsius << endl;
+        // ((Chassis *)g_record[cmm_chassis])->led_lit(LED_YELLOW);
+        // ((Chassis *)g_record[cmm_chassis])->led_lit(LED_RED);
+        sleep(3);
+        // ((Chassis *)g_record[cmm_chassis])->led_off(LED_GREEN);
+        // ((Chassis *)g_record[cmm_chassis])->led_blinking(LED_RED);
         // ((Chassis *)g_service_root->chassis_collection->members[0])->led_lit(LED_GREEN);
     });
 

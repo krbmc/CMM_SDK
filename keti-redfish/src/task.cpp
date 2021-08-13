@@ -1174,7 +1174,7 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
     // json::value response_json;
     // http_response response;
 
-// adf
+
     if(uri_part == ODATA_ACCOUNT_SERVICE_ID)
     {
         // /redfish/v1/AccountService 처리
@@ -1280,9 +1280,19 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
                 return _msg;
             }
 
-            patch_network_protocol(_jv, uri);
-            _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
-            return _msg;
+            if(patch_network_protocol(_jv, uri))
+            {
+                // iptable수정 ㄱㄱ 그담에 save
+                NetworkProtocol *net = (NetworkProtocol *)g_record[uri];
+                _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
+                patch_iptable(net);
+                return _msg;
+            }
+            else
+            {
+                _msg = reply_error(_request, _msg, get_error_json("Error Occur in NetworkProtocol PATCH"), status_codes::BadRequest);
+                return _msg;
+            }
         }
 
         // /redfish/v1/Managers/cmm_id/FanMode
@@ -1335,10 +1345,12 @@ m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value
                 return _msg;
             }
 
-            patch_ethernet_interface(_jv, uri);
-            patch_ethernet_interface(_jv, sys_uri);
+            patch_ethernet_interface(_jv, uri, 1);
+            patch_ethernet_interface(_jv, sys_uri, 0);
             // EthernetInterfaces PATCH를 Manager에서 하면 System에도 반영되고
             // System에선 지원안하는걸로
+
+            // if(patch_ethernet_interface(_jv, uri, 1) && patch_ethernet_interface(_jv, sys_uri, 0))
 
             _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
             return _msg;
@@ -1483,8 +1495,8 @@ m_Request treat_uri_bmc_patch(http_request _request, m_Request _msg, json::value
             sys_uri = sys_uri + "/" + uri_tokens[3] + "/EthernetInterfaces";
             sys_uri = sys_uri + "/" + eth_num;
 
-            patch_ethernet_interface(_jv, uri);
-            patch_ethernet_interface(_jv, sys_uri);
+            patch_ethernet_interface(_jv, uri, 0);
+            patch_ethernet_interface(_jv, sys_uri, 0);
 
             _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
             return _msg;
@@ -2871,79 +2883,170 @@ void patch_manager(json::value _jv, string _record_uri)
     cout << record_get_json(_record_uri) << endl;
 }
 
-void patch_network_protocol(json::value _jv, string _record_uri)
+bool patch_network_protocol(json::value _jv, string _record_uri)
 {
     cout << "바뀌기전~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
     cout << " $$$$$$$ " << endl;
 
-    if(_jv.as_object().find("Description") != _jv.as_object().end())
-        ((NetworkProtocol *)g_record[_record_uri])->description = _jv.at("Description").as_string();
+    bool result = false;
+    NetworkProtocol *network = (NetworkProtocol *)g_record[_record_uri];
 
-    if(_jv.as_object().find("SNMP") != _jv.as_object().end())
+    string description;
+    if(get_value_from_json_key(_jv, "Description", description))
     {
-        json::value j = json::value::object();
-        j = _jv.at("SNMP");
-        
-        if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->snmp_enabled = j.at("ProtocolEnabled").as_bool();
-        if(j.as_object().find("Port") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->snmp_port = j.at("Port").as_integer();
+        network->description = description;
+        result = true;
     }
 
-    if(_jv.as_object().find("IPMI") != _jv.as_object().end())
+    json::value snmp;
+    if(get_value_from_json_key(_jv, "SNMP", snmp))
     {
-        json::value j = json::value::object();
-        j = _jv.at("IPMI");
-        
-        if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->ipmi_enabled = j.at("ProtocolEnabled").as_bool();
-        if(j.as_object().find("Port") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->ipmi_port = j.at("Port").as_integer();
+        bool enabled;
+        int port;
+        if(get_value_from_json_key(snmp, "ProtocolEnabled", enabled))
+        {
+            network->snmp_enabled = enabled;
+            result = true;
+        }
+
+        if(get_value_from_json_key(snmp, "Port", port))
+        {
+            network->snmp_port = port;
+            result = true;
+        }
+        // 포트번호 범위검사 해줘야하나? QQQQ
+    }
+    
+    json::value ipmi;
+    if(get_value_from_json_key(_jv, "IPMI", ipmi))
+    {
+        bool enabled;
+        int port;
+        if(get_value_from_json_key(ipmi, "ProtocolEnabled", enabled))
+        {
+            network->ipmi_enabled = enabled;
+            result = true;
+        }
+
+        if(get_value_from_json_key(ipmi, "Port", port))
+        {
+            network->ipmi_port = port;
+            result = true;
+        }
     }
 
-    if(_jv.as_object().find("KVMIP") != _jv.as_object().end())
+    json::value kvmip;
+    if(get_value_from_json_key(_jv, "KVMIP", kvmip))
     {
-        json::value j = json::value::object();
-        j = _jv.at("KVMIP");
-        
-        if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->kvmip_enabled = j.at("ProtocolEnabled").as_bool();
-        if(j.as_object().find("Port") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->kvmip_port = j.at("Port").as_integer();
+        bool enabled;
+        int port;
+        if(get_value_from_json_key(kvmip, "ProtocolEnabled", enabled))
+        {
+            network->kvmip_enabled = enabled;
+            result = true;
+        }
+
+        if(get_value_from_json_key(kvmip, "Port", port))
+        {
+            network->kvmip_port = port;
+            result = true;
+        }
     }
 
-    if(_jv.as_object().find("HTTP") != _jv.as_object().end())
+    json::value http;
+    if(get_value_from_json_key(_jv, "HTTP", http))
     {
-        json::value j = json::value::object();
-        j = _jv.at("HTTP");
-        
-        if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->http_enabled = j.at("ProtocolEnabled").as_bool();
-        if(j.as_object().find("Port") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->http_port = j.at("Port").as_integer();
+        bool enabled;
+        int port;
+        if(get_value_from_json_key(http, "ProtocolEnabled", enabled))
+        {
+            network->http_enabled = enabled;
+            result = true;
+        }
+
+        if(get_value_from_json_key(http, "Port", port))
+        {
+            network->http_port = port;
+            result = true;
+        }
     }
 
-    if(_jv.as_object().find("HTTPS") != _jv.as_object().end())
+    json::value https;
+    if(get_value_from_json_key(_jv, "HTTPS", https))
     {
-        json::value j = json::value::object();
-        j = _jv.at("HTTPS");
-        
-        if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->https_enabled = j.at("ProtocolEnabled").as_bool();
-        if(j.as_object().find("Port") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->https_port = j.at("Port").as_integer();
+        bool enabled;
+        int port;
+        if(get_value_from_json_key(https, "ProtocolEnabled", enabled))
+        {
+            network->https_enabled = enabled;
+            result = true;
+        }
+
+        if(get_value_from_json_key(https, "Port", port))
+        {
+            network->https_port = port;
+            result = true;
+        }
     }
 
-    if(_jv.as_object().find("NTP") != _jv.as_object().end())
+    json::value ssh;
+    if(get_value_from_json_key(_jv, "SSH", ssh))
     {
-        json::value j = json::value::object();
-        j = _jv.at("NTP");
-        
-        if(j.as_object().find("ProtocolEnabled") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->ntp_enabled = j.at("ProtocolEnabled").as_bool();
-        if(j.as_object().find("Port") != j.as_object().end())
-            ((NetworkProtocol *)g_record[_record_uri])->ntp_port = j.at("Port").as_integer();
+        bool enabled;
+        int port;
+        if(get_value_from_json_key(ssh, "ProtocolEnabled", enabled))
+        {
+            network->ssh_enabled = enabled;
+            result = true;
+        }
+
+        if(get_value_from_json_key(ssh, "Port", port))
+        {
+            network->ssh_port = port;
+            result = true;
+        }
+    }
+
+
+    json::value ntp;
+    if(get_value_from_json_key(_jv, "NTP", ntp))
+    {
+        bool enabled;
+        int port;
+        json::value ntp_servers = json::value::array();
+        if(get_value_from_json_key(ntp, "ProtocolEnabled", enabled))
+        {
+            network->ntp_enabled = enabled;
+            result = true;
+        }
+
+        if(get_value_from_json_key(ntp, "Port", port))
+        {
+            network->ntp_port = port;
+            result = true;
+        }
+
+        if(get_value_from_json_key(ntp, "NTPServers", ntp_servers))
+        {
+            for(int i=0; i<ntp_servers.size(); i++)
+            {
+                bool add = true;
+                for(int j=0; j<network->v_netservers.size(); j++)
+                {
+                    if(ntp_servers[i].as_string() == network->v_netservers[j])
+                    {
+                        add = false;
+                        break;
+                    }
+                }
+                if(add)
+                    network->v_netservers.push_back(ntp_servers[i].as_string());
+
+                result = true;
+            }
+        }
+        // ntpservers 는 현재 존재하지않으면 추가하는 식으로만 구현
     }
 
     // NTPServers 는 여러개가 들어가있는 형식인데 어떻게 수정해야하지?
@@ -2954,6 +3057,7 @@ void patch_network_protocol(json::value _jv, string _record_uri)
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
 
+    return result;
 }
 
 void patch_fan_mode(string _mode, string _record_uri)
@@ -3027,178 +3131,329 @@ void patch_fan_mode(string _mode, string _record_uri)
     }
 }
 
-void patch_ethernet_interface(json::value _jv, string _record_uri)
+bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
 {
+    // _flag=0 -- 값만 바꿈, _flag=1 -- 변경처리까지
     cout << "바뀌기전~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
     cout << " $$$$$$$ " << endl;
 
-    if(_jv.as_object().find("Description") != _jv.as_object().end())
-        ((EthernetInterfaces *)g_record[_record_uri])->description = _jv.at("Description").as_string();
+    EthernetInterfaces *eth = (EthernetInterfaces *)g_record[_record_uri];
+    bool result = false;
 
-    if(_jv.as_object().find("FQDN") != _jv.as_object().end())
-        ((EthernetInterfaces *)g_record[_record_uri])->fqdn = _jv.at("FQDN").as_string();
-
-    if(_jv.as_object().find("HostName") != _jv.as_object().end())
-        ((EthernetInterfaces *)g_record[_record_uri])->hostname = _jv.at("HostName").as_string();
-
-    // if(_jv.as_object().find("LinkStatus") != _jv.as_object().end())
-    //     ((EthernetInterfaces *)g_record[uri])->link_status = _jv.at("LinkStatus").as_string();
-    // read-only
-
-    if(_jv.as_object().find("MACAddress") != _jv.as_object().end())
-        ((EthernetInterfaces *)g_record[_record_uri])->mac_address = _jv.at("MACAddress").as_string();
-
-    // if(_jv.as_object().find("IPv6DefaultGateway") != _jv.as_object().end())
-    //     ((EthernetInterfaces *)g_record[uri])->ipv6_default_gateway = _jv.at("IPv6DefaultGateway").as_string();
-    // read-only였음
-
-    if(_jv.as_object().find("MTUSize") != _jv.as_object().end())
-        ((EthernetInterfaces *)g_record[_record_uri])->mtu_size = _jv.at("MTUSize").as_integer();
-
-
-    // IPv4, IPv6 Addresses는 원래 스키마에는 array로 되어있는데 
-    // 일단 여기서의 patch는 하나만 있는거라고 생각하고 함
-    if(_jv.as_object().find("IPv4Addresses") != _jv.as_object().end())
+    string description;
+    if(get_value_from_json_key(_jv, "Description", description))
     {
-        // json::value ip_array = json::value::array();
-        // ip_array = _jv.at("IPv4Addresses");
-        // int size_v4 = ((EthernetInterfaces *)g_record[uri])->v_ipv4.size();
-        // // ((EthernetInterfaces *)g_record[uri])->v_ipv4.clear();
-        // // 기존벡터 클리어
-        // size_v4 
-        // for(int ip_num=0; ip_num<ip_array.size(); ip_num++)
-        // {
-        //     IPv4_Address tmp;
-        //     if(ip_array[ip_num].as_object().find("Address") != ip_array[ip_num].as_object().end())
-        //         tmp.address = ip_array[ip_num].at("Address").as_string();
-            
-        //     // if(ip_array[ip_num].as_object().find("AddressOrigin") != ip_array[ip_num].as_object().end())
-        //     //     tmp.address_origin = ip_array[ip_num].at("AddressOrigin").as_string();
-        //     // read-only
+        eth->description = description;
+        result = true;
+    }
 
-        //     if(ip_array[ip_num].as_object().find("SubnetMask") != ip_array[ip_num].as_object().end())
-        //         tmp.subnet_mask = ip_array[ip_num].at("SubnetMask").as_string();
+    // string fqdn;
+    // if(get_value_from_json_key(_jv, "FQDN", fqdn))
+    // {
+    //     eth->fqdn = fqdn;
+    //     if(_flag == 1)
+    //     {
+    //         string buf = "hostname ";
 
-        //     if(ip_array[ip_num].as_object().find("Gateway") != ip_array[ip_num].as_object().end())
-        //         tmp.gateway = ip_array[ip_num].at("Gateway").as_string();
+    //     }
+    // }
 
-
-        //     ((EthernetInterfaces *)g_record[uri])->v_ipv4.push_back(tmp);
-        // } //원래 여러개일수도있다하고 한부분이고 수정중이었음
-
-        json::value j = json::value::object();
-        j = _jv.at("IPv4Addresses");
-
-        int size_v4 = ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4.size();
-        if(size_v4 == 0)
+    string hostname;
+    if(get_value_from_json_key(_jv, "HostName", hostname))
+    {
+        eth->hostname = hostname;
+        if(_flag == 1)
         {
-            // 없을때 하나 만들어서 넣어줌
-            IPv4_Address tmp;
-            if(j.as_object().find("Address") != j.as_object().end())
-                tmp.address = j.at("Address").as_string();
-
-            // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-            //     tmp.address_origin = j.at("AddressOrigin").as_string();
-            // read-only
-
-            if(j.as_object().find("SubnetMask") != j.as_object().end())
-                tmp.subnet_mask = j.at("SubnetMask").as_string();
-
-            if(j.as_object().find("Gateway") != j.as_object().end())
-                tmp.gateway = j.at("Gateway").as_string();
-
-            ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4.push_back(tmp);
+            string buf = "hostname ";
+            buf = buf + hostname;
+            cout << "hostname buf : " << buf << endl;
+            // system(buf.c_str());
         }
-        else
+        result = true;
+    }
+
+    string mac;
+    if(get_value_from_json_key(_jv, "MACAddress", mac))
+    {
+        eth->mac_address = mac;
+        if(_flag == 1)
         {
-            // 1개이상일 때 수정은 1개만있는거로 보기로 했으니깐 v_ipv4벡터의 0번째인덱스만 수정
-            if(j.as_object().find("Address") != j.as_object().end())
-                ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].address = j.at("Address").as_string();
-            
-            // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-            //     ((EthernetInterfaces *)g_record[uri])->v_ipv4[0].address_origin = j.at("AddressOrigin").as_string();
-            // read-only
+            string buf = "macchanger -m ";
+            buf = buf + mac + " eth" + eth->id;
+            cout << "macaddress buf : " << buf << endl;
+            // system(buf.c_str());
+        }
+        result = true;
+    }
 
-            if(j.as_object().find("SubnetMask") != j.as_object().end())
-                ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].subnet_mask = j.at("SubnetMask").as_string();
+    int mtu;
+    if(get_value_from_json_key(_jv, "MTUSize", mtu))
+    {
+        eth->mtu_size = mtu;
+        if(_flag == 1)
+        {
+            string buf = "ip link set ";
+            buf = buf + "eth" + eth->id;
+            buf = buf + " mtu " + to_string(mtu);
+            cout << "mtusize buf : " << buf << endl;
+            // system(buf.c_str());
+        }
+        result = true;
+    }
 
-            if(j.as_object().find("Gateway") != j.as_object().end())
-                ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].gateway = j.at("Gateway").as_string();
+    // ipv4, ipv6 주소들은 array로 되어있는데 patch request body로는 일단 object하나라고 생각하고 구현
+    json::value ipv4;
+    if(get_value_from_json_key(_jv, "IPv4Addresses", ipv4))
+    {
+        int size = eth->v_ipv4.size();
+        if(size == 0)
+        {
+            return false;
+        }
+        // ipv4 1개이상있을때 첫번째꺼만 수정되는걸로
+
+        string address;
+        string netmask;
+        string gateway;
+        if(get_value_from_json_key(ipv4, "Address", address))
+        {
+            eth->v_ipv4[0].address = address;
+            if(_flag == 1)
+            {
+                string buf = "ifconfig eth";
+                buf = buf + eth->id + " " + address;
+                cout << "ipv4 address buf : " << buf << endl;
+                // system(buf.c_str());
+            }
+            result = true;
+        }
+
+        if(get_value_from_json_key(ipv4, "SubnetMask", netmask))
+        {
+            eth->v_ipv4[0].subnet_mask = netmask;
+            if(_flag == 1)
+            {
+                string buf = "ifconfig eth";
+                buf = buf + eth->id + " netmask " + netmask;
+                cout << "ipv4 subnetmask buf : " << buf << endl;
+                // system(buf.c_str());
+            }
+            result = true;
+        }
+
+        if(get_value_from_json_key(ipv4, "Gateway", gateway))
+        {
+            eth->v_ipv4[0].gateway = gateway;
+            if(_flag == 1)
+            {
+                string buf = "route add default gw ";
+                buf = buf + gateway;
+                cout << "ipv4 gateway buf : " << buf << endl;
+                // system(buf.c_str());
+            }
+            result = true;
         }
     }
 
-    if(_jv.as_object().find("IPv6Addresses") != _jv.as_object().end())
+    json::value ipv6;
+    if(get_value_from_json_key(_jv, "IPv6Addresses", ipv6))
     {
-        // json::value ip_array = json::value::array();
-        // ip_array = _jv.at("IPv6Addresses");
-        // ((EthernetInterfaces *)g_record[uri])->v_ipv6.clear();
-        // // 기존벡터 클리어
-        // for(int ip_num=0; ip_num<ip_array.size(); ip_num++)
-        // {
-        //     IPv6_Address tmp;
-        //     if(ip_array[ip_num].as_object().find("Address") != ip_array[ip_num].as_object().end())
-        //         tmp.address = ip_array[ip_num].at("Address").as_string();
-            
-        //     // if(ip_array[ip_num].as_object().find("AddressOrigin") != ip_array[ip_num].as_object().end())
-        //     //     tmp.address_origin = ip_array[ip_num].at("AddressOrigin").as_string();
-
-        //     // if(ip_array[ip_num].as_object().find("AddressState") != ip_array[ip_num].as_object().end())
-        //     //     tmp.address_state = ip_array[ip_num].at("AddressState").as_string();
-
-        //     // if(ip_array[ip_num].as_object().find("PrefixLength") != ip_array[ip_num].as_object().end())
-        //     //     tmp.prefix_length = ip_array[ip_num].at("PrefixLength").as_integer();
-        //     // else
-        //     //     tmp.prefix_length = 0;
-        //     // 셋다 read-only
-
-        //     ((EthernetInterfaces *)g_record[uri])->v_ipv6.push_back(tmp);
-        // }
-
-        json::value j = json::value::object();
-        j = _jv.at("IPv6Addresses");
-
-        int size_v6 = ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6.size();
-        if(size_v6 == 0)
+        // ipv6는 추가하는식
+        int size = eth->v_ipv6.size();
+        if(size == 0)
         {
-            // 없을때 하나 만들어서 넣어줌
-            IPv6_Address tmp;
-            if(j.as_object().find("Address") != j.as_object().end())
-                tmp.address = j.at("Address").as_string();
-
-            // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-            //     tmp.address_origin = j.at("AddressOrigin").as_string();
-
-            // if(j.as_object().find("AddressState") != j.as_object().end())
-            //     tmp.address_state = j.at("AddressState").as_string();
-
-            // if(j.as_object().find("PrefixLength") != j.as_object().end())
-            //     tmp.prefix_length = j.at("PrefixLength").as_integer();
-            // 셋다 read-only 지만 prefixlength는 쓰레기값 들어가길래 0넣어줌
-            tmp.prefix_length = 0;
-
-            ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6.push_back(tmp);
+            return false;
         }
-        else
+
+        string address;
+        if(get_value_from_json_key(ipv6, "Address", address))
         {
-            // 1개이상일 때 수정은 1개만있는거로 보기로 했으니깐 v_ipv6벡터의 0번째인덱스만 수정
-            if(j.as_object().find("Address") != j.as_object().end())
-                ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6[0].address = j.at("Address").as_string();
-            
-            // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-            //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].address_origin = j.at("AddressOrigin").as_string();
-
-            // if(j.as_object().find("AddressState") != j.as_object().end())
-            //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].address_state = j.at("AddressState").as_string();
-
-            // if(j.as_object().find("PrefixLength") != j.as_object().end())
-            //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].prefix_length = j.at("PrefixLength").as_string();
-            // read-only
+            IPv6_Address new_ipv6;
+            new_ipv6.address = address;
+            new_ipv6.address_origin = eth->v_ipv6[0].address_origin;
+            new_ipv6.prefix_length = eth->v_ipv6[0].prefix_length;
+            new_ipv6.address_state = eth->v_ipv6[0].address_state;
+            if(_flag == 1)
+            {
+                string buf = "ifconfig eth";
+                buf = buf + eth->id + " inet6 add " + address + "/" + to_string(new_ipv6.prefix_length);
+                cout << "ipv6 address buf : " << buf << endl;
+                // system(buf.c_str());
+            }
+            result = true;
         }
+
     }
+
+    // if(_jv.as_object().find("Description") != _jv.as_object().end())
+    //     ((EthernetInterfaces *)g_record[_record_uri])->description = _jv.at("Description").as_string();
+
+    // if(_jv.as_object().find("FQDN") != _jv.as_object().end())
+    //     ((EthernetInterfaces *)g_record[_record_uri])->fqdn = _jv.at("FQDN").as_string();
+
+    // if(_jv.as_object().find("HostName") != _jv.as_object().end())
+    //     ((EthernetInterfaces *)g_record[_record_uri])->hostname = _jv.at("HostName").as_string();
+
+    // // if(_jv.as_object().find("LinkStatus") != _jv.as_object().end())
+    // //     ((EthernetInterfaces *)g_record[uri])->link_status = _jv.at("LinkStatus").as_string();
+    // // read-only
+
+    // if(_jv.as_object().find("MACAddress") != _jv.as_object().end())
+    //     ((EthernetInterfaces *)g_record[_record_uri])->mac_address = _jv.at("MACAddress").as_string();
+
+    // // if(_jv.as_object().find("IPv6DefaultGateway") != _jv.as_object().end())
+    // //     ((EthernetInterfaces *)g_record[uri])->ipv6_default_gateway = _jv.at("IPv6DefaultGateway").as_string();
+    // // read-only였음
+
+    // if(_jv.as_object().find("MTUSize") != _jv.as_object().end())
+    //     ((EthernetInterfaces *)g_record[_record_uri])->mtu_size = _jv.at("MTUSize").as_integer();
+
+
+    // // IPv4, IPv6 Addresses는 원래 스키마에는 array로 되어있는데 
+    // // 일단 여기서의 patch는 하나만 있는거라고 생각하고 함
+    // if(_jv.as_object().find("IPv4Addresses") != _jv.as_object().end())
+    // {
+    //     // json::value ip_array = json::value::array();
+    //     // ip_array = _jv.at("IPv4Addresses");
+    //     // int size_v4 = ((EthernetInterfaces *)g_record[uri])->v_ipv4.size();
+    //     // // ((EthernetInterfaces *)g_record[uri])->v_ipv4.clear();
+    //     // // 기존벡터 클리어
+    //     // size_v4 
+    //     // for(int ip_num=0; ip_num<ip_array.size(); ip_num++)
+    //     // {
+    //     //     IPv4_Address tmp;
+    //     //     if(ip_array[ip_num].as_object().find("Address") != ip_array[ip_num].as_object().end())
+    //     //         tmp.address = ip_array[ip_num].at("Address").as_string();
+            
+    //     //     // if(ip_array[ip_num].as_object().find("AddressOrigin") != ip_array[ip_num].as_object().end())
+    //     //     //     tmp.address_origin = ip_array[ip_num].at("AddressOrigin").as_string();
+    //     //     // read-only
+
+    //     //     if(ip_array[ip_num].as_object().find("SubnetMask") != ip_array[ip_num].as_object().end())
+    //     //         tmp.subnet_mask = ip_array[ip_num].at("SubnetMask").as_string();
+
+    //     //     if(ip_array[ip_num].as_object().find("Gateway") != ip_array[ip_num].as_object().end())
+    //     //         tmp.gateway = ip_array[ip_num].at("Gateway").as_string();
+
+
+    //     //     ((EthernetInterfaces *)g_record[uri])->v_ipv4.push_back(tmp);
+    //     // } //원래 여러개일수도있다하고 한부분이고 수정중이었음
+
+    //     json::value j = json::value::object();
+    //     j = _jv.at("IPv4Addresses");
+
+    //     int size_v4 = ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4.size();
+    //     if(size_v4 == 0)
+    //     {
+    //         // 없을때 하나 만들어서 넣어줌
+    //         IPv4_Address tmp;
+    //         if(j.as_object().find("Address") != j.as_object().end())
+    //             tmp.address = j.at("Address").as_string();
+
+    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
+    //         //     tmp.address_origin = j.at("AddressOrigin").as_string();
+    //         // read-only
+
+    //         if(j.as_object().find("SubnetMask") != j.as_object().end())
+    //             tmp.subnet_mask = j.at("SubnetMask").as_string();
+
+    //         if(j.as_object().find("Gateway") != j.as_object().end())
+    //             tmp.gateway = j.at("Gateway").as_string();
+
+    //         ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4.push_back(tmp);
+    //     }
+    //     else
+    //     {
+    //         // 1개이상일 때 수정은 1개만있는거로 보기로 했으니깐 v_ipv4벡터의 0번째인덱스만 수정
+    //         if(j.as_object().find("Address") != j.as_object().end())
+    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].address = j.at("Address").as_string();
+            
+    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
+    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv4[0].address_origin = j.at("AddressOrigin").as_string();
+    //         // read-only
+
+    //         if(j.as_object().find("SubnetMask") != j.as_object().end())
+    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].subnet_mask = j.at("SubnetMask").as_string();
+
+    //         if(j.as_object().find("Gateway") != j.as_object().end())
+    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].gateway = j.at("Gateway").as_string();
+    //     }
+    // }
+
+    // if(_jv.as_object().find("IPv6Addresses") != _jv.as_object().end())
+    // {
+    //     // json::value ip_array = json::value::array();
+    //     // ip_array = _jv.at("IPv6Addresses");
+    //     // ((EthernetInterfaces *)g_record[uri])->v_ipv6.clear();
+    //     // // 기존벡터 클리어
+    //     // for(int ip_num=0; ip_num<ip_array.size(); ip_num++)
+    //     // {
+    //     //     IPv6_Address tmp;
+    //     //     if(ip_array[ip_num].as_object().find("Address") != ip_array[ip_num].as_object().end())
+    //     //         tmp.address = ip_array[ip_num].at("Address").as_string();
+            
+    //     //     // if(ip_array[ip_num].as_object().find("AddressOrigin") != ip_array[ip_num].as_object().end())
+    //     //     //     tmp.address_origin = ip_array[ip_num].at("AddressOrigin").as_string();
+
+    //     //     // if(ip_array[ip_num].as_object().find("AddressState") != ip_array[ip_num].as_object().end())
+    //     //     //     tmp.address_state = ip_array[ip_num].at("AddressState").as_string();
+
+    //     //     // if(ip_array[ip_num].as_object().find("PrefixLength") != ip_array[ip_num].as_object().end())
+    //     //     //     tmp.prefix_length = ip_array[ip_num].at("PrefixLength").as_integer();
+    //     //     // else
+    //     //     //     tmp.prefix_length = 0;
+    //     //     // 셋다 read-only
+
+    //     //     ((EthernetInterfaces *)g_record[uri])->v_ipv6.push_back(tmp);
+    //     // }
+
+    //     json::value j = json::value::object();
+    //     j = _jv.at("IPv6Addresses");
+
+    //     int size_v6 = ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6.size();
+    //     if(size_v6 == 0)
+    //     {
+    //         // 없을때 하나 만들어서 넣어줌
+    //         IPv6_Address tmp;
+    //         if(j.as_object().find("Address") != j.as_object().end())
+    //             tmp.address = j.at("Address").as_string();
+
+    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
+    //         //     tmp.address_origin = j.at("AddressOrigin").as_string();
+
+    //         // if(j.as_object().find("AddressState") != j.as_object().end())
+    //         //     tmp.address_state = j.at("AddressState").as_string();
+
+    //         // if(j.as_object().find("PrefixLength") != j.as_object().end())
+    //         //     tmp.prefix_length = j.at("PrefixLength").as_integer();
+    //         // 셋다 read-only 지만 prefixlength는 쓰레기값 들어가길래 0넣어줌
+    //         tmp.prefix_length = 0;
+
+    //         ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6.push_back(tmp);
+    //     }
+    //     else
+    //     {
+    //         // 1개이상일 때 수정은 1개만있는거로 보기로 했으니깐 v_ipv6벡터의 0번째인덱스만 수정
+    //         if(j.as_object().find("Address") != j.as_object().end())
+    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6[0].address = j.at("Address").as_string();
+            
+    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
+    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].address_origin = j.at("AddressOrigin").as_string();
+
+    //         // if(j.as_object().find("AddressState") != j.as_object().end())
+    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].address_state = j.at("AddressState").as_string();
+
+    //         // if(j.as_object().find("PrefixLength") != j.as_object().end())
+    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].prefix_length = j.at("PrefixLength").as_string();
+    //         // read-only
+    //     }
+    // }
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
+
+    return result;
 
 }
 

@@ -248,6 +248,18 @@ enum ACTION_NAME
     EJECT_MEDIA
 };
 
+enum NETWORK_PROTOCOL_IPTABLE_INDEX
+{
+    HTTP_INDEX = 1,
+    HTTPS_INDEX,
+    SNMP_INDEX,
+    IPMI_INDEX,
+    KVMIP_INDEX,
+    SSH_INDEX,
+    VM_INDEX,
+    NTP_INDEX
+};
+
 /**
  * @brief Sensor context
  */
@@ -2741,5 +2753,11 @@ void update_cert_with_pem(fs::path cert, Certificate *certificate);
 
 // virtual media
 static int umount();
+
+// iptable(network protocol)
+string make_iptable_cmd(string _op, string _pos, int _index, int _port, int _able);
+void execute_iptables(NetworkProtocol* _net, int _index, string _op);
+void init_iptable(NetworkProtocol* _net);
+void patch_iptable(NetworkProtocol* _net);
 
 #endif

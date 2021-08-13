@@ -673,6 +673,8 @@ void init_manager(Collection *manager_collection, string _id)
     
     manager->network->status.state = STATUS_STATE_ENABLED;
     manager->network->status.health = STATUS_HEALTH_OK;
+
+    init_iptable(manager->network);
     
     if (!record_is_exist(odata_id + "/EthernetInterfaces")){
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
@@ -2851,9 +2853,11 @@ pplx::task<void> Chassis::led_blinking(uint8_t _led_index)
         while (*indicator_led == LED_BLINKING)
         {
             GPIO_CLR = 1 << _led_index;
-            usleep(30000);
+            sleep(1);
+            // usleep(30000);
             GPIO_SET = 1 << _led_index;
-            usleep(30000);
+            // usleep(30000);
+            sleep(1);
         }
     });
 }
@@ -3457,42 +3461,43 @@ bool Systems::Reset(json::value body)
         sprintf(cmds, "kill -s TERM %d && %s", pid, this_proc_name.c_str());
     }
     if (reset_type == "ForceRestart"){
-        int fork_pid;
-        fork_pid = fork();
-        if(fork_pid < 0)
-        {
-            fprintf(stderr, "Fork Fail");
-            return false;
-        }
-        else if(fork_pid == 0)
-        {
-            cout << "!child 0" << endl;
-            cout << "pid in child : " << pid << endl;
-            //child
-            sprintf(cmds, "kill -9 %d", pid);
-            sleep(3);
-            system(cmds);
-            cout << "!child 1" << endl;
-            // sleep(10);
-            // execl("/bin/ls", "ls", "-l", NULL);
-            execlp("./reboot", NULL);
-            // execlp(this_proc_name.c_str(), NULL);
-            // sprintf(cmds, "%s", this_proc_name.c_str());
-            cout << "!child 2" << endl;
+        sprintf(cmds, "reboot");
+        // int fork_pid;
+        // fork_pid = fork();
+        // if(fork_pid < 0)
+        // {
+        //     fprintf(stderr, "Fork Fail");
+        //     return false;
+        // }
+        // else if(fork_pid == 0)
+        // {
+        //     cout << "!child 0" << endl;
+        //     cout << "pid in child : " << pid << endl;
+        //     //child
+        //     sprintf(cmds, "kill -9 %d", pid);
+        //     sleep(3);
+        //     system(cmds);
+        //     cout << "!child 1" << endl;
+        //     // sleep(10);
+        //     // execl("/bin/ls", "ls", "-l", NULL);
+        //     execlp("./reboot", NULL);
+        //     // execlp(this_proc_name.c_str(), NULL);
+        //     // sprintf(cmds, "%s", this_proc_name.c_str());
+        //     cout << "!child 2" << endl;
 
-        }
-        else
-        {
-            cout << "!parent 0" << endl;
-            //parent
-            // sprintf(cmds, "kill -9 %d", pid);
-            // g_listener->close().wait();
-            return true;
-            cout << "!parent 1" << endl;
-            system(cmds);
-            // sprintf(cmds, "kill -9 %d && %s", pid, this_proc_name.c_str());
-            cout << "!parent 2" << endl;
-        }
+        // }
+        // else
+        // {
+        //     cout << "!parent 0" << endl;
+        //     //parent
+        //     // sprintf(cmds, "kill -9 %d", pid);
+        //     // g_listener->close().wait();
+        //     return true;
+        //     cout << "!parent 1" << endl;
+        //     system(cmds);
+        //     // sprintf(cmds, "kill -9 %d && %s", pid, this_proc_name.c_str());
+        //     cout << "!parent 2" << endl;
+        // }
         // #1 부모는 자기꺼 kill하고 종료 자식은 sleep햇다가 ./keti-redfish실행방법 ->안됨
         // #2 부모는 리턴해서 OK사인 reply 자식은 짧게슬립했다가 kill하고(부모) ./keti-redfish실행방법 -> 안됨
         // 보니깐 부모자식 나눠져도 서버가 켜진상태로 나눠져서 부모프로세스 죽어도 자식이 남아있어서 다시
@@ -3505,7 +3510,6 @@ bool Systems::Reset(json::value body)
         // ?????????????????????????????????????????????????????????????????????????????????????????????????????
     }
 
-cout << "???" << endl;
     system(cmds);
 
     return true;
@@ -4709,4 +4713,195 @@ void generate_logentry(string _res_odata, string _entry_id)
     LogService *log = (LogService *)g_record[_res_odata];
 
     log->new_log_entry(_entry_id);
+}
+
+string make_iptable_cmd(string _op, string _pos, int _index, int _port, int _able)
+{
+    //  -I/-R, INPUT/OUTPUT, _index, _port, _able
+    string cmd;
+    switch(_able)
+    {
+        case 0:
+            // ACCEPT
+            if(_pos == "INPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " INPUT " + to_string(_index) + " -p tcp --dport ";
+                cmd = cmd + to_string(_port) + " -j ACCEPT";
+            }
+            else if(_pos == "OUTPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " OUTPUT " + to_string(_index) + " -p tcp --sport ";
+                cmd = cmd + to_string(_port) + " -j ACCEPT";
+            }
+            break;
+        case 1:
+            // REJECT
+            if(_pos == "INPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " INPUT " + to_string(_index) + " -p tcp --dport ";
+                cmd = cmd + to_string(_port) + " -j REJECT";
+            }
+            else if(_pos == "OUTPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " OUTPUT " + to_string(_index) + " -p tcp --sport ";
+                cmd = cmd + to_string(_port) + " -j REJECT";
+            }
+            break;
+        default:
+            break;
+    }
+
+    return cmd;
+}
+
+void execute_iptables(NetworkProtocol* _net, int _index, string _op)
+{
+    string cmd_input, cmd_output;
+    switch(_index)
+    {
+        case HTTP_INDEX:
+            if(_net->http_enabled == true)
+            {
+                // ACCEPT
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTP_INDEX, _net->http_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTP_INDEX, _net->http_port, 0);
+            }
+            else
+            {
+                // REJECT
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTP_INDEX, _net->http_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTP_INDEX, _net->http_port, 1);
+            }
+            break;
+
+        case HTTPS_INDEX:
+            if(_net->https_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTPS_INDEX, _net->https_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTPS_INDEX, _net->https_port, 0);
+
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTPS_INDEX, _net->https_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTPS_INDEX, _net->https_port, 1);
+            }
+            break;
+
+        case SNMP_INDEX:
+            if(_net->snmp_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 1);
+            }
+            break;
+
+        case IPMI_INDEX:
+            if(_net->ipmi_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", IPMI_INDEX, _net->ipmi_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", IPMI_INDEX, _net->ipmi_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", IPMI_INDEX, _net->ipmi_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", IPMI_INDEX, _net->ipmi_port, 1);
+            }
+            break;
+
+        case KVMIP_INDEX:
+            if(_net->kvmip_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", KVMIP_INDEX, _net->kvmip_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", KVMIP_INDEX, _net->kvmip_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", KVMIP_INDEX, _net->kvmip_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", KVMIP_INDEX, _net->kvmip_port, 1);
+            }
+            break;
+
+        case SSH_INDEX:
+            if(_net->ssh_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SSH_INDEX, _net->ssh_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SSH_INDEX, _net->ssh_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SSH_INDEX, _net->ssh_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SSH_INDEX, _net->ssh_port, 1);
+            }
+            break;
+
+        case VM_INDEX:
+            if(_net->virtual_media_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", VM_INDEX, _net->virtual_media_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", VM_INDEX, _net->virtual_media_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", VM_INDEX, _net->virtual_media_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", VM_INDEX, _net->virtual_media_port, 1);
+            }
+            break;
+
+        case NTP_INDEX:
+            if(_net->ntp_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp_port, 1);
+            }
+            break;
+        default:
+            break;
+
+    }
+
+    system(cmd_input.c_str());
+    system(cmd_output.c_str());
+}
+
+void init_iptable(NetworkProtocol* _net)
+{
+    execute_iptables(_net, HTTP_INDEX, "I");
+    execute_iptables(_net, HTTPS_INDEX, "I");
+    execute_iptables(_net, SNMP_INDEX, "I");
+    execute_iptables(_net, IPMI_INDEX, "I");
+    execute_iptables(_net, KVMIP_INDEX, "I");
+    execute_iptables(_net, SSH_INDEX, "I");
+    execute_iptables(_net, VM_INDEX, "I");
+    execute_iptables(_net, NTP_INDEX, "I");
+
+    system("iptables-save > /etc/iptables.rules");
+}
+
+void patch_iptable(NetworkProtocol* _net)
+{
+    execute_iptables(_net, HTTP_INDEX, "R");
+    execute_iptables(_net, HTTPS_INDEX, "R");
+    execute_iptables(_net, SNMP_INDEX, "R");
+    execute_iptables(_net, IPMI_INDEX, "R");
+    execute_iptables(_net, KVMIP_INDEX, "R");
+    execute_iptables(_net, SSH_INDEX, "R");
+    execute_iptables(_net, VM_INDEX, "R");
+    execute_iptables(_net, NTP_INDEX, "R");
+
+    system("iptables-save > /etc/iptables.rules");
 }

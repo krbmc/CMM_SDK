@@ -112,9 +112,9 @@ m_Request modify_role(http_request _request, m_Request _msg, json::value _jv, st
 bool patch_account_service(json::value _jv, string _record_uri);
 bool patch_session_service(json::value _jv);
 void patch_manager(json::value _jv, string _record_uri);
-void patch_network_protocol(json::value _jv, string _record_uri);
+bool patch_network_protocol(json::value _jv, string _record_uri);
 void patch_fan_mode(string _mode, string _record_uri);
-void patch_ethernet_interface(json::value _jv, string _record_uri);
+bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag);
 void patch_system(json::value _jv, string _record_uri);
 void patch_chassis(json::value _jv, string _record_uri);
 void patch_power_control(json::value _jv, string _record_uri);
