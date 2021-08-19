@@ -47,6 +47,7 @@ int main(int _argc, char *_argv[])
         log(info) << "Redfish resource initialization complete";
 
     uuid_str = generate_uuid();
+    log(info) << "global uuid : " << uuid_str;
     // @@@@@ cmm이 요청보내는 것 테스트용
     // json::value ddd;
     // ddd = redfish_request_get("/redfish", "http://10.0.6.104:443");
@@ -58,6 +59,11 @@ int main(int _argc, char *_argv[])
     // redfish_request_patch("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
     // redfish_request_delete("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
     // @@@@@
+
+    // // ssdp discover (not working yet)
+    // std::thread t_ssdp(ssdp_handler);
+    // log(info) << "ssdp discover start";
+    // t_ssdp.join();
 
     pplx::create_task([]{
         sleep(3);
@@ -126,5 +132,6 @@ int main(int _argc, char *_argv[])
 
     g_listener->close().wait();
     HA_listener->close().wait();
+
     exit(0);
 }
