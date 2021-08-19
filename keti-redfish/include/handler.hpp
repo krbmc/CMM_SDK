@@ -42,5 +42,7 @@ void redfish_request_patch(string _path, string _url);
 void redfish_request_delete(string _path, string _url);
 // @@@@@@
 
+// ssdp
+void *ssdp_handler(void);
 
 #endif

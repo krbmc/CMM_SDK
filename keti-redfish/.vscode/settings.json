@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "string": "cpp"
-    }
+        "string": "cpp",
+        "lssdp.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }
