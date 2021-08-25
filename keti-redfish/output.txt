@@ -1,0 +1,9 @@
+-- Compiler
+--  - ID       	: GNU
+--  - Version  	: 9.3.0
+--  - Path     	: /root/CMM_SDK/output/host/usr/bin/arm-linux-g++
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /root/CMM_SDK/source/keti-redfish
+Scanning dependencies of target keti-redfish
+[ 16%] Building CXX object src/CMakeFiles/keti-redfish.dir/main.cpp.o
