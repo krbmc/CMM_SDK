@@ -60,10 +60,17 @@ int main(int _argc, char *_argv[])
     // redfish_request_delete("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
     // @@@@@
 
+<<<<<<< HEAD
     // ssdp discover (not working yet)
     std::thread t_ssdp(ssdp_handler);
     log(info) << "ssdp discover start";
     t_ssdp.join();
+=======
+    // // ssdp discover (not working yet)
+    // std::thread t_ssdp(ssdp_handler);
+    // log(info) << "ssdp discover start";
+    // t_ssdp.join();
+>>>>>>> e363a34bb856e6f86ae0963c762ae6a32375c3f1
 
     pplx::create_task([]{
         sleep(3);

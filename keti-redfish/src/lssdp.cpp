@@ -169,7 +169,10 @@ int lssdp_network_interface_update(lssdp_ctx * lssdp) {
             snprintf(lssdp->interface[n].ip,   LSSDP_IP_LEN,             "%s", ip);            // ip string
             lssdp->interface[n].addr = addr->sin_addr.s_addr;                                  // address in network byte order
 
+<<<<<<< HEAD
         
+=======
+>>>>>>> e363a34bb856e6f86ae0963c762ae6a32375c3f1
             // set network mask
             addr = (struct sockaddr_in *) &netmask.ifr_addr;
             lssdp->interface[n].netmask = addr->sin_addr.s_addr;                               // mask in network byte order

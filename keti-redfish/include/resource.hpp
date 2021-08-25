@@ -2472,11 +2472,19 @@ public:
         {
             module_id_table.insert({CMM_ID, CMM_ADDRESS});
             save_module_id();
+<<<<<<< HEAD
             //log(info) << "cmm id 등록했음";
         }
         else
         {
             //log(info) << CMM_ID << " 는 이미 있어서 init에서 등록안함";
+=======
+            log(info) << "cmm id 등록했음";
+        }
+        else
+        {
+            log(info) << CMM_ID << " 는 이미 있어서 init에서 등록안함";
+>>>>>>> e363a34bb856e6f86ae0963c762ae6a32375c3f1
             // cout << CMM_ID << " 는 이미 있어서 init에서 등록안함" << endl;
         }
         
