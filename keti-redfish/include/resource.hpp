@@ -2472,11 +2472,11 @@ public:
         {
             module_id_table.insert({CMM_ID, CMM_ADDRESS});
             save_module_id();
-            log(info) << "cmm id 등록했음";
+            //log(info) << "cmm id 등록했음";
         }
         else
         {
-            log(info) << CMM_ID << " 는 이미 있어서 init에서 등록안함";
+            //log(info) << CMM_ID << " 는 이미 있어서 init에서 등록안함";
             // cout << CMM_ID << " 는 이미 있어서 init에서 등록안함" << endl;
         }
         

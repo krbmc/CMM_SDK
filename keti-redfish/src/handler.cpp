@@ -9,6 +9,9 @@ extern unordered_map<uint8_t, Task_Manager *> task_map;
 extern Value_About_HA ha_value;
 extern int heart_beat_cycle;
 unsigned int g_count = 0;
+//ssdp timer
+long long last_time,findlast_time;
+long long current_time,findcurrent_time;
 
 /**
  * @brief Handler class constructor with method connection
@@ -1023,7 +1026,7 @@ void redfish_request_post(string _path, string _url)//json::value _jv)
     _jv[U("UserName")] = json::value::string(U("MY_NAME"));
     _jv[U("Password")] = json::value::string(U("MY_PASSWORD"));
     // 파라미터로 json::value를 그대로 받으면 그냥 쓰면 되고
-    // 그 안에 내용물을 받았으면 이렇게 만들어주어야함
+    // 그 안에 내용물을 받았으면 이렇게 만들어주어야함  
 
     http_client client(_url);
 
@@ -1114,14 +1117,33 @@ int show_interface_list_and_rebind_socket(lssdp_ctx * lssdp) {
 }
 
 int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packet_len){
-    log(info) << "packet received..";
-    printf("%s", packet);
-    
+    //printf("%s", packet);
     vector<string> packet_info = string_split(std::string(packet), '\n');
-    // for (auto str : packet_info){
-    //     if (!strncmp(str.c_str(), "LOCATION:", 9))
-    //         log(info) << str;
-    // }
+    string resultaddr;
+    bool checkmyblade=false;
+    for (auto str : packet_info){
+         if(str.find("SMM")!=string::npos||str.find("BMC")!=string::npos)
+        {           
+            checkmyblade=true;      
+        }
+        if(str.find("LOCATION")!=string::npos){
+            
+            resultaddr=str;  
+        }
+    }
+    if (checkmyblade)
+    {
+        string result = resultaddr.substr(resultaddr.find(":")+1);
+        if(result=="")
+            return 0;
+        findcurrent_time = get_current_time();
+        log(info) <<"Find Computing Module ip address: "<<result;
+        for(int i =0; i<7; i++)
+        log(info)<<packet_info[i];
+        log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
+         findlast_time = get_current_time();
+        
+    }
 
     return 0;
 }
@@ -1140,14 +1162,15 @@ int show_neighbor_list(lssdp_ctx * lssdp) {
             nbr->update_time
         );
     }
-    printf("%s\n", i == 0 ? "Empty" : "");
+    //printf("%s\n", i == 0 ? "Empty" : "");
     return 0;
 }
 
 void *ssdp_handler(void)
 {
     lssdp_set_log_callback(log_callback);
-
+    findlast_time = get_current_time();
+    log(info)<<"ssdp discovery Computing Module and Storage Module .. time"<<currentDateTime();;
     lssdp_ctx lssdp = {
         .port = 1900,
         .neighbor_timeout = 15000, // 15seconds
@@ -1166,7 +1189,7 @@ void *ssdp_handler(void)
 
     lssdp_network_interface_update(&lssdp);
 
-    long long last_time = get_current_time();
+    last_time = get_current_time();
     if (last_time < 0){
         log(error) << "Got Invalid Timestamp : " << last_time;
         return 0;
@@ -1188,13 +1211,13 @@ void *ssdp_handler(void)
         if (ret > 0){
             lssdp_socket_read(&lssdp);
         }
-        long long current_time = get_current_time();
+        current_time = get_current_time();
         if (current_time < 0){
             log(error) << "Got Invalid Timestamp : " << last_time;
             break;
         }
-
         // // show neighbor list
+       
         // lssdp_nbr *nbr = lssdp.neighbor_list;
         // if (nbr != NULL){
         //     while (nbr->next != NULL){
@@ -1203,12 +1226,20 @@ void *ssdp_handler(void)
         //         nbr = nbr->next;
         //     }
         // }
+    //     for (int i = 0; i < lssdp->interface_num; i++) {
+    //     printf("%zu. %-6s: %s\n",
+    //         i + 1,
+    //         lssdp->interface[i].name,
+    //         lssdp->interface[i].ip
+    //     );
+    // }
 
         // doing task per 5 seconds
-        if (current_time - last_time >= 5000) {
+        if (current_time - last_time >= 3000) {
+            
             lssdp_network_interface_update(&lssdp);
             lssdp_send_msearch(&lssdp);
-            lssdp_send_notify(&lssdp);
+            //lssdp_send_notify(&lssdp);
             lssdp_neighbor_check_timeout(&lssdp);
 
             last_time = current_time;
