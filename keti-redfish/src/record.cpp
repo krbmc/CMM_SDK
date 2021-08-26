@@ -159,6 +159,9 @@ json::value record_get_json(const string _uri)
         case VIRTUAL_MEDIA_TYPE:
             j = ((VirtualMedia *)g_record[_uri])->get_json();
             break;
+        case MESSAGE_REGISTRY_TYPE:
+            j = ((MessageRegistry *)g_record[_uri])->get_json();
+            break;
         default:
             break;
     }
@@ -576,7 +579,16 @@ bool record_load_json(void)
                     log(warning) << "load Virtual Media failed";
                 dependency_object.push_back(vm);
                 break;
-            } 
+            }
+            case MESSAGE_REGISTRY_TYPE:{
+                string this_odata_id = it->second->odata.id;
+                gc.push_back(it->second);
+                MessageRegistry *msg_regi = new MessageRegistry(this_odata_id);
+                if (!msg_regi->load_json(j))
+                    log(warning) << "load Message Registry failed";
+                //dependency_object.push_back(msg_regi);
+                // Message Registry는 걍 독립적이라 안해도 될듯
+            }
             default:
                 log(warning) << "NOT IMPLEMETED IN LOAD JSON : " << it->second->odata.id;
                 gc.push_back(it->second);
@@ -633,10 +645,12 @@ bool record_save_json(void)
     // delete file 현재 g_record에 존재하지 않는 record를 disk에서도 삭제.
     // 모두 json 파일.. 디렉토리는 남아있음
     for (auto const& iter : dir_list){
-        fs::path target_file(iter + ".json");
-        
-        log(info) << "delete " << iter;
-        fs::remove(target_file);
+        if (!record_is_exist(iter)){
+            fs::path target_file(iter + ".json");
+            
+            log(info) << "delete " << iter;
+            fs::remove(target_file);
+        }
     }
     dir_list.clear();
     
@@ -953,6 +967,16 @@ void dependency_injection(Resource *res)
             break;
         case VIRTUAL_MEDIA_TYPE: // BMC Manager && Systems
             ((Collection *)g_record[parent_object_id])->add_member((VirtualMedia *)res);
+            if(((VirtualMedia *)res)->media_type[0] == "CD")
+            {
+                string id = current_object_name.substr(2);
+                insert_numset_num(ALLOCATE_VM_CD_NUM, stoi(id));
+            }
+            else if(((VirtualMedia *)res)->media_type[0] == "USBStick")
+            {
+                string id = current_object_name.substr(3);
+                insert_numset_num(ALLOCATE_VM_USB_NUM, stoi(id));
+            }
             break;
         case SENSOR_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Sensor *)res);
@@ -962,12 +986,14 @@ void dependency_injection(Resource *res)
             break;
         case TASK_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Task *)res);
-            insert_task_num(stoi(current_object_name)); 
+            insert_numset_num(ALLOCATE_TASK_NUM, stoi(current_object_name));
+            // insert_task_num(stoi(current_object_name)); 
             break;
         case SESSION_TYPE:
             ((Session *)res)->account = ((Account *)g_record[((Session *)res)->account_id]);
             ((Collection *)g_record[parent_object_id])->add_member((Session *)res);
-            insert_session_num(stoi(current_object_name));
+            insert_numset_num(ALLOCATE_SESSION_NUM, stoi(current_object_name));
+            // insert_session_num(stoi(current_object_name));
             ((Session *)res)->_remain_expires_time = ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout;
             ((Session *)res)->start();
             break;
@@ -976,7 +1002,8 @@ void dependency_injection(Resource *res)
             break;
         case ACCOUNT_TYPE:
             if (isNumber(current_object_name)){
-                insert_account_num(stoi(current_object_name)); 
+                insert_numset_num(ALLOCATE_ACCOUNT_NUM, stoi(current_object_name));
+                // insert_account_num(stoi(current_object_name));
             }else{
                 log(warning) << "account name is not number : " << current_object_name;
                 break;
@@ -986,6 +1013,7 @@ void dependency_injection(Resource *res)
             break;
         case EVENT_DESTINATION_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((EventDestination *)res);
+            insert_numset_num(ALLOCATE_SUBSCRIPTION_NUM, stoi(current_object_name));
             break;
         case SOFTWARE_INVENTORY_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((SoftwareInventory *)res);

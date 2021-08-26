@@ -110,6 +110,8 @@
 #define ODATA_VOLUME_TYPE "#Volume" ODATA_TYPE_VERSION ".Volume"
 #define ODATA_VOLUME_COLLECTION_TYPE "#Volume.Volume"
 
+#define ODATA_MESSAGE_REGISTRY_TYPE "#MessageRegistry" ODATA_TYPE_VERSION ".MessageRegistry"
+
 #define NO_DATA_TYPE 0
 
 /**
@@ -230,7 +232,8 @@ enum RESOURCE_TYPE
     CERTIFICATE_SERVICE_TYPE,
     VIRTUAL_MEDIA_TYPE,
     DRIVE_TYPE,
-    VOLUME_TYPE
+    VOLUME_TYPE,
+    MESSAGE_REGISTRY_TYPE
 };
 
 enum ACTION_NAME
@@ -573,6 +576,22 @@ typedef struct _Event_Info{
     vector<string> message_args;
 } Event_Info;
 
+typedef struct _Message
+{
+    string pattern; // id
+    string description;
+    string message;
+    string severity;
+    int number_of_args;
+    vector<string> param_types;
+    string resolution;
+} Message;
+
+typedef struct _Messages
+{
+    vector<Message> v_msg;
+} Messages;
+
 typedef struct _Part_Location{
     int location_ordinal_value;
     string location_type; // Bay 
@@ -699,6 +718,38 @@ public:
     void add_member(Resource *);
     json::value get_json(void);
     bool load_json(json::value &j);
+};
+
+/**
+ * @brief Resource of MessageRegistry
+ * 
+ */
+
+class MessageRegistry : public Resource
+{
+    public:
+        string id; // MessageId는 여기 이 id + message pattern
+        string language; // required
+
+        Messages messages; // 라는 object안에 Message구조체가 여러개들은 구조니깐 안에서 vector화
+        string registry_prefix; // required
+        string registry_version; // required
+
+        MessageRegistry(const string _odata_id) : Resource(MESSAGE_REGISTRY_TYPE, _odata_id, ODATA_MESSAGE_REGISTRY_TYPE)
+        {
+            g_record[_odata_id] = this;
+        }
+        MessageRegistry(const string _odata_id, const string _registry_id) : MessageRegistry(_odata_id)
+        {
+            this->id = _registry_id;
+        }
+        ~MessageRegistry()
+        {
+            g_record.erase(this->odata.id);
+        };
+
+        json::value get_json(void);
+        bool load_json(json::value &j);
 };
 
 /**
@@ -1206,7 +1257,7 @@ class Certificate : public Resource
         Actions rekey;
         rekey.type = RE_KEY;
         rekey.name = "#Certificate.Rekey";
-        rekey.target = this->odata.id + "Actions/Certificate.ReKey";
+        rekey.target = this->odata.id + "Actions/Certificate.Rekey";
 
         // required, allowable_values 바뀔 수 있음
         Parameter key_curve_id;
@@ -1220,14 +1271,14 @@ class Certificate : public Resource
         rekey.parameters.push_back(key_curve_id);
         rekey.parameters.push_back(key_pair_algorithm);
 
-        this->actions["ReKey"] = rekey;
+        this->actions["Rekey"] = rekey;
         
         Actions renew;
         renew.type = RE_NEW;
-        renew.name = "#Certificate.ReNew";
-        renew.target = this->odata.id + "Actions/Certificate.ReNew";
+        renew.name = "#Certificate.Renew";
+        renew.target = this->odata.id + "Actions/Certificate.Renew";
         
-        this->actions["ReNew"] = renew;
+        this->actions["Renew"] = renew;
 
         g_record[_odata_id] = this;
     }
@@ -2470,23 +2521,46 @@ class VirtualMedia : public Resource
     bool inserted;
     bool write_protected;
     string user_name;
-    string passwword;
+    string password;
 
     unordered_map <string, Actions> actions;
 
     VirtualMedia(const string _odata_id) : Resource(VIRTUAL_MEDIA_TYPE, _odata_id, ODATA_VIRTUAL_MEDIA_TYPE)
     {
-        Actions insert_media;
-        insert_media.type = INSERT_MEDIA;
-        insert_media.name = "#VirtualMedia.InsertMedia";
-        insert_media.target = this->odata.id + "/Actions/VirtualMedia.InsertMedia";
+        // Actions insert_media;
+        // insert_media.type = INSERT_MEDIA;
+        // insert_media.name = "#VirtualMedia.InsertMedia";
+        // insert_media.target = this->odata.id + "/Actions/VirtualMedia.InsertMedia";
+
+        Actions insert_media_cd;
+        insert_media_cd.type = INSERT_MEDIA;
+        insert_media_cd.name = "#VirtualMedia.InsertMediaCD";
+        insert_media_cd.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaCD";
+
+        // Actions insert_media_dvd;
+        // insert_media_dvd.type = INSERT_MEDIA;
+        // insert_media_dvd.name = "#VirtualMedia.InsertMediaDVD";
+        // insert_media_dvd.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaDVD";
+
+        // Actions insert_media_floppy;
+        // insert_media_floppy.type = INSERT_MEDIA;
+        // insert_media_floppy.name = "#VirtualMedia.InsertMediaFloppy";
+        // insert_media_floppy.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaFloppy";
+
+        Actions insert_media_usb;
+        insert_media_usb.type = INSERT_MEDIA;
+        insert_media_usb.name = "#VirtualMedia.InsertMediaUSB";
+        insert_media_usb.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaUSB";
 
         Actions eject_media;
         eject_media.type = EJECT_MEDIA;
         eject_media.name = "#VirtualMedia.EjectMedia";
         eject_media.target = this->odata.id + "/Actions/VirtualMedia.EjectMedia";
 
-        this->actions["InsertMedia"] = insert_media;
+        this->actions["InsertMediaCD"] = insert_media_cd;
+        // this->actions["InsertMediaDVD"] = insert_media_dvd;
+        // this->actions["InsertMediaFloppy"] = insert_media_floppy;
+        this->actions["InsertMediaUSB"] = insert_media_usb;
         this->actions["EjectMedia"] = eject_media;
 
         g_record[_odata_id] = this;
@@ -2532,7 +2606,7 @@ void init_event_service(EventService *event_service);
 void init_event_destination(Collection *event_destination_collection, string _id);
 void init_account_service(AccountService *account_service);
 void init_session_service(SessionService *session_service);
-void insert_virtual_media(Collection *virtual_media_collection, string _id);
+void insert_virtual_media(Collection *virtual_media_collection, string _id, string _type);
 /**
  * @brief Root of redfish
  *        This resource create only once
@@ -2660,6 +2734,8 @@ public:
 
 bool init_record(void);
 bool init_resource(void);
+
+void init_message_registry(void);
 
 bool is_session_valid(const string _token);
 string get_session_odata_id_by_token(string _token);

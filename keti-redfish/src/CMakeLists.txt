@@ -19,6 +19,7 @@ set(
     task.cpp # @@@@ 추가
     chassis_controller.cpp # @@@@ 추가
     TaskServer.cpp
+    init.cpp
 )
 
 # Directory setting
@@ -35,6 +36,9 @@ link_directories(
     ${Boost_LIBRARY_DIR} 
 )
 
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(deps REQUIRED IMPORTED_TARGET glib-2.0)
+
 # Build
 add_executable(${OUTPUT} ${SOURCE_FILES})
 target_link_libraries(
@@ -42,12 +46,13 @@ target_link_libraries(
     crypto 
     ssl 
     pam
-    pam_misc
-    cpprest 
+    pam_misc 
     pthread 
     boost_system 
     boost_log 
     boost_log_setup 
     boost_thread
     stdc++fs
+    cpprest
+    # PkgConfig::deps
 )

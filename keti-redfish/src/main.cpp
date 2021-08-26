@@ -2,6 +2,8 @@
 #include "resource.hpp"
 #include "hwcontrol.hpp"
 #include "task.hpp"
+// #include <glib-2.0/glib.h>
+// #include <gssdp-1.2/libgssdp/gssdp.h>
 
 unique_ptr<Handler> g_listener, HA_listener;
 unordered_map<string, Resource *> g_record;
@@ -90,8 +92,10 @@ int main(int _argc, char *_argv[])
         // });
 
         log(info) << "Server crt file path: " << SERVER_CERTIFICATE_CHAIN_PATH;
+        // _ctx.use_certificate_chain_file("/conf/ssl/server.pem");
         _ctx.use_certificate_chain_file(SERVER_CERTIFICATE_CHAIN_PATH);
         log(info) << "Server key file path: " << SERVER_PRIVATE_KEY_PATH;
+        // _ctx.use_private_key_file("/conf/ssl/server.pem", boost::asio::ssl::context::pem);
         _ctx.use_private_key_file(SERVER_PRIVATE_KEY_PATH, boost::asio::ssl::context::pem);
         log(info) << "Server pem file path: " << SERVER_TMP_DH_PATH;
         _ctx.use_tmp_dh_file(SERVER_TMP_DH_PATH);
@@ -104,7 +108,6 @@ int main(int _argc, char *_argv[])
     // Set server entry point
     log(info) << "Server entry point: " << SERVER_ENTRY_POINT;
     utility::string_t url = U(SERVER_ENTRY_POINT);
-    // cout << "!@#$URL?? : " << url << endl;
 
     // RESTful server start
     start_server(url, listen_config);

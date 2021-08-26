@@ -21,6 +21,7 @@ Handler::Handler(utility::string_t _url, http_listener_config _config) : m_liste
     this->m_listener.support(methods::POST, bind(&Handler::handle_post, this, placeholders::_1));
     this->m_listener.support(methods::DEL, bind(&Handler::handle_delete, this, placeholders::_1));
     this->m_listener.support(methods::PATCH, bind(&Handler::handle_patch, this, placeholders::_1));
+    this->m_listener.support(methods::OPTIONS, bind(&Handler::handle_options, this, placeholders::_1));
 }
 
 /**
@@ -61,7 +62,8 @@ void Handler::handle_get(http_request _request)
 
         if(uri_tokens.size() >= 4)
         {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
                 //CMM자체 동작으로다가 처리하시면됨
                 do_task_cmm_get(_request);
@@ -256,7 +258,8 @@ void Handler::handle_delete(http_request _request)
 
         if(uri_tokens.size() >= 4)
         {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
                 //CMM자체 동작으로다가 처리하시면됨
                 do_task_cmm_delete(_request);
@@ -917,7 +920,8 @@ void Handler::handle_patch(http_request _request)
 
         if(uri_tokens.size() >= 4)
         {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
                 //CMM자체 동작으로다가 처리하시면됨
                 do_task_cmm_patch(_request);
@@ -959,6 +963,31 @@ void Handler::handle_patch(http_request _request)
         _request.reply(status_codes::BadRequest);
     }
     
+}
+
+/**
+ * @brief OPTIONS request handler
+ * 
+ * @param _request Request object
+ */
+void Handler::handle_options(http_request _request)
+{
+    log(info) << "Request method: OPTIONS";
+    string uri = _request.request_uri().to_string();
+    vector<string> uri_tokens = string_split(uri, '/');
+    string filtered_uri = make_path(uri_tokens);
+    log(info) << "Reqeust URL : " << filtered_uri;
+    log(info) << "Request Body : " << _request.to_string();
+
+    cout << "handle_options request" << endl;
+
+    http_response response(status_codes::OK);
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    _request.reply(response);
 }
 
 

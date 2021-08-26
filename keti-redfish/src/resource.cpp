@@ -535,7 +535,8 @@ pplx::task<void> Session::start(void)
             {
                 unsigned int id_num;
                 id_num = stoi(session->id);
-                delete_session_num(id_num);
+                delete_numset_num(ALLOCATE_SESSION_NUM, id_num);
+                // delete_session_num(id_num);
                 // numset에서 num id 삭제
 
                 delete(*iter);
@@ -945,7 +946,8 @@ json::value EventService::SubmitTestEvent(json::value body)
     get_value_from_json_key(body, "EventId", e.event_id);
     get_value_from_json_key(body, "EventTimestamp", e.event_timestamp);
     get_value_from_json_key(body, "Message", e.message);
-    get_value_from_json_key(body, "MessageId", e.message_id);
+    if(!get_value_from_json_key(body, "MessageId", e.message_id))
+        return json::value::null();
     get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition);
     if(!(get_value_from_json_key(body, "MessageArgs", args)))
         return json::value::null();
@@ -1738,6 +1740,7 @@ json::value Chassis::get_json(void)
     j["Power"] = get_resource_odata_id_json(this->power, this->odata.id);
     j["Storage"] = get_resource_odata_id_json(this->storage, this->odata.id);
     j["Sensors"] = get_resource_odata_id_json(this->sensors, this->odata.id);
+    j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
 
     return j;
 }
@@ -3597,7 +3600,7 @@ json::value VirtualMedia::get_json(void)
     j["Image"] = json::value::string(this->image);
     j["ImageName"] = json::value::string(this->image_name);
     j["UserName"] = json::value::string(this->user_name);
-    j["Password"] = json::value::string(this->passwword);
+    j["Password"] = json::value::string(this->password);
     j["Inserted"] = json::value::boolean(this->inserted);
     j["WriteProtected"] = json::value::boolean(this->write_protected);
     j["MediaTypes"] = json::value::array();
@@ -3618,7 +3621,7 @@ bool VirtualMedia::load_json(json::value &j)
         get_value_from_json_key(j, "Image", this->image);
         get_value_from_json_key(j, "ImageName", this->image_name);
         get_value_from_json_key(j, "UserName", this->user_name);
-        get_value_from_json_key(j, "Password", this->passwword);
+        get_value_from_json_key(j, "Password", this->password);
         get_value_from_json_key(j, "Inserted", this->inserted);
         get_value_from_json_key(j, "WriteProtected", this->write_protected);
         get_value_from_json_key(j, "MediaTypes", media_type);
@@ -3645,12 +3648,15 @@ json::value VirtualMedia::InsertMedia(json::value body)
     int ret = 0;
 
     string image, user_name, password;
-    bool write_protected;
+    bool write_protected, inserted;
     
-    get_value_from_json_key(body, "Image", image);
-    get_value_from_json_key(body, "UserName", user_name);
-    get_value_from_json_key(body, "Password", password);
-    get_value_from_json_key(body, "WriteProtected", write_protected);
+    // get_value_from_json_key(body, "Image", image);
+    // get_value_from_json_key(body, "UserName", user_name);
+    // get_value_from_json_key(body, "Password", password);
+    // get_value_from_json_key(body, "WriteProtected", write_protected);
+
+    if(!(get_value_from_json_key(body, "Image", image)))
+        return json::value::null();
 
     // #0 mount check
     ret = umount();
@@ -3666,6 +3672,7 @@ json::value VirtualMedia::InsertMedia(json::value body)
     
     // #1-2 using nfs, 
     string cmd = "mount -vt nfs " + image + " /etc/nfs";
+    cout << "CMD : " << cmd << endl;
     ret = system(cmd.c_str());
     if (ret == -1){
         log(warning) << "mount error!";
@@ -3673,17 +3680,34 @@ json::value VirtualMedia::InsertMedia(json::value body)
     }
 
     // #2 make virtual media, insert
-    this->connected_via = "URI";
-    this->name = "VirtualMedia";
-    this->inserted = true;
+    
+    // this->name = "VirtualMedia";
+
     this->image = image;
     this->image_name = get_current_object_name(image, "/");
-    this->id = get_current_object_name(this->odata.id, "/");
-    this->write_protected = write_protected;
-    this->media_type.push_back("CD");
-    this->media_type.push_back("DVD");
+    this->connected_via = "URI";
 
-    ((Collection *)g_record[get_parent_object_uri(this->odata.id, "/")])->add_member(this);
+    if(get_value_from_json_key(body, "UserName", user_name))
+        this->user_name = user_name;
+    if(get_value_from_json_key(body, "Password", password))
+        this->password = password;
+
+    if(get_value_from_json_key(body, "Inserted", inserted))
+        this->inserted = inserted;
+    else
+        this->inserted = true;
+    if(get_value_from_json_key(body, "WriteProtected", write_protected))
+        this->write_protected = write_protected;
+    else
+        this->write_protected = true;
+
+    
+    // this->id = get_current_object_name(this->odata.id, "/");
+    
+    // this->media_type.push_back("CD");
+    // this->media_type.push_back("DVD");
+
+    // ((Collection *)g_record[get_parent_object_uri(this->odata.id, "/")])->add_member(this);
     
     // #3 return resource
     return this->get_json();
@@ -3692,6 +3716,8 @@ json::value VirtualMedia::InsertMedia(json::value body)
 json::value VirtualMedia::EjectMedia(void)
 {
     int ret;
+    json::value target = this->get_json();
+    string odata_id = this->odata.id;
 
     // #1 unmount
     ret = umount();
@@ -3699,12 +3725,58 @@ json::value VirtualMedia::EjectMedia(void)
         return json::value::null();
 
     // #2 connectedVia => notconnected, inserted => false, image => null  <? data는 보존한다는 얘기??>
-    this->connected_via = "NotConnected";
-    this->inserted = false;
-    this->image = "";
+    // this->connected_via = "NotConnected";
+    // this->inserted = false;
+    // this->image = "";
+    // this->image_name = "";
+    // this->user_name = "";
+    // this->password = "";
+
+    // InsertMedia가 리소스를 그때그때 생성하므로 Eject는 리소스 삭제하겠음
+    string col_uri = get_parent_object_uri(this->odata.id, "/");
+    Collection *col = (Collection *)g_record[col_uri];
+    std::vector<Resource *>::iterator iter;
+    for(iter=col->members.begin(); iter!=col->members.end(); iter++)
+    {
+        VirtualMedia *del = (VirtualMedia *)*iter;
+        if(del->id == this->id)
+        {
+            break;
+        }
+    }
+
+    cout << "지우기전!! " << endl;
+    cout << record_get_json(col->odata.id) << endl;
+    cout << " $$$$$$$ " << endl;
+
+    // numset지우기
+    unsigned int id_num;
+    if(this->media_type[0] == "CD")
+    {
+        string id = this->id;
+        string extract = id.substr(2);
+        id_num = stoi(extract);
+        delete_numset_num(ALLOCATE_VM_CD_NUM, id_num);
+    }
+    else if(this->media_type[0] == "USBStick")
+    {
+        string id = this->id;
+        string extract = id.substr(3);
+        id_num = stoi(extract);
+        delete_numset_num(ALLOCATE_VM_USB_NUM, id_num);
+    }
+
+    delete(*iter);
+    col->members.erase(iter);
+
+    cout << "지운후~~ " << endl;
+    cout << "지워진놈 : " << odata_id << endl;
+    cout << target << endl;
+
     
+    return target;
     // #3 return resource
-    return this->get_json();
+    // return this->get_json();
 }
 
 static int umount()
@@ -3720,6 +3792,72 @@ static int umount()
     return 0;
 }
 // dy : virtual media end
+
+// message registry start
+json::value MessageRegistry::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
+
+    j[U("Id")] = json::value::string(U(this->id));
+    j[U("Language")] = json::value::string(U(this->language));
+    j[U("RegistryPrefix")] = json::value::string(U(this->registry_prefix));
+    j[U("RegistryVersion")] = json::value::string(U(this->registry_version));
+
+    json::value messages;
+    for(int i=0; i<this->messages.v_msg.size(); i++)
+    {
+        Message msg = this->messages.v_msg[i];
+        json::value tmp;
+        tmp[U("Description")] = json::value::string(U(msg.description));
+        tmp[U("Message")] = json::value::string(U(msg.message));
+        tmp[U("Severity")] = json::value::string(U(msg.severity));
+        tmp[U("Resolution")] = json::value::string(U(msg.resolution));
+        tmp[U("NumberOfArgs")] = json::value::number(U(msg.number_of_args));
+
+        if(!msg.param_types.empty())
+        {
+            tmp[U("ParamTypes")] = json::value::array();
+            for(int j=0; j<msg.param_types.size(); j++)
+            {
+                tmp[U("ParamTypes")][j] = json::value::string(U(msg.param_types[j]));
+            }
+        }
+
+        messages[U(msg.pattern)] = tmp;
+    }
+
+
+    j[U("Messages")] = messages;
+
+    return j;
+
+}
+
+bool MessageRegistry::load_json(json::value &j)
+{
+    try
+    {
+        Resource::load_json(j);
+        this->id = j.at("Id").as_string();
+        this->language = j.at("Language").as_string();
+        this->registry_prefix = j.at("RegistryPrefix").as_string();
+        this->registry_version = j.at("RegistryVersion").as_string();
+
+        // 이 외에 this->messages에 들어갈 Message vector요소들은 키워드(pattern)을 일일이
+        // hasfield같은걸로 찾아서 읽은다음 거기서 Message 구조체에 담고 그걸 messages.v_msg에 push_back해주는식
+        // 으로 구현해야함 아직 들어갈 키워드(패턴)들이 지정되지 않아서 자리만 만들어둠
+        
+    }
+    catch(json::json_exception &e)
+    {
+        return false;
+    }
+    
+    return true;
+}
+// message registry end
 
 // ServiceRoot start
 json::value ServiceRoot::get_json(void)

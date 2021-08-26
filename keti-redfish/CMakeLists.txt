@@ -36,7 +36,7 @@ message(STATUS " - Path     \t: ${CMAKE_CXX_COMPILER}")
 ## Header
 include_directories(
     ${Buildroot_INCLUDE_DIR} 
-    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include/
 )
 ## Source
 link_directories(

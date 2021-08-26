@@ -104,100 +104,144 @@ string generate_token(const int _length)
  * @return unsigned int , unsigned int(to string변환필요)
  */
 
-set<unsigned int> task_numset;
-set<unsigned int> account_numset;
-set<unsigned int> session_numset;
-unsigned int account_numset_num = 1;
-unsigned int session_numset_num = 1;
+map<int, set<unsigned int> > numset;
+map<int, unsigned int> numset_num;
 
-// task id_num
-unsigned int allocate_task_num(void)
+
+
+// set<unsigned int> task_numset;
+// set<unsigned int> account_numset;
+// set<unsigned int> session_numset;
+// set<unsigned int> vm_cd_numset;
+// set<unsigned int> vm_usb_numset;
+// unsigned int account_numset_num = 1;
+// unsigned int session_numset_num = 1;
+// unsigned int vm_cd_numset_num = 1;
+// unsigned int vm_usb_numset_num = 1;
+
+unsigned int allocate_numset_num(int _index)
 {
-    unsigned int num = 1;
-    for(num; num < UINT_MAX; num++)
+    set<unsigned int> *set_ptr = &(numset[_index]);
+    unsigned int *num_ptr = &(numset_num[_index]);
+
+    unsigned int i = *num_ptr;
+    for( ; i <= UINT_MAX; i++)
     {
-        if(task_numset.find(num) == task_numset.end())
+        if(i == UINT_MAX)
         {
-            task_numset.insert(num);
-            return num;
-        }
-    }
-}
-
-void insert_task_num(unsigned int num)
-{
-    task_numset.insert(num);
-    return;
-}
-
-void delete_task_num(unsigned int num)
-{
-    task_numset.erase(num);
-    return ;
-}
-
-// account id_num
-unsigned int allocate_account_num(void)
-{
-    for(account_numset_num; account_numset_num <= UINT_MAX; account_numset_num++)
-    {
-        if(account_numset_num == UINT_MAX)
-        {
-            account_numset_num = 0;
+            i = 0;
             continue;
         }
 
-        if(account_numset.find(account_numset_num) == account_numset.end())
+        if(set_ptr->find(i) == set_ptr->end())
         {
-            account_numset.insert(account_numset_num);
-            return account_numset_num;
-        }
-    }
-
-}
-
-void insert_account_num(unsigned int num)
-{
-    account_numset.insert(num);
-    return;
-}
-
-void delete_account_num(unsigned int num)
-{
-    account_numset.erase(num);
-    return ;
-}
-
-// session id_num
-unsigned int allocate_session_num(void)
-{
-    for(session_numset_num; session_numset_num <= UINT_MAX; session_numset_num++)
-    {
-        if(session_numset_num == UINT_MAX)
-        {
-            session_numset_num = 0;
-            continue;
-        }
-
-        if(session_numset.find(session_numset_num) == session_numset.end())
-        {
-            session_numset.insert(session_numset_num);
-            return session_numset_num;
+            set_ptr->insert(i);
+            *num_ptr = i;
+            return i;
         }
     }
 }
 
-void insert_session_num(unsigned int num)
+void insert_numset_num(int _index, unsigned int num)
 {
-    session_numset.insert(num);
-    return ;
+    set<unsigned int> *set_ptr = &(numset[_index]);
+    set_ptr->insert(num);
 }
 
-void delete_session_num(unsigned int num)
+void delete_numset_num(int _index, unsigned int num)
 {
-    session_numset.erase(num);
-    return ;
+    set<unsigned int> *set_ptr = &(numset[_index]);
+    set_ptr->erase(num);
 }
+
+// // task id_num
+// unsigned int allocate_task_num(void)
+// {
+//     unsigned int num = 1;
+//     for(num; num < UINT_MAX; num++)
+//     {
+//         if(task_numset.find(num) == task_numset.end())
+//         {
+//             task_numset.insert(num);
+//             return num;
+//         }
+//     }
+// }
+
+// void insert_task_num(unsigned int num)
+// {
+//     task_numset.insert(num);
+//     return;
+// }
+
+// void delete_task_num(unsigned int num)
+// {
+//     task_numset.erase(num);
+//     return ;
+// }
+
+// // account id_num
+// unsigned int allocate_account_num(void)
+// {
+//     for(account_numset_num; account_numset_num <= UINT_MAX; account_numset_num++)
+//     {
+//         if(account_numset_num == UINT_MAX)
+//         {
+//             account_numset_num = 0;
+//             continue;
+//         }
+
+//         if(account_numset.find(account_numset_num) == account_numset.end())
+//         {
+//             account_numset.insert(account_numset_num);
+//             return account_numset_num;
+//         }
+//     }
+
+// }
+
+// void insert_account_num(unsigned int num)
+// {
+//     account_numset.insert(num);
+//     return;
+// }
+
+// void delete_account_num(unsigned int num)
+// {
+//     account_numset.erase(num);
+//     return ;
+// }
+
+// // session id_num
+// unsigned int allocate_session_num(void)
+// {
+//     for(session_numset_num; session_numset_num <= UINT_MAX; session_numset_num++)
+//     {
+//         if(session_numset_num == UINT_MAX)
+//         {
+//             session_numset_num = 0;
+//             continue;
+//         }
+
+//         if(session_numset.find(session_numset_num) == session_numset.end())
+//         {
+//             session_numset.insert(session_numset_num);
+//             return session_numset_num;
+//         }
+//     }
+// }
+
+// void insert_session_num(unsigned int num)
+// {
+//     session_numset.insert(num);
+//     return ;
+// }
+
+// void delete_session_num(unsigned int num)
+// {
+//     session_numset.erase(num);
+//     return ;
+// }
 
 // 꽉차면?
 

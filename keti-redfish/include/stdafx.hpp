@@ -23,7 +23,7 @@
 
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
-#include <cpprest/http_client.h> 
+#include <cpprest/http_client.h>
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
@@ -101,15 +101,41 @@ bool comp(const string &s1, const string &s2);
 void timer(boost::asio::deadline_timer* _timer, unsigned int *_remain_expires_time);
 string generate_token(const int len);
 
-unsigned int allocate_task_num(void);
-void insert_task_num(unsigned int num);
-void delete_task_num(unsigned int num);
-unsigned int allocate_account_num(void);
-void insert_account_num(unsigned int num);
-void delete_account_num(unsigned int num);
-unsigned int allocate_session_num(void);
-void insert_session_num(unsigned int num);
-void delete_session_num(unsigned int num);
+/**
+ * @brief allocate number 
+ * @authors 강
+ * */
+
+enum ALLOCATE_NUM
+{
+     ALLOCATE_TASK_NUM,
+     ALLOCATE_ACCOUNT_NUM,
+     ALLOCATE_SESSION_NUM,
+     ALLOCATE_VM_CD_NUM,
+     ALLOCATE_VM_USB_NUM,
+     ALLOCATE_SUBSCRIPTION_NUM,
+
+
+     ALLOCATE_NUM_COUNT
+};
+
+// map<int, set<unsigned int> > numset;
+// map<int, unsigned int> numset_num;
+
+void init_numset(void);
+unsigned int allocate_numset_num(int _index);
+void insert_numset_num(int _index, unsigned int num);
+void delete_numset_num(int _index, unsigned int num);
+
+// unsigned int allocate_task_num(void);
+// void insert_task_num(unsigned int num);
+// void delete_task_num(unsigned int num);
+// unsigned int allocate_account_num(void);
+// void insert_account_num(unsigned int num);
+// void delete_account_num(unsigned int num);
+// unsigned int allocate_session_num(void);
+// void insert_session_num(unsigned int num);
+// void delete_session_num(unsigned int num);
 
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
