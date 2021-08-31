@@ -22,6 +22,7 @@ Handler::Handler(utility::string_t _url, http_listener_config _config) : m_liste
     this->m_listener.support(methods::POST, bind(&Handler::handle_post, this, placeholders::_1));
     this->m_listener.support(methods::DEL, bind(&Handler::handle_delete, this, placeholders::_1));
     this->m_listener.support(methods::PATCH, bind(&Handler::handle_patch, this, placeholders::_1));
+    this->m_listener.support(methods::OPTIONS, bind(&Handler::handle_options, this, placeholders::_1));
 }
 
 /**
@@ -961,6 +962,30 @@ void Handler::handle_patch(http_request _request)
     
 }
 
+/**
+ * @brief OPTIONS request handler
+ * 
+ * @param _request Request object
+ */
+void Handler::handle_options(http_request _request)
+{
+    log(info) << "Request method: OPTIONS";
+    string uri = _request.request_uri().to_string();
+    vector<string> uri_tokens = string_split(uri, '/');
+    string filtered_uri = make_path(uri_tokens);
+    log(info) << "Reqeust URL : " << filtered_uri;
+    log(info) << "Request Body : " << _request.to_string();
+
+    cout << "handle_options request" << endl;
+
+    http_response response(status_codes::OK);
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    _request.reply(response);
+}
 
 /**
  * @brief : CMM모듈이 client가 되어 request요청하기

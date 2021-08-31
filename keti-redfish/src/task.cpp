@@ -65,6 +65,13 @@ void do_task_cmm_get(http_request _request)
     // msg.result = msg_res;
 
     http_response response;
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+
+
     json::value response_json;
 
 
@@ -286,6 +293,12 @@ void do_task_bmc_get(http_request _request)
     // 해야할듯
     // >> cmm이 보내는건 bmc로그인 필요없게끔해야되는것이 아닌가 (cmm만 로그인)
     http_response response;
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    
     json::value response_json;
     m_Response msg_res;
 
@@ -563,6 +576,12 @@ void do_task_bmc_post(http_request _request)
     req.set_body(jv);
 
     http_response response;
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+
     json::value response_json;
     m_Response msg_res;
 
@@ -1939,6 +1958,11 @@ m_Request make_account(http_request _request, m_Request _msg, json::value _jv)
     _msg.result.result_datetime = currentDateTime();
     _msg.result.result_status = WORK_SUCCESS;
     _msg.result.result_response = response;
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
 
     _request.reply(response);
     return _msg;
@@ -2994,6 +3018,11 @@ m_Request reply_error(http_request _request, m_Request _msg, json::value _jv, we
     _msg.result.result_datetime = currentDateTime();
     _msg.result.result_status = WORK_FAIL;
     _msg.result.result_response = res;
+    res.headers().add("Access-Control-Allow-Origin", "*");
+    res.headers().add("Access-Control-Allow-Credentials", "true");
+    res.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    res.headers().add("Access-Control-Max-Age", "3600");
+    res.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
 
     _request.reply(res);
     return _msg;
