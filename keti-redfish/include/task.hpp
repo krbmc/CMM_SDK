@@ -31,11 +31,12 @@ enum WORK_STATUS
 typedef struct _m_Response
 {
     unsigned int res_number;
-    string result_data;
+    // string result_data;
     enum WORK_STATUS result_status;
     string result_datetime;
     // 추가
     http_response result_response;
+    json::value response_json;
 } m_Response;
 
 typedef struct _m_Request
@@ -157,7 +158,13 @@ json::value get_error_json(string _message);
 http_response reply_success(http_request _request, m_Request& _msg, json::value _jv, web::http::status_code _status, http_response _response);
 // m_Request reply_success(http_request _request, m_Request _msg, json::value _jv, web::http::status_code _status);
 
-void test_send_event();
+void test_send_event(Event _event);
 
+// task backup용 json으로 만들기 함수하나
+// 그거 받아서 task_map 구성하기 함수 하나
+json::value get_json_task_map(void);
+json::value get_json_task_manager(Task_Manager *_tm);
+void create_task_map_from_json(json::value _jv);
+void create_task_manager_from_json(Task_Manager *_tm, json::value _jv);
 
 #endif

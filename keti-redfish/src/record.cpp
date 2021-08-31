@@ -705,7 +705,10 @@ void record_init_load(string _path)
         string name = namelist[i]->d_name;
         str = str + "/" + name;
         
-        
+        // json schema 파일은 load 하지 않음
+        if (name == "JsonSchemas" || name == "JsonSchemas.json")
+            continue;
+
         stat(str.c_str(), &statbuf);
         if(S_ISDIR(statbuf.st_mode))
         {

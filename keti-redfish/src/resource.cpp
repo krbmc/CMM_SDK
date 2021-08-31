@@ -1,5 +1,6 @@
 #include "resource.hpp"
 #include "handler.hpp"
+#include "task.hpp"
 
 extern unordered_map<string, Resource *> g_record;
 extern ServiceRoot *g_service_root;
@@ -940,31 +941,59 @@ json::value EventService::SubmitTestEvent(json::value body)
     string egi;
 
     // #1 get json value
-    if(!(get_value_from_json_key(body, "EventGroupId", e.event_group_id)))
-        return json::value::null();
-    egi = to_string(e.event_group_id);
-    get_value_from_json_key(body, "EventId", e.event_id);
-    get_value_from_json_key(body, "EventTimestamp", e.event_timestamp);
-    get_value_from_json_key(body, "Message", e.message);
     if(!get_value_from_json_key(body, "MessageId", e.message_id))
         return json::value::null();
-    get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition);
-    if(!(get_value_from_json_key(body, "MessageArgs", args)))
-        return json::value::null();
+    
+    if(!get_value_from_json_key(body, "EventGroupId", e.event_group_id))
+        e.event_group_id = 0;
 
-    for(auto arg : args.as_array())
-        e.message_args.push_back(arg.as_string());
+    egi = to_string(e.event_group_id);
+    if(!get_value_from_json_key(body, "EventId", e.event_id))
+        e.event_id = "Test Event";
 
-    // #2 make event and return
-    if (record_is_exist(egi))
-        event_map[egi]->events.push_back(e);
-    else{
-        Event *event = new Event(egi);
-        event->events.push_back(e);
-        event_map[egi] = event;
+    if(!get_value_from_json_key(body, "EventTimestamp", e.event_timestamp))
+        e.event_timestamp = currentDateTime();
+    
+    if(!get_value_from_json_key(body, "EventType", e.event_type))
+        e.event_type = "Alert";
+
+    if(!get_value_from_json_key(body, "Message", e.message))
+        e.message = "This is Test Message";
+    
+    if(get_value_from_json_key(body, "MessageArgs", args))
+    {
+        for(auto arg : args.as_array())
+            e.message_args.push_back(arg.as_string());
+        // for(int i=0; i<args.size(); i++)
+        // {
+        //     e.message_args.push_back(args[i].as_string());
+        // }
     }
 
-    return event_map[egi]->get_json(); 
+    if(!get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition))
+        e.origin_of_condition = "SubmitTestEvent";
+
+    if(!get_value_from_json_key(body, "Severity", e.message_severity))
+        e.message_severity = "OK";
+
+    Event *event = new Event(e.event_id);
+    event->events.push_back(e);
+
+    test_send_event(*event);
+
+    // #2 make event and return
+    // if (record_is_exist(egi))
+    //     event_map[egi]->events.push_back(e);
+    // else{
+    //     Event *event = new Event(egi);
+    //     event->events.push_back(e);
+    //     event_map[egi] = event;
+    // }
+
+    return event->get_json();
+    // 현재 확인용으로 만들어진 이벤트 get_json찍어보는것
+
+    // return event_map[egi]->get_json(); 
 }
 // Event Service & Event Destination end
 
@@ -1986,6 +2015,7 @@ json::value EthernetInterfaces::get_json(void)
     json::value dh_v4, dh_v6;
     json::value v_ip4, v_ip6;
     json::value o_ip4, o_ip6;
+    json::value vlan;
 
     dh_v4[U("DHCPEnabled")] = json::value::boolean(U(this->dhcp_v4.dhcp_enabled));
     dh_v4[U("UseDNSServers")] = json::value::boolean(U(this->dhcp_v4.use_dns_servers));
@@ -2026,6 +2056,10 @@ json::value EthernetInterfaces::get_json(void)
     }
     j[U("IPv6Addresses")] = v_ip6;
 
+    vlan["VLANEnable"] = json::value::boolean(this->vlan.vlan_enable);
+    vlan["VLANId"] = json::value::number(this->vlan.vlan_id);
+    j["VLAN"] = vlan;
+    
     return j;
 }
 
@@ -2080,21 +2114,29 @@ bool EthernetInterfaces::load_json(json::value &j)
         v_ipv4 = j.at("IPv4Addresses");
         for (auto item : v_ipv4.as_array()){
             IPv4_Address temp;
-            temp.address = v_ipv4.at("Address").as_string();
-            temp.address_origin = v_ipv4.at("AddressOrigin").as_string();
-            temp.subnet_mask = v_ipv4.at("SubnetMask").as_string();
-            temp.gateway = v_ipv4.at("Gateway").as_string();
+            temp.address = item.at("Address").as_string();
+            temp.address_origin = item.at("AddressOrigin").as_string();
+            temp.subnet_mask = item.at("SubnetMask").as_string();
+            temp.gateway = item.at("Gateway").as_string();
+            this->v_ipv4.push_back(temp);
         }
         
         step = 6;
         v_ipv6 = j.at("IPv6Addresses");
         for (auto item : v_ipv6.as_array()){
             IPv6_Address temp;
-            temp.address = v_ipv6.at("Address").as_string();
-            temp.address_origin = v_ipv6.at("AddressOrigin").as_string();
-            temp.address_state = v_ipv6.at("AddressState").as_string();
-            temp.prefix_length = v_ipv6.at("PrefixLength").as_integer();
+            temp.address = item.at("Address").as_string();
+            temp.address_origin = item.at("AddressOrigin").as_string();
+            temp.address_state = item.at("AddressState").as_string();
+            temp.prefix_length = item.at("PrefixLength").as_integer();
+            this->v_ipv6.push_back(temp);
         }
+        this->ipv6_default_gateway = j.at("IPv6DefaultGateway").as_string();
+
+        step = 7;
+        vlan = j.at("VLAN");
+        this->vlan.vlan_enable = vlan.at("VLANEnable").as_bool();
+        this->vlan.vlan_id = vlan.at("VLANId").as_integer();
     }
     catch (json::json_exception &e)
     {

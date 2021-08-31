@@ -54,6 +54,24 @@ void Handler::handle_get(http_request _request)
             return ;
         }
 
+        if(uri_tokens.size() == 1 && uri_tokens[0] == "Map")
+        {
+            json::value j;
+            j = get_json_task_map();
+            _request.reply(status_codes::Found, j);
+            return ;
+        }
+
+        if(uri_tokens.size() == 1 && uri_tokens[0] == "Boom")
+        {
+            cout << " ?? 0" << endl;
+            // json::value j;
+            create_task_map_from_json(json::value::null());
+            cout << " ?? 000" << endl;
+            _request.reply(status_codes::Found);
+            return ;
+        }
+
         if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
         {
             do_task_cmm_get(_request);
@@ -984,7 +1002,7 @@ void Handler::handle_options(http_request _request)
     http_response response(status_codes::OK);
     response.headers().add("Access-Control-Allow-Origin", "*");
     response.headers().add("Access-Control-Allow-Credentials", "true");
-    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
     response.headers().add("Access-Control-Max-Age", "3600");
     response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
     _request.reply(response);

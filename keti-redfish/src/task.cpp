@@ -136,6 +136,18 @@ void do_task_cmm_get(http_request _request)
         msg.result.result_datetime = currentDateTime();
         msg.result.result_status = WORK_SUCCESS;
         msg.result.result_response = response;
+        msg.result.response_json = jj;
+
+        // http_response test_response = response;
+        // json::value test_jv = response.extract_json().get();
+        // cout << " !@#$ EXTRACT TEST -------- " << endl;
+        // cout << response.to_string() << endl;
+        // cout << "JV : " << test_jv << endl;
+
+        // response.set_body(test_jv);
+        // cout << " !@#$ INSERT TEST ----------" << endl;
+        // cout << response.to_string() << endl;
+        // cout << "JV : " << test_jv << endl;
         
 
         // _request.reply(response);
@@ -272,16 +284,6 @@ void do_task_bmc_get(http_request _request)
     t_manager->list_request.push_back(msg);
     // 이거 할때 요청 uri잘못들어오면 /redfish/v1/Managers인데 /Manager로 들어오면 제대론된 포인터가 연결안되어있어서 터짐
     
-    
-    // Make Resource Task Json
-    // string task_odata = ODATA_TASK_ID;
-    // task_odata = task_odata + "/" + to_string(msg.task_number);
-    // cout << "task_data : " << task_odata << endl;
-    // Task *task = new Task(task_odata, "Task-" + to_string(msg.task_number));
-    // task->start_time = msg.request_datetime;
-    // task->set_payload(_request.headers(), "GET", jv, uri);
-    // record_save_json();
-    
     http_client client(msg.host);
     http_request req(methods::GET);
     // req.set_request_uri(msg.uri);
@@ -320,10 +322,14 @@ void do_task_bmc_get(http_request _request)
             msg.result.result_status = WORK_SUCCESS;
         else
             msg.result.result_status = WORK_FAIL;
-
+        response_json = response.extract_json().get();
+        msg.result.response_json = response_json;
+        response.set_body(response_json);
         msg.result.result_datetime = currentDateTime();
         msg.result.result_response = response;
-        _request.reply(response);
+        
+        // _request.reply(response);
+        
     }
     catch(const std::exception& e)
     {
@@ -332,7 +338,6 @@ void do_task_bmc_get(http_request _request)
 
         response = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
         // msg = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError);
-        // #공사중 - 여기 리플라이안하는듯
     }
     
 
@@ -418,15 +423,9 @@ void do_task_bmc_get(http_request _request)
     // ((Task *)g_record[task_odata])->task_state = TASK_STATE_COMPLETED;
     // record_save_json();
     // _request.reply(U(response.status_code()), response_json);
+    _request.reply(response);
+    return ;
 }
-
-/**
- * @todo 1.현재 엣지로 요청을 보낼때 헤더를 같이 못보내고 있어서 x-auth-token 같은거 뚫는 테스트를 못함 -- 해결
- *  2.요청 보내고 응답받고나서 매니지task 가 컴플리트로 간 후에 언제 삭제될 지  그리고 그때 만들어 둔 리소스task 의 json파일
- *  삭제 처리 해줘야함
- *  3. 예외처리 try,catch 등..
- * 
- */
 
 void do_task_cmm_post(http_request _request)
 {
@@ -615,9 +614,12 @@ void do_task_bmc_post(http_request _request)
         else
             msg.result.result_status = WORK_FAIL;
 
+        response_json = response.extract_json().get();
+        msg.result.response_json = response_json;
+        response.set_body(response_json);
         msg.result.result_datetime = currentDateTime();
         msg.result.result_response = response;
-        _request.reply(response);
+        // _request.reply(response);
     }
     catch(const std::exception& e)
     {
@@ -681,7 +683,8 @@ void do_task_bmc_post(http_request _request)
 
     // _request.reply(response);
     // _request.reply(U(response.status_code()), response_json);
-    
+    _request.reply(response);
+    return ;
 }
 
 void do_task_cmm_patch(http_request _request)
@@ -825,6 +828,8 @@ void do_task_bmc_patch(http_request _request)
     c_manager = work_after_request_process(t_manager, msg);
 
     // _request.reply(U(response.status_code()), response_json);
+    _request.reply(response);
+    return ;
 }
 
 void do_task_cmm_delete(http_request _request)
@@ -949,6 +954,9 @@ void do_task_bmc_delete(http_request _request)
     }
 
     c_manager = work_after_request_process(t_manager, msg);
+
+    _request.reply(response);
+    return ;
 }
 
 
@@ -2407,6 +2415,7 @@ http_response make_account(http_request _request, m_Request& _msg, json::value _
     // response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
 
     // response.set_body(record_get_json(ODATA_ACCOUNT_ID)); // 확인용임 실제에선 빼셈 -- 넣는거같음
+    _msg.result.response_json = record_get_json(odata_id);
     _msg.result.result_datetime = currentDateTime();
     _msg.result.result_status = WORK_SUCCESS;
     _msg.result.result_response = _response;
@@ -4447,6 +4456,7 @@ http_response reply_error(http_request _request, m_Request& _msg, json::value _j
     if(_jv != json::value::null())
     {
         _response.set_body(_jv);
+        _msg.result.response_json = _jv;
         // res.set_body(_jv);
     }
 
@@ -4505,6 +4515,7 @@ http_response reply_success(http_request _request, m_Request& _msg, json::value 
     if(_jv != json::value::null())
     {
         _response.set_body(_jv);
+        _msg.result.response_json = _jv;
     }
 
     _msg.result.result_datetime = currentDateTime();
@@ -4515,44 +4526,318 @@ http_response reply_success(http_request _request, m_Request& _msg, json::value 
     // return _msg;
     return _response;
 }
-
-void test_send_event()
+  
+void test_send_event(Event _event)
 {
     // string, Event* ... event_map
+    // 인자받아야겟네
+    // 이벤트에서 subs에 event type이 맞는걸 골라서 각자의 sub type으로 보내는거같음
+    Collection* col = (Collection *)g_record[ODATA_EVENT_DESTINATION_ID];
+    vector<Resource *>::iterator iter;
+    EventDestination* dest;
+    for(iter = col->members.begin(); iter != col->members.end(); iter++)
+    {
+        dest = (EventDestination *)*iter;
 
+        if(dest->subscription_type == "RedfishEvent")
+        {
+            // break;
+            http_client client(dest->destination); // 이게되네 개굿
+            http_request req(methods::POST);
+            req.set_body(_event.get_json());
+            http_response res;
+
+            try
+            {
+                pplx::task<http_response> responseTask = client.request(req);
+                res = responseTask.get();
+                log(info) << "[SUBMIT][TESTEVENT][STATUS][DEST : " << dest->context << "] : " << res.status_code();
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+
+        }
+        // 일단은 subs type이 RedfishEvent인거에만 보냄
+        // 여기서 이제 테스트말고 실제 이벤트 관련해서는 Event타입도 고려하고
+        // 전송방식도 고려하면 될거같음 그다음에 log도 같이 구현해주고
+        // 받은곳에서도 받은처리해주면될듯
+    }
+
+    // http_client client(dest->destination); // 이게되네 개굿
+    // http_request req(methods::POST);
+    // req.set_body(_event.get_json());
+    // http_response res;
+
+    // try
+    // {
+    //     pplx::task<http_response> responseTask = client.request(req);
+    //     res = responseTask.get();
+    //     log(info) << "[SUBMIT][TESTEVENT][STATUS] : " << res.status_code();
+    // }
+    // catch(const std::exception& e)
+    // {
+    //     std::cerr << e.what() << '\n';
+    // }
+
+    
+    
     // 현재 event_info 에서 event_group_id를 가지고 stoi해서 string으로 만든뒤 그걸 event map에서의 first로
     // 하고있단말임? 그리고 그게 Event클래스 객체의 id도 되고
 
+    // 이거 기반으로 이벤트 보내면될듯 redfish타입은
+    // 만들어진 event에서 eventtype이 있을거고 1가지로 지정되어있을거임
+    // 그걸 토대로 sub에는 array로 eventtype이 들어가있을건데 거기에 포함되면 그 sub에다가 event를 쏴주는데
+    // 쏴줄때 방식이 subs type, protocol같은거 보고 redfishevent면 http post로 SSE, SMTP뭐 이런거면 그거에 맞게
+    // 현재는 redfishEvent만
+
 }
 
-// Event 스키마는 eventdestination으로 가는 JSON payload임 근데 이 구조가 안에 Event array를 가지고 있어서 여러개의
-// Event가 동시에 전송될수 있는거임 라는말은 Event를 전송할때 class Event형 하나를 전송한다는 거고 그럼 그 안의 
-// events변수 vector<Event_info> 가 한번에 전송된다는거임 그럼 결국 Event형 하나가 특정 subs한테 가는건데
-// eventmap을 eventtype으로 나눠서 Event형을 저장하게 되면 타입마다 나눠지는거라 구조랑 맞지않음
+/**
+ * 이벤트는 발생하면 바로 subsciption에 이벤트 전송되게끔 event_map일단 사용않기로..
+ * Event 클래스 안의 Event_Info안 멤버변수
+ * groupid는 0일경우 다른이벤트들이 이 이벤트와 관련없다는 뜻. 이벤트 발생 근본 원인과 상관 관계를 나타내는 식별자
+ * eventid는 이벤트식별자
+ * messageid는 MessageRegistry에 지정된 메세지패턴id를 지칭
+ * event type에 해당 이벤트의 타입들어감
+ * 
+ * 그래서 저런 정보들 담아서 이벤트가 생성되면 바로 subscription컬렉션 돌면서
+ * 해당 이벤트타입을 구독하는 subscription이 있으면 그 subs 에게 보내주는데 이때 subs의 subs type하고 protocol
+ * 에 맞게 전송하면됨
+ * 현재는 redfish event로 http로 destination uri에 post로 전송함
+ * 전송한 곳은 전송한대로 이벤트log 발생(구현필요)
+ * 받는 곳은 받아서 log발생, 이벤트에 대한 처리(구현필요)해야함
+ * event_map이 필요한지(백업, 모아둿다 한번에 보내기등)
+ * */
 
-/// --> Event하나당 한명의 Subs한테 가는걸로 봐야됨 그럼 이건 그런식으로 바꾸면됨
-// 맵을 <dest구별가능한거, Event> 하면되니까
 
-// 근데 EventInfo안에 있는 groupid, eventid, messageid 이런건 뭐냐고..
 
-// 메세지 자체가 로그작성하려고 하는거임ㅇㅇ 그러면 굳이 구분해서 안하고 걍 id하나 넣자 event에 대한 id로
+json::value get_json_task_map(void)
+{
+    json::value j_map;
+    // 카테고리가  서비스루트/시스템/매니저/샤시/계정서비스/세션서비스/태스크서비스/이벤트서비스/업데이트서비스/인증서비스
 
-// 내가 뽑는다 ㅡㅡ
-// 일단 스키마 구조는 따라야하니깐 event map은 저런식으로 저장하고
-// EventInfo에서 멤버id는 events벡터 크기에따라서 붙일게 걍
-// timestamp는 발생시각 저장하면되고 , event id나 memberid나 그게 그건거같은데 어차피 식별하는거니깐
-// 근데 message id 는 어쩌지 메세지라는게 지정되어있는거같음 메세지 모음이 있어서
-// 거기에 예를들어 메세지가 Temperature threshold exceeded라고하면 이 메세지는 딱 온도범위 초과라는 메세지가 메세지모음
-// 에 저장되어잇는거야 거기서의 id가 messageid인 셈인거같다 
+    // task_type에 따라서 나눠지고 각각의 이름으로 json::value가 들어가고 안에서 리스트가잇는셈
+    // 근데 리스트는 내용 똑같음 만드는거 함수화해서 쓰면댐 일단 serviceroot꺼로 하나 만들어보고 그다음에 함수화시켜서
+    // 각각 할당하면될듯
+    // j_map[U("ServiceRoot")]
+    Task_Manager *tm;
+    json::value j_task_manager;
+    if(task_map.find(TASK_TYPE_SERVICEROOT) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_SERVICEROOT)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["ServiceRoot"] = j_task_manager;
+    }
 
-// message registry 리소스가 있음... 근데 이거 왜 uri가 없냐 odata랑
-// class로 만들고 걍 리소스화해서... get정도만 보여주면.. 나머진 나중에필요하면추가하는걸로하고
-// messageregistry만들고 그걸로 messageid넣어놓으면될듯
+    if(task_map.find(TASK_TYPE_SYSTEMS) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_SYSTEMS)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["Systems"] = j_task_manager;
+    }
 
-// 그럼 일단 messgaeregistry만들고
+    if(task_map.find(TASK_TYPE_CHASSIS) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_CHASSIS)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["Chassis"] = j_task_manager;
+    }
 
-// event저장할때 걍 Event로 보내야될듯 Event를 모든 sub에 대해 sub정보에따라 필터링해서 보내는거지
-// 받은ㄴ녀석이 Eventlog 하지않을까
+    if(task_map.find(TASK_TYPE_MANAGERS) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_MANAGERS)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["Managers"] = j_task_manager;
+    }
 
-// Q 언제보내야하는거지?이벤트발생즉시.. 어 그럼 이벤트 저장해둘필요없긴함
+    if(task_map.find(TASK_TYPE_TASKSERVICE) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_TASKSERVICE)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["TaskService"] = j_task_manager;
+    }
+
+    if(task_map.find(TASK_TYPE_EVENTSERVICE) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_EVENTSERVICE)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["EventService"] = j_task_manager;
+    }
+
+    if(task_map.find(TASK_TYPE_ACCOUNTSERVICE) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_ACCOUNTSERVICE)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["AccountService"] = j_task_manager;
+    }
+
+    if(task_map.find(TASK_TYPE_SESSIONSERVICE) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_SESSIONSERVICE)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["SessionService"] = j_task_manager;
+    }
+
+    if(task_map.find(TASK_TYPE_UPDATESERVICE) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_UPDATESERVICE)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["UpdateService"] = j_task_manager;
+    }
+
+    if(task_map.find(TASK_TYPE_CERTIFICATESERVICE) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_CERTIFICATESERVICE)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["CertificateService"] = j_task_manager;
+    }
+
+    if(task_map.find(TASK_TYPE_COMPLETED) != task_map.end())
+    {
+        tm = task_map.find(TASK_TYPE_COMPLETED)->second;
+        j_task_manager = get_json_task_manager(tm);
+        j_map["Completed"] = j_task_manager;
+    }
+    
+    return j_map;
+}
+
+json::value get_json_task_manager(Task_Manager *_tm)
+{
+    json::value j_task;
+
+    j_task["TaskType"] = json::value::number(_tm->task_type);
+    j_task["HostIP"] = json::value::string(_tm->host_ip);
+    j_task["PrimaryIP"] = json::value::string(_tm->primary_ip);
+    j_task["PrimaryPort"] = json::value::number(_tm->primary_port);
+    j_task["SecondaryPort"] = json::value::number(_tm->secondary_port);
+    j_task["_IP"] = json::value::string(_tm->_ip);
+    j_task["List"] = json::value::array();
+    // Task_Manager 부분
+
+    list<m_Request>::iterator iter;
+    int i = 0;
+    for(iter=_tm->list_request.begin(); iter!=_tm->list_request.end(); iter++, i++)
+    {
+        json::value j_request;
+        j_request["TaskNumber"] = json::value::number(iter->task_number);
+        j_request["Method"] = json::value::string(iter->method);
+        j_request["Host"] = json::value::string(iter->host);
+        j_request["Uri"] = json::value::string(iter->uri);
+        j_request["Datetime"] = json::value::string(iter->request_datetime);
+        j_request["RequestJson"] = iter->request_json;
+        // m_Request 부분
+
+        json::value j_response;
+        j_response["ResponseNumber"] = json::value::number(iter->result.res_number);
+        j_response["ResultStatus"] = json::value::number(iter->result.result_status);
+        j_response["ResultDatetime"] = json::value::string(iter->result.result_datetime);
+        // m_Response 부분
+
+        json::value j_res;
+        http_response response = iter->result.result_response;
+        // log(info) << "[BEFORE EXTRACT RESPONSE] : " << response.to_string();
+        j_res["StatusCode"] = json::value::number(response.status_code());
+        j_res["ResponseJson"] = iter->result.response_json;
+        // j_res["ResponseJson"] = response.extract_json().get();
+        // log(info) << "[AFTER EXTRACT RESPONSE] : " << response.to_string();
+    
+        json::value j_header;
+        http_headers::iterator iter_header;
+        http_headers head = response.headers();
+        for(iter_header=head.begin(); iter_header!=head.end(); iter_header++)
+        {
+            j_header[iter_header->first] = json::value::string(iter_header->second);
+        }
+        j_res["Headers"] = j_header;
+        // header는 헤더에서 하나씩 만들어서 key:value로 저장해서 하는걸로
+        // result_response 부분
+
+        j_response["ResultResponse"] = j_res;
+
+        j_request["Result"] = j_response;
+        
+        // tm->list_request[i].task 이거안되네 이터레이터
+        j_task["List"][i] = j_request;
+    }
+    // list<m_Request> list_request 부분
+
+    return j_task;
+}
+
+void create_task_map_from_json(json::value _jv)
+{
+    // 토할거같다!! 
+    // 음 이건 테스트를 할때 cmm꺼 가지고 할거니깐 일단 지금의 task_map초기화한후 그걸로 json뽑아보고
+    // 깨끗할거아니여 그런담에 이걸로 읽어서 task_map 구성하고 다시 json뽑았을때 똑같으면 됨
+    // 도중에 요청들어와서 taskmap 충돌나는건  이건 ha에서 할거니깐 아 잠깐만 ha에도 요청들어오는데?
+    // 하지만 ha는 요청처리에 task_map을 만들지않지 굿
+    // 오히려 task_map json으로 만들때가 cmm에서 만드는데 그때 도중에 요청와서 task_map변동이 있을수있겠넹ㅇ
+
+    json::value clear_json;
+    task_map.clear();
+    clear_json = get_json_task_map();
+
+    cout << " !@#$ CLEAR !!!! ------------------- " << endl;
+    cout << clear_json << endl;
+
+    // 이제 로드
+    json::value inner_json;
+    Task_Manager *tm;
+    if(get_value_from_json_key(_jv, "ServiceRoot", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_SERVICEROOT) != task_map.end())
+            tm = task_map.find(TASK_TYPE_SERVICEROOT)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_SERVICEROOT;
+            task_map.insert(make_pair(TASK_TYPE_SERVICEROOT, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    
+
+}
+
+void create_task_manager_from_json(Task_Manager *_tm, json::value _jv)
+{
+    get_value_from_json_key(_jv, "HostIP", _tm->host_ip);
+    get_value_from_json_key(_jv, "PrimaryIP", _tm->primary_ip);
+    get_value_from_json_key(_jv, "PrimaryPort", _tm->primary_port);
+    get_value_from_json_key(_jv, "SecondaryPort", _tm->secondary_port);
+    get_value_from_json_key(_jv, "_IP", _tm->_ip);
+
+    json::value j_list = json::value::array();
+
+    get_value_from_json_key(_jv, "List", j_list);
+
+    for(int i=0; i<j_list.size(); i++)
+    {
+        json::value j_request = j_list[i];
+        
+        m_Request m_req;
+        get_value_from_json_key(j_request, "TaskNumber", m_req.task_number);
+        get_value_from_json_key(j_request, "Method", m_req.method);
+        get_value_from_json_key(j_request, "Host", m_req.host);
+        get_value_from_json_key(j_request, "Uri", m_req.uri);
+        get_value_from_json_key(j_request, "Datetime", m_req.request_datetime);
+        get_value_from_json_key(j_request, "RequestJson", m_req.request_json);
+
+        json::value j_response;
+        get_value_from_json_key(j_request, "Result", j_response);
+
+        m_Response m_res;
+        get_value_from_json_key(j_response, "ResponseNumber", m_res.res_number);
+        get_value_from_json_key(j_response, "ResultStatus", m_res.result_status);
+        get_value_from_json_key(j_response, "ResultDatetime", m_res.result_datetime);
+
+    }
+
+}
 

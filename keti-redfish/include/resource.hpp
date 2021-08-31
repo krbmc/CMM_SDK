@@ -569,6 +569,7 @@ typedef struct _Event_Info{
     int event_group_id;
     string event_id;
     string event_timestamp;
+    string event_type;
     string message_severity;
     string message;
     string message_id;

@@ -467,8 +467,12 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     ethernet->mtu_size = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/mtu"));
     ethernet->hostname = get_popen_string("cat /etc/hostname");
     ethernet->fqdn = get_popen_string("hostname -f");
-    ethernet->name_servers = string_split(get_popen_string("cat /etc/resolv.conf"), ' ');
     ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
+
+    vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
+    for (string servers : nameservers){
+        ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
+    }
     
     if (fs::exists(DHCPV4_CONF)){
         log(warning) << "NOT IMPLEMENTED : read dhcpv4 conf";
@@ -506,7 +510,10 @@ void init_ethernet(Collection *ethernet_collection, string _id)
                 Vlan v;
                 v.vlan_enable = true;
                 v.vlan_id = stoi(string_split(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id), '|')[1]);
-            }   
+            } else {
+                ethernet->vlan.vlan_enable = false;
+                ethernet->vlan.vlan_id = 0;
+            }
         }
     }
     
@@ -1325,6 +1332,14 @@ void init_message_registry(void)
     mr->registry_prefix = "Basic";
     mr->registry_version = "1.0.0";
 
-    Message success;
+    Message Test;
+    Test.pattern = "Test"; // msg id
+    Test.description = "For Test";
+    Test.message = "This is test Message!";
+    Test.severity = "OK";
+    Test.number_of_args = 0;
+    Test.resolution = "None";
+    mr->messages.v_msg.push_back(Test);
+
     // mr->messages.v_msg.push_back();
 }
