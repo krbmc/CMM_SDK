@@ -634,10 +634,12 @@ bool record_save_json(void)
     // delete file 현재 g_record에 존재하지 않는 record를 disk에서도 삭제.
     // 모두 json 파일.. 디렉토리는 남아있음
     for (auto const& iter : dir_list){
-        fs::path target_file(iter + ".json");
-        
-        log(info) << "delete " << iter;
-        fs::remove(target_file);
+        if (!record_is_exist(iter)){
+            fs::path target_file(iter + ".json");
+            
+            log(info) << "delete " << iter;
+            fs::remove(target_file);
+        }
     }
     dir_list.clear();
     
