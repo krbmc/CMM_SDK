@@ -19,6 +19,7 @@ set(
     TaskServer.cpp
     init.cpp
     lssdp.cpp
+    multipart_parser.cpp
 )
 
 # Directory setting

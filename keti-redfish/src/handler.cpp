@@ -360,8 +360,8 @@ void Handler::handle_delete(http_request _request)
 //             g_record.erase(odata_id);
             
 //             record_save_json();
-//             string delete_path = odata_id + ".json";
-//             // string delete_path = filtered_uri + '/' + user_name + ".json";
+//             string delete_path = odata_id + ".json"},";
+//             // string delete_path = filtered_uri + '/' + user_name + ".json"},";
 //             // cout << "dd2 : " << delete_path2 << endl;
 //             if(remove(delete_path.c_str()) < 0)
 //             {
