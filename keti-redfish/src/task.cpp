@@ -4837,6 +4837,9 @@ void create_task_manager_from_json(Task_Manager *_tm, json::value _jv)
         get_value_from_json_key(j_response, "ResultStatus", m_res.result_status);
         get_value_from_json_key(j_response, "ResultDatetime", m_res.result_datetime);
 
+        json::value j_http_response;
+        get_value_from_json_key(j_response, "ResultResponse", j_http_response);
+
     }
 
 }

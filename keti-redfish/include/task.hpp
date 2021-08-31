@@ -32,7 +32,8 @@ typedef struct _m_Response
 {
     unsigned int res_number;
     // string result_data;
-    enum WORK_STATUS result_status;
+    int result_status;
+    // enum WORK_STATUS result_status;
     string result_datetime;
     // 추가
     http_response result_response;
