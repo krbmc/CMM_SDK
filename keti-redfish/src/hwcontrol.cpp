@@ -106,6 +106,7 @@ double get_intake_humidity(uint8_t _sensor_index)
 	if (write(file, cmd, 2) < 0)
 	{
 		log(error) << "Cannot write device file";
+		// log(warning) << "first";
 		close(file);
 		return -1;
 	}
@@ -147,6 +148,7 @@ bool get_intake_temperature_config(double *_range)
 	if (write(file, cmd, 2) < 0)
 	{
 		log(error) << "Cannot write device file";
+		// log(warning) << "second";
 		close(file);
 		return false;
 	}
@@ -197,7 +199,9 @@ double get_intake_temperature(uint8_t _sensor_index)
 
 	if (write(file, cmd, 2) < 0)
 	{
-		log(error) << "Cannot write device file";
+		// log(error) << "Cannot write device file";
+		// log(warning) << "third";
+		// 로그 계속떠서 주석처리
 		close(file);
 		return -1;
 	}

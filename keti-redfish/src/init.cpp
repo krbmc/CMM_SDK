@@ -2,12 +2,40 @@
 
 extern unordered_map<string, Resource *> g_record;
 extern ServiceRoot *g_service_root;
+extern map<int, set<unsigned int> > numset;
+extern map<int, unsigned int> numset_num;
 
 /**
  * @brief Resource initialization
  */
 bool init_resource(void)
 {
+    init_numset();
+
+    // allocate test
+    // for(int ii=ALLOCATE_TASK_NUM; ii<ALLOCATE_NUM_COUNT; ii++)
+    // {
+    //     cout << "numset_num " << ii << " : " << numset_num[ii] << endl;
+    //     cout << "set size " << ii << " : " << numset[ii].size() << endl;
+    // }
+
+    // allocate_numset_num(ALLOCATE_ACCOUNT_NUM);
+    // allocate_numset_num(ALLOCATE_ACCOUNT_NUM);
+    // allocate_numset_num(ALLOCATE_SESSION_NUM);
+    // allocate_numset_num(ALLOCATE_VM_CD_NUM);
+    // allocate_numset_num(ALLOCATE_VM_CD_NUM);
+    // allocate_numset_num(ALLOCATE_VM_CD_NUM);
+
+    // cout << " AFTER ALLOCATE " << endl;
+
+    // for(int ii=ALLOCATE_TASK_NUM; ii<ALLOCATE_NUM_COUNT; ii++)
+    // {
+    //     cout << "numset_num " << ii << " : " << numset_num[ii] << endl;
+    //     cout << "set size " << ii << " : " << numset[ii].size() << endl;
+    // }
+
+
+
     load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
     // 등록해버리고 table.json까지 수정해버림
     record_load_json();
@@ -15,6 +43,8 @@ bool init_resource(void)
 
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
         g_service_root = new ServiceRoot();
+
+    init_message_registry();
 
     // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
@@ -437,8 +467,12 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     ethernet->mtu_size = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/mtu"));
     ethernet->hostname = get_popen_string("cat /etc/hostname");
     ethernet->fqdn = get_popen_string("hostname -f");
-    ethernet->name_servers = string_split(get_popen_string("cat /etc/resolv.conf"), ' ');
     ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
+
+    vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
+    for (string servers : nameservers){
+        ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
+    }
     
     if (fs::exists(DHCPV4_CONF)){
         log(warning) << "NOT IMPLEMENTED : read dhcpv4 conf";
@@ -476,7 +510,10 @@ void init_ethernet(Collection *ethernet_collection, string _id)
                 Vlan v;
                 v.vlan_enable = true;
                 v.vlan_id = stoi(string_split(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id), '|')[1]);
-            }   
+            } else {
+                ethernet->vlan.vlan_enable = false;
+                ethernet->vlan.vlan_id = 0;
+            }
         }
     }
     
@@ -988,14 +1025,17 @@ void init_manager(Collection *manager_collection, string _id)
         manager->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
         manager->virtual_media->name = "VirtualMediaCollection";
 
-        insert_virtual_media(manager->virtual_media, "EXT1_test");    // temp
+        // insert_virtual_media(manager->virtual_media, "EXT1_test", "CD");    // temp
+        // insert_virtual_media(manager->virtual_media, "CD1", "CD");
+        // insert_virtual_media(manager->virtual_media, "CD2", "CD");
+        // insert_virtual_media(manager->virtual_media, "USB1", "USB");
     }
     
     manager_collection->add_member(manager);
     return;
 }
 
-void insert_virtual_media(Collection *virtual_media_collection, string _id)
+void insert_virtual_media(Collection *virtual_media_collection, string _id, string _type)
 {
     string odata_id = virtual_media_collection->odata.id + "/" + _id;
     VirtualMedia *virtual_media;
@@ -1010,15 +1050,22 @@ void insert_virtual_media(Collection *virtual_media_collection, string _id)
      */
     virtual_media->id = _id;
     virtual_media->name = "VirtualMedia";
-    virtual_media->image = "http://192.168.1.2/Core-current.iso";
-    virtual_media->image_name = "Core-current.iso";
-    virtual_media->media_type.push_back("CD");
-    virtual_media->media_type.push_back("DVD");
+    // virtual_media->image = "http://192.168.1.2/Core-current.iso";
+    // virtual_media->image_name = "Core-current.iso";
+    if(_type == "CD")
+    {
+        virtual_media->media_type.push_back("CD");
+        virtual_media->media_type.push_back("DVD");
+    }
+    else if(_type == "USB")
+    {
+        virtual_media->media_type.push_back("USBStick");
+    }
     virtual_media->connected_via = "URI";
-    virtual_media->inserted = true;
+    virtual_media->inserted = false;
     virtual_media->write_protected = true;
-    virtual_media->user_name = "test";
-    virtual_media->passwword = "password";
+    // virtual_media->user_name = "test";
+    // virtual_media->passwword = "password";
     
     virtual_media_collection->add_member(virtual_media);
     return;
@@ -1126,7 +1173,7 @@ void init_event_service(EventService *event_service)
         event_service->subscriptions = new Collection(odata_id + "/Subscriptions", ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
         event_service->subscriptions->name = "Subscription Collection";
         
-        init_event_destination(event_service->subscriptions, "1");
+        // init_event_destination(event_service->subscriptions, "1");
     }
     return;
 }
@@ -1145,7 +1192,7 @@ void init_event_destination(Collection *event_destination_collection, string _id
      * Event Destination Configuration
      */
     event_destination->subscription_type = "RedfishEvent";
-    event_destination->delivery_retry_policy = "TerminateAfterRetries";
+    event_destination->delivery_retry_policy = "SuspendRetries";
     event_destination->protocol = "Redfish";
 
     event_destination->status.state = STATUS_STATE_ENABLED;
@@ -1216,7 +1263,8 @@ void init_account_service(AccountService *account_service)
 
         // accountservice - account
         string acc_odata = account_service->account_collection->odata.id;
-        string acc_id = to_string(allocate_account_num());
+        string acc_id = to_string(allocate_numset_num(ALLOCATE_ACCOUNT_NUM));
+        // string acc_id = to_string(allocate_account_num());
         acc_odata = acc_odata + "/" + acc_id;
 
         // account certificate configure
@@ -1264,4 +1312,34 @@ void init_session_service(SessionService *session_service)
         session_service->session_collection->name = "Session Collection";
     }
     return;
+}
+
+void init_numset(void)
+{
+    for(int i=0; i<ALLOCATE_NUM_COUNT; i++)
+    {
+        set<unsigned int> empty;
+        numset_num[i] = 1;
+        numset[i] = empty;
+    }
+}
+
+void init_message_registry(void)
+{
+    MessageRegistry *mr = new MessageRegistry("/redfish/v1/MessageRegistry", "Basic.1.0.0");
+    mr->name = "Message Registry";
+    mr->language = "en";
+    mr->registry_prefix = "Basic";
+    mr->registry_version = "1.0.0";
+
+    Message Test;
+    Test.pattern = "Test"; // msg id
+    Test.description = "For Test";
+    Test.message = "This is test Message!";
+    Test.severity = "OK";
+    Test.number_of_args = 0;
+    Test.resolution = "None";
+    mr->messages.v_msg.push_back(Test);
+
+    // mr->messages.v_msg.push_back();
 }

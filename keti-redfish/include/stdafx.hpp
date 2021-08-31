@@ -24,7 +24,7 @@
 
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
-#include <cpprest/http_client.h> 
+#include <cpprest/http_client.h>
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
@@ -102,15 +102,41 @@ bool comp(const string &s1, const string &s2);
 void timer(boost::asio::deadline_timer* _timer, unsigned int *_remain_expires_time);
 string generate_token(const int len);
 
-unsigned int allocate_task_num(void);
-void insert_task_num(unsigned int num);
-void delete_task_num(unsigned int num);
-unsigned int allocate_account_num(void);
-void insert_account_num(unsigned int num);
-void delete_account_num(unsigned int num);
-unsigned int allocate_session_num(void);
-void insert_session_num(unsigned int num);
-void delete_session_num(unsigned int num);
+/**
+ * @brief allocate number 
+ * @authors 강
+ * */
+
+enum ALLOCATE_NUM
+{
+     ALLOCATE_TASK_NUM,
+     ALLOCATE_ACCOUNT_NUM,
+     ALLOCATE_SESSION_NUM,
+     ALLOCATE_VM_CD_NUM,
+     ALLOCATE_VM_USB_NUM,
+     ALLOCATE_SUBSCRIPTION_NUM,
+
+
+     ALLOCATE_NUM_COUNT
+};
+
+// map<int, set<unsigned int> > numset;
+// map<int, unsigned int> numset_num;
+
+void init_numset(void);
+unsigned int allocate_numset_num(int _index);
+void insert_numset_num(int _index, unsigned int num);
+void delete_numset_num(int _index, unsigned int num);
+
+// unsigned int allocate_task_num(void);
+// void insert_task_num(unsigned int num);
+// void delete_task_num(unsigned int num);
+// unsigned int allocate_account_num(void);
+// void insert_account_num(unsigned int num);
+// void delete_account_num(unsigned int num);
+// unsigned int allocate_session_num(void);
+// void insert_session_num(unsigned int num);
+// void delete_session_num(unsigned int num);
 
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
@@ -123,11 +149,8 @@ string get_extracted_bmc_id_uri(string _uri);
 bool check_role_privileges(string _pri);
 string get_value_from_cmd_str(string cmd_str, string key);
 
-bool get_value_from_json_key(json::value body, string key, int& value);
-bool get_value_from_json_key(json::value body, string key, string& value);
-bool get_value_from_json_key(json::value body, string key, json::value& value);
-bool get_value_from_json_key(json::value body, string key, double& value);
-bool get_value_from_json_key(json::value body, string key, bool& value);
+void generate_logservice(string _res_odata, string _service_id);
+void generate_logentry(string _res_odata, string _entry_id);
 
 string generate_uuid(void);
 
@@ -149,4 +172,10 @@ void save_module_id(void);
 void load_module_id(void);
 void remove_if_exists(fs::path file);
 
+bool get_value_from_json_key(json::value body, string key, int& value);
+bool get_value_from_json_key(json::value body, string key, unsigned int& value);
+bool get_value_from_json_key(json::value body, string key, string& value);
+bool get_value_from_json_key(json::value body, string key, json::value& value);
+bool get_value_from_json_key(json::value body, string key, double& value);
+bool get_value_from_json_key(json::value body, string key, bool& value);
 #endif
