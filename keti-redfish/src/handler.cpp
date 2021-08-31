@@ -1,6 +1,7 @@
 #include "handler.hpp"
 #include "resource.hpp"
 #include "task.hpp"
+#include "lssdp.hpp"
 
 extern unordered_map<string, Resource *> g_record;
 extern unordered_map<uint8_t, Task_Manager *> task_map;
@@ -8,6 +9,9 @@ extern unordered_map<uint8_t, Task_Manager *> task_map;
 extern Value_About_HA ha_value;
 extern int heart_beat_cycle;
 unsigned int g_count = 0;
+//ssdp timer
+long long last_time,findlast_time;
+long long current_time,findcurrent_time;
 
 /**
  * @brief Handler class constructor with method connection
@@ -1070,7 +1074,7 @@ void redfish_request_post(string _path, string _url)//json::value _jv)
     _jv[U("UserName")] = json::value::string(U("MY_NAME"));
     _jv[U("Password")] = json::value::string(U("MY_PASSWORD"));
     // 파라미터로 json::value를 그대로 받으면 그냥 쓰면 되고
-    // 그 안에 내용물을 받았으면 이렇게 만들어주어야함
+    // 그 안에 내용물을 받았으면 이렇게 만들어주어야함  
 
     http_client client(_url);
 
@@ -1117,3 +1121,178 @@ void redfish_request_delete(string _path, string _url)
  * 그리고 CMM모듈에서 이 함수들을 어떻게 사용할건지에 따라서 변형될 수 있음
  * try-catch 처리해.. 그리고 테스트 위한 출력부 처리하고
  */
+
+void log_callback(const char *file, const char *tag, int level, int line, const char *func, const char * message) {
+    char *level_name = "DEBUG";
+    if (level == LSSDP_LOG_INFO)    level_name = "INFO";
+    if (level == LSSDP_LOG_WARN)    level_name = "WARN";
+    if (level == LSSDP_LOG_ERROR)   level_name = "ERROR";
+
+    printf("[%-5s][%s] %s", level_name, tag, message);
+    return;
+}
+
+
+long long get_current_time() {
+    struct timeval time = {};
+    if (gettimeofday(&time, NULL) == -1) {
+        printf("gettimeofday failed, errno = %s (%d)\n", strerror(errno), errno);
+        return -1;
+    }
+    return (long long) time.tv_sec * 1000 + (long long) time.tv_usec / 1000;
+}
+
+int show_interface_list_and_rebind_socket(lssdp_ctx * lssdp) {
+    // 1. show interface list
+    printf("\nNetwork Interface List (%zu):\n", lssdp->interface_num);
+    size_t i;
+    for (i = 0; i < lssdp->interface_num; i++) {
+        printf("%zu. %-6s: %s\n",
+            i + 1,
+            lssdp->interface[i].name,
+            lssdp->interface[i].ip
+        );
+    }
+    printf("%s\n", i == 0 ? "Empty" : "");
+
+    // 2. re-bind SSDP socket
+    if (lssdp_socket_create(lssdp) != 0) {
+        puts("SSDP create socket failed");
+        return -1;
+    }
+
+    return 0;
+}
+
+int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packet_len){
+    //printf("%s", packet);
+    vector<string> packet_info = string_split(std::string(packet), '\n');
+    string resultaddr;
+    bool checkmyblade=false;
+    for (auto str : packet_info){
+         if(str.find("SMM")!=string::npos||str.find("BMC")!=string::npos)
+        {           
+            checkmyblade=true;      
+        }
+        if(str.find("LOCATION")!=string::npos){
+            
+            resultaddr=str;  
+        }
+    }
+    if (checkmyblade)
+    {
+        string result = resultaddr.substr(resultaddr.find(":")+1);
+        if(result=="")
+            return 0;
+        findcurrent_time = get_current_time();
+        log(info) <<"Find Computing Module ip address: "<<result;
+        for(int i =0; i<7; i++)
+        log(info)<<packet_info[i];
+        log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
+         findlast_time = get_current_time();
+        
+    }
+
+    return 0;
+}
+
+int show_neighbor_list(lssdp_ctx * lssdp) {
+    int i = 0;
+    lssdp_nbr * nbr;
+    puts("\nSSDP LIST:");
+    for (nbr = lssdp->neighbor_list; nbr != NULL; nbr = nbr->next) {
+        printf("%d. id = %-9s, ip = %-20s, name = %-12s, device_type = %-8s (%lld)\n",
+            ++i,
+            nbr->sm_id,
+            nbr->location,
+            nbr->usn,
+            nbr->device_type,
+            nbr->update_time
+        );
+    }
+    //printf("%s\n", i == 0 ? "Empty" : "");
+    return 0;
+}
+
+void *ssdp_handler(void)
+{
+    lssdp_set_log_callback(log_callback);
+    findlast_time = get_current_time();
+    log(info)<<"ssdp discovery Computing Module and Storage Module .. time"<<currentDateTime();;
+    lssdp_ctx lssdp = {
+        .port = 1900,
+        .neighbor_timeout = 15000, // 15seconds
+        //.debug = true,
+        .header = {
+            "ST_P2P",
+            "f835dd000001",
+            "700000123",
+            "DEV_TYPE",
+        },
+        // callback
+        .network_interface_changed_callback = show_interface_list_and_rebind_socket,
+        .neighbor_list_changed_callback = show_neighbor_list,
+        .packet_received_callback = show_ssdp_packet,
+    };
+
+    lssdp_network_interface_update(&lssdp);
+
+    last_time = get_current_time();
+    if (last_time < 0){
+        log(error) << "Got Invalid Timestamp : " << last_time;
+        return 0;
+    }
+
+    while (1){
+        fd_set fs;
+        FD_ZERO(&fs);
+        FD_SET(lssdp.sock, &fs);
+        struct timeval tv;
+        tv.tv_usec = 500 * 1000; // 500ms
+
+        int ret = select(lssdp.sock + 1, &fs, NULL, NULL, &tv);
+        if (ret < 0){
+            log(error) << "select error, ret = " << ret;
+            break;
+        }
+
+        if (ret > 0){
+            lssdp_socket_read(&lssdp);
+        }
+        current_time = get_current_time();
+        if (current_time < 0){
+            log(error) << "Got Invalid Timestamp : " << last_time;
+            break;
+        }
+        // // show neighbor list
+       
+        // lssdp_nbr *nbr = lssdp.neighbor_list;
+        // if (nbr != NULL){
+        //     while (nbr->next != NULL){
+        //         log(info) << "location : " << nbr->location;
+        //         log(info) << "device type : " << nbr->device_type;
+        //         nbr = nbr->next;
+        //     }
+        // }
+    //     for (int i = 0; i < lssdp->interface_num; i++) {
+    //     printf("%zu. %-6s: %s\n",
+    //         i + 1,
+    //         lssdp->interface[i].name,
+    //         lssdp->interface[i].ip
+    //     );
+    // }
+
+        // doing task per 5 seconds
+        if (current_time - last_time >= 3000) {
+            
+            lssdp_network_interface_update(&lssdp);
+            lssdp_send_msearch(&lssdp);
+            //lssdp_send_notify(&lssdp);
+            lssdp_neighbor_check_timeout(&lssdp);
+
+            last_time = current_time;
+        }
+    }
+
+    return 0;
+}

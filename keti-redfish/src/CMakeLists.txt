@@ -20,11 +20,12 @@ set(
     chassis_controller.cpp # @@@@ 추가
     TaskServer.cpp
     init.cpp
+    lssdp.cpp
 )
 
 # Directory setting
 set(Boost_INCLUDE_DIR ${ROOT_DIR}/output/build/boost-1.74.0)
-set(Boost_LIBRARY_DIR ${ROOT_DIR}/CMM_SDK/output/build/boost-1.74.0/stage/lib)
+set(Boost_LIBRARY_DIR ${ROOT_DIR}/output/build/boost-1.74.0/stage/lib)
 
 # Linkinking
 ## Header

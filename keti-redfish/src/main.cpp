@@ -48,18 +48,14 @@ int main(int _argc, char *_argv[])
     if (init_resource())
         log(info) << "Redfish resource initialization complete";
 
-
-    // string sys = ODATA_SYSTEM_ID;
-    // sys = sys + "/" + CMM_ID;
-    // generate_logservice(sys, "TEST");
-
-    // sys = sys + "/LogServices/TEST";
-
-    // generate_logentry(sys, "YAM");
-    // record_save_json();
-    // generate 로그서비스,엔트리 테스트
     uuid_str = generate_uuid();
-    
+    log(info) << "global uuid : " << uuid_str;
+
+    // ssdp discover (not working yet)
+    std::thread t_ssdp(ssdp_handler);
+    log(info) << "ssdp discover start";
+    t_ssdp.join();
+
     pplx::create_task([]{
         sleep(3);
         string cmm_chassis = ODATA_CHASSIS_ID;
@@ -135,5 +131,6 @@ int main(int _argc, char *_argv[])
 
     g_listener->close().wait();
     HA_listener->close().wait();
+
     exit(0);
 }
