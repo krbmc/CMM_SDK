@@ -10,5 +10,5 @@ cmake CMakeLists.txt
 make
 mv src/CMM-HA .
 
-#sshpass -p $password scp $file $id@$ip:$path
+sshpass -p $password scp $file $id@$ip:$path
 

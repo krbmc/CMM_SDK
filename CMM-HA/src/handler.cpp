@@ -39,6 +39,7 @@ json::value string2json(http_request &_request,json::value &obj)
     }
     return obj;
 }
+
 /**
  * @brief GET method request handler
  * 
@@ -51,9 +52,9 @@ void Handler::handle_get(http_request _request)
     string senduri="http://";
 json::value obj ;
     if (ha->IsSwtich==KETIhaStatus::HA_STATUS_ACTIVE)
-        senduri+=ha->PeerPrimaryAddress+":"+to_string(80);
+        senduri+=ha->PeerPrimaryAddress+":"+to_string(HTTPPORT);
     else if(ha->IsSwtich==KETIhaStatus::HA_STATUS_STANDBY)
-        senduri+=ha->PeerSecondaryAddress+":"+to_string(80);
+        senduri+=ha->PeerSecondaryAddress+":"+to_string(HTTPPORT);
     else
     {
         log(info) << "Not response" ;
@@ -82,8 +83,40 @@ json::value obj ;
     log(info) << "send URL : " << senduri;
     log(info) << "Request Body : " << _request.to_string();
     http_response response;
+    if (uri_tokens.size() == 1 && uri_tokens[0] == "CMMHA")
+    {
+        json::value j;
+        string activeip;
+        string standbyip;
+        string activeport;
+        string standbyport;
+
+        if (ha->IsSwtich == KETIhaStatus::HA_STATUS_ACTIVE)
+        {
+            activeip = ha->PeerPrimaryAddress;
+            activeport = to_string(ha->PeerPort);
+            standbyip = ha->PeerSecondaryAddress;
+            standbyport = to_string(ha->SecondPort);
+        }
+        else if (ha->IsSwtich == KETIhaStatus::HA_STATUS_STANDBY)
+        {
+            standbyip = ha->PeerPrimaryAddress;
+            standbyport = to_string(ha->PeerPort);
+            activeip = ha->PeerSecondaryAddress;
+            activeport = to_string(ha->SecondPort);
+        }
+        j[U("IPList")] = json::value::array();
+        j[U("IPList")][0] = json::value::string(U(activeip));
+        j[U("IPList")][1] = json::value::string(U(standbyip));
+        j[U("ActiveIP")] = json::value::string(U(activeip));
+        j[U("ActivePort")] = json::value::string(U(activeport));
+        j[U("StandbyIP")] = json::value::string(U(standbyip));
+        j[U("StandbyPort")] = json::value::string(U(standbyport));
+        _request.reply(status_codes::OK, j);
+    }
     response=All_request(senduri,filtered_uri,_request.method(),obj);
     json::value response_json = response.extract_json().get();
+    
     try
     {
         _request.reply(response.status_code(),response_json);

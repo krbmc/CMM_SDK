@@ -125,8 +125,6 @@ mutex
 -
 iostream
 -
-boost/make_shared.hpp
--
 boost/shared_ptr.hpp
 -
 KETIhaNetService.hpp
@@ -144,8 +142,6 @@ include/KETIhaNetService.hpp
 future
 -
 atomic
--
-boost/make_shared.hpp
 -
 boost/shared_ptr.hpp
 -

@@ -68,6 +68,8 @@
         "bit": "cpp",
         "*.ipp": "cpp",
         "*.dat": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "filesystem": "cpp",
+        "regex": "cpp"
     }
 }

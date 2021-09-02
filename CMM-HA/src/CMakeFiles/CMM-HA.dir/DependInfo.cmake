@@ -19,7 +19,9 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
+  "/home/keti/CMM_SDK/output/host/usr/arm-buildroot-linux-uclibcgnueabihf/sysroot/usr/include"
   "include"
+  "/home/keti/CMM_SDK/output/build/boost-1.74.0"
   )
 
 # Targets to which this target links.

@@ -60,15 +60,15 @@ include src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.o: src/KETI_halmp.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp
 
 src/CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp > CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp > CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp -o CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETI_halmp.cpp -o CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.o.requires:
 
@@ -84,15 +84,15 @@ src/CMakeFiles/CMM-HA.dir/KETI_halmp.cpp.o.provides.build: src/CMakeFiles/CMM-HA
 src/CMakeFiles/CMM-HA.dir/main.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/main.cpp.o: src/main.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object src/CMakeFiles/CMM-HA.dir/main.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/main.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/main.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/main.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/main.cpp
 
 src/CMakeFiles/CMM-HA.dir/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/main.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/main.cpp > CMakeFiles/CMM-HA.dir/main.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/main.cpp > CMakeFiles/CMM-HA.dir/main.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/main.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/main.cpp -o CMakeFiles/CMM-HA.dir/main.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/main.cpp -o CMakeFiles/CMM-HA.dir/main.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/main.cpp.o.requires:
 
@@ -108,15 +108,15 @@ src/CMakeFiles/CMM-HA.dir/main.cpp.o.provides.build: src/CMakeFiles/CMM-HA.dir/m
 src/CMakeFiles/CMM-HA.dir/KETIHA.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/KETIHA.cpp.o: src/KETIHA.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object src/CMakeFiles/CMM-HA.dir/KETIHA.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETIHA.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETIHA.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.cpp
 
 src/CMakeFiles/CMM-HA.dir/KETIHA.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/KETIHA.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.cpp > CMakeFiles/CMM-HA.dir/KETIHA.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.cpp > CMakeFiles/CMM-HA.dir/KETIHA.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/KETIHA.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/KETIHA.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.cpp -o CMakeFiles/CMM-HA.dir/KETIHA.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA.cpp -o CMakeFiles/CMM-HA.dir/KETIHA.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/KETIHA.cpp.o.requires:
 
@@ -132,15 +132,15 @@ src/CMakeFiles/CMM-HA.dir/KETIHA.cpp.o.provides.build: src/CMakeFiles/CMM-HA.dir
 src/CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.o: src/KETIHA_Sync.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp
 
 src/CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp > CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp > CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp -o CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETIHA_Sync.cpp -o CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.o.requires:
 
@@ -156,15 +156,15 @@ src/CMakeFiles/CMM-HA.dir/KETIHA_Sync.cpp.o.provides.build: src/CMakeFiles/CMM-H
 src/CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.o: src/KETI_Helper.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object src/CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp
 
 src/CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp > CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp > CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp -o CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Helper.cpp -o CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.o.requires:
 
@@ -180,15 +180,15 @@ src/CMakeFiles/CMM-HA.dir/KETI_Helper.cpp.o.provides.build: src/CMakeFiles/CMM-H
 src/CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.o: src/KETIhaNetService.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object src/CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp
 
 src/CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp > CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp > CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp -o CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETIhaNetService.cpp -o CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.o.requires:
 
@@ -204,15 +204,15 @@ src/CMakeFiles/CMM-HA.dir/KETIhaNetService.cpp.o.provides.build: src/CMakeFiles/
 src/CMakeFiles/CMM-HA.dir/handler.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/handler.cpp.o: src/handler.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object src/CMakeFiles/CMM-HA.dir/handler.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/handler.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/handler.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/handler.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/handler.cpp
 
 src/CMakeFiles/CMM-HA.dir/handler.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/handler.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/handler.cpp > CMakeFiles/CMM-HA.dir/handler.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/handler.cpp > CMakeFiles/CMM-HA.dir/handler.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/handler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/handler.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/handler.cpp -o CMakeFiles/CMM-HA.dir/handler.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/handler.cpp -o CMakeFiles/CMM-HA.dir/handler.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/handler.cpp.o.requires:
 
@@ -228,15 +228,15 @@ src/CMakeFiles/CMM-HA.dir/handler.cpp.o.provides.build: src/CMakeFiles/CMM-HA.di
 src/CMakeFiles/CMM-HA.dir/util.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/util.cpp.o: src/util.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object src/CMakeFiles/CMM-HA.dir/util.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/util.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/util.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/util.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/util.cpp
 
 src/CMakeFiles/CMM-HA.dir/util.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/util.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/util.cpp > CMakeFiles/CMM-HA.dir/util.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/util.cpp > CMakeFiles/CMM-HA.dir/util.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/util.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/util.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/util.cpp -o CMakeFiles/CMM-HA.dir/util.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/util.cpp -o CMakeFiles/CMM-HA.dir/util.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/util.cpp.o.requires:
 
@@ -252,15 +252,15 @@ src/CMakeFiles/CMM-HA.dir/util.cpp.o.provides.build: src/CMakeFiles/CMM-HA.dir/u
 src/CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.o: src/KETI_Switch.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object src/CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp
 
 src/CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp > CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp > CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp -o CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/KETI_Switch.cpp -o CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.o.requires:
 
@@ -276,15 +276,15 @@ src/CMakeFiles/CMM-HA.dir/KETI_Switch.cpp.o.provides.build: src/CMakeFiles/CMM-H
 src/CMakeFiles/CMM-HA.dir/TaskServer.cpp.o: src/CMakeFiles/CMM-HA.dir/flags.make
 src/CMakeFiles/CMM-HA.dir/TaskServer.cpp.o: src/TaskServer.cpp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/keti/CMM_SDK/source/CMM-HA/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object src/CMakeFiles/CMM-HA.dir/TaskServer.cpp.o"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/TaskServer.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/TaskServer.cpp
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/CMM-HA.dir/TaskServer.cpp.o -c /home/keti/CMM_SDK/source/CMM-HA/src/TaskServer.cpp
 
 src/CMakeFiles/CMM-HA.dir/TaskServer.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/CMM-HA.dir/TaskServer.cpp.i"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/TaskServer.cpp > CMakeFiles/CMM-HA.dir/TaskServer.cpp.i
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/keti/CMM_SDK/source/CMM-HA/src/TaskServer.cpp > CMakeFiles/CMM-HA.dir/TaskServer.cpp.i
 
 src/CMakeFiles/CMM-HA.dir/TaskServer.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/CMM-HA.dir/TaskServer.cpp.s"
-	cd /home/keti/CMM_SDK/source/CMM-HA/src && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/TaskServer.cpp -o CMakeFiles/CMM-HA.dir/TaskServer.cpp.s
+	cd /home/keti/CMM_SDK/source/CMM-HA/src && /home/keti/CMM_SDK/output/host/usr/bin/arm-linux-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/keti/CMM_SDK/source/CMM-HA/src/TaskServer.cpp -o CMakeFiles/CMM-HA.dir/TaskServer.cpp.s
 
 src/CMakeFiles/CMM-HA.dir/TaskServer.cpp.o.requires:
 
