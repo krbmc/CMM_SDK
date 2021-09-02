@@ -37,7 +37,7 @@ bool init_resource(void)
 
 
     load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
-    // 등록해버리고 table.json까지 수정해버림
+    // 등록해버리고 table.json"},까지 수정해버림
     record_load_json();
     log(info) << "[Record Load Json] complete" << endl;
 

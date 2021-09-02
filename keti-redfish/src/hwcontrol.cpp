@@ -41,6 +41,7 @@ bool init_gpio(void)
 	OUT_GPIO(LED_YELLOW);
 	INP_GPIO(LED_GREEN); // must use INP_GPIO before we can use OUT_GPIO
 	OUT_GPIO(LED_GREEN);
+	INP_GPIO(LED_GREEN); // must use INP_GPIO before we can use OUT_GPIO
 
 	return true;
 
