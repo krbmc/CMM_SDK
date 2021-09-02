@@ -161,8 +161,7 @@ http_response reply_success(http_request _request, m_Request& _msg, json::value 
 
 void test_send_event(Event _event);
 
-// task backup용 json으로 만들기 함수하나
-// 그거 받아서 task_map 구성하기 함수 하나
+// task_map backup용
 json::value get_json_task_map(void);
 json::value get_json_task_manager(Task_Manager *_tm);
 void create_task_map_from_json(json::value _jv);

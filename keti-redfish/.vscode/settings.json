@@ -64,7 +64,8 @@
         "cfenv": "cpp",
         "cinttypes": "cpp",
         "typeindex": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "*.dat": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

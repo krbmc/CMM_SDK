@@ -1117,7 +1117,7 @@ m_Request work_before_request_process(string _method, string _host, string _uri,
     ((Collection *)g_record[ODATA_TASK_ID])->add_member(task);
     task->start_time = msg.request_datetime;
     task->set_payload(_header, _method, _jv, _uri);
-    record_save_json();
+    resource_save_json(task);
     // 해당하는 task의 리소스 생성후 json파일 생성
 
 
@@ -1156,7 +1156,7 @@ Task_Manager* work_after_request_process(Task_Manager* _t, m_Request _msg)
     task_odata = task_odata + "/" + to_string(_msg.task_number);
     ((Task *)g_record[task_odata])->end_time = _msg.result.result_datetime;
     ((Task *)g_record[task_odata])->task_state = TASK_STATE_COMPLETED;
-    record_save_json();
+    resource_save_json(g_record[task_odata]);
     // request의 리소스 task 정보 추가,변경
 
     return complete;
@@ -1284,6 +1284,7 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
         {
             if(patch_account_service(_jv, ODATA_ACCOUNT_SERVICE_ID))
             {
+                resource_save_json(g_record[uri]);
                 _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
                 return _response;
                 // _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
@@ -1339,6 +1340,7 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
         {
             if(patch_session_service(_jv))
             {
+                resource_save_json(g_record[uri]);
                 _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
                 return _response;
                 // _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
@@ -1385,6 +1387,7 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
         if(uri == cmm_manager)
         {
             patch_manager(_jv, uri);
+            resource_save_json(g_record[uri]);
 
             _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
             return _response;
@@ -1410,6 +1413,7 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
             {
                 // iptable수정 ㄱㄱ 그담에 save
                 NetworkProtocol *net = (NetworkProtocol *)g_record[uri];
+                resource_save_json(g_record[uri]);
                 _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
                 // _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
                 patch_iptable(net);
@@ -1497,6 +1501,8 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
 
             if(patch_ethernet_interface(_jv, uri, 1) && patch_ethernet_interface(_jv, sys_uri, 0))
             {
+                resource_save_json(g_record[uri]);
+                resource_save_json(g_record[sys_uri]);
                 _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
                 return _response;
                 // _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
@@ -1522,6 +1528,7 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
         if(uri == cmm_system)
         {
             patch_system(_jv, uri);
+            resource_save_json(g_record[uri]);
 
             _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
             return _response;
@@ -1545,6 +1552,7 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
         if(uri == cmm_chassis)
         {
             patch_chassis(_jv, uri);
+            resource_save_json(g_record[uri]);
             _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
             return _response;
             // _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
@@ -1568,6 +1576,7 @@ http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::
             }
 
             patch_power_control(_jv, uri);
+            resource_save_json(g_record[uri]);
             _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
             return _response;
             // _msg = reply_success(_request, _msg, record_get_json(uri), status_codes::OK);
@@ -2267,6 +2276,8 @@ http_response act_virtualmedia(http_request _request, m_Request& _msg, json::val
         {
             Collection *col = (Collection *)g_record[_resource];
             col->add_member(vm);
+            resource_save_json(col);
+            resource_save_json(vm);
         }
         _response = reply_success(_request, _msg, result_value, status_codes::OK, _response);
         return _response;
@@ -2399,7 +2410,8 @@ http_response make_account(http_request _request, m_Request& _msg, json::value _
 
     // 컬렉션에 add
     ((Collection *)g_record[ODATA_ACCOUNT_ID])->add_member(account);
-    record_save_json();
+    resource_save_json(account);
+    resource_save_json(g_record[ODATA_ACCOUNT_ID]);
 
     _response.set_status_code(status_codes::Created);
     _response.set_body(record_get_json(odata_id));
@@ -2515,7 +2527,8 @@ http_response make_session(http_request _request, m_Request& _msg, json::value _
     // Session *session = new Session(odata_id, token, account);
     ((Collection *)g_record[ODATA_SESSION_ID])->add_member(session);
     session->start();
-    record_save_json();
+    resource_save_json(session);
+    resource_save_json(g_record[ODATA_SESSION_ID]);
 
 
     _response.set_status_code(status_codes::Created);
@@ -2650,6 +2663,8 @@ http_response make_role(http_request _request, m_Request& _msg, json::value _jv,
         new_role->name = "User Role";
         new_role->assigned_privileges = tmp_pri;
         col->add_member(new_role);
+        resource_save_json(new_role);
+        resource_save_json(col);
 
         _response = reply_success(_request, _msg, record_get_json(new_role->odata.id), status_codes::Created, _response);
         return _response;
@@ -2736,6 +2751,9 @@ http_response make_subscription(http_request _request, m_Request& _msg, json::va
 
     service->subscriptions->add_member(event_dest);
 
+    resource_save_json(event_dest);
+    resource_save_json(service->subscriptions);
+
 
     _response = reply_success(_request, _msg, record_get_json(event_dest->odata.id), status_codes::Created, _response);
     return _response;
@@ -2780,7 +2798,7 @@ http_response make_logentry(http_request _request, m_Request& _msg, json::value 
     return _response;
     // _msg = reply_success(_request, _msg, record_get_json(entry_odata_id), status_codes::Created);
     // return _msg;
-}
+} // 이건 핸들러지원이아닌거라 save_json안넣었음 나중에 함수자체 삭제할것
 
 // m_Request make_virtualmedia(http_request _request, m_Request _msg, json::value _jv)
 // {
@@ -2976,6 +2994,8 @@ http_response modify_account(http_request _request, m_Request& _msg, json::value
     if(op_pass)
         ((Account *)g_record[_uri])->password = input_password;
     // 검사중 error나면 적용안되고 error나지 않을때 변경일괄처리
+
+    resource_save_json(g_record[_uri]);
     
 
     cout << "바꾼후~~ " << endl;
@@ -3112,6 +3132,7 @@ http_response modify_role(http_request _request, m_Request& _msg, json::value _j
     }
     // 일단 assignedprivileges 있는걸 추가하는식으로만 구현해봄 삭제는 보류
 
+    resource_save_json(g_record[_uri]);
     _response = reply_success(_request, _msg, record_get_json(_uri), status_codes::OK, _response);
     return _response;
     // _msg = reply_success(_request, _msg, record_get_json(_uri), status_codes::OK);
@@ -3199,12 +3220,14 @@ http_response remove_account(http_request _request, m_Request& _msg, json::value
     acc_service->account_collection->members.erase(iter);
     // account자체 객체삭제, g_record에서 삭제, account collection에서 삭제
 
-    string delete_path = odata_id + ".json";
-    if(remove(delete_path.c_str()) < 0)
-    {
-        cout << "account json file delete error" << endl;
-    }
+    // string delete_path = odata_id + ".json";
+    // if(remove(delete_path.c_str()) < 0)
+    // {
+    //     cout << "account json file delete error" << endl;
+    // }
+    delete_resource(odata_id);
     // account json파일 삭제
+    resource_save_json(acc_service->account_collection);
 
     cout << "지운후~~ " << endl;
     cout << "지워진놈 : " << odata_id << endl;
@@ -3339,16 +3362,20 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
             // 롤 지우기
             delete(*iter);
             role_col->members.erase(iter);
+            delete_resource(uri);
+            resource_save_json(role_col);
         }
 
         string odata = role_col->odata.id + "/ReadOnly";
         Role *read_only = (Role *)g_record[odata];
         for(iter = acc_col->members.begin(); iter != acc_col->members.end(); iter++)
         {
-            if(((Account *)(*iter))->role_id == role_id)
+            Account *acc_tmp = (Account *)*iter;
+            if(acc_tmp->role_id == role_id)
             {
-                ((Account *)(*iter))->role_id = read_only->id;
-                ((Account *)(*iter))->role = read_only;
+                acc_tmp->role_id = read_only->id;
+                acc_tmp->role = read_only;
+                resource_save_json(acc_tmp);
             }
         }
 
@@ -3402,6 +3429,8 @@ http_response remove_subscription(http_request _request, m_Request& _msg, string
 
     delete(*iter);
     col->members.erase(iter);
+    delete_resource(uri);
+    resource_save_json(col);
 
     cout << "지운후~~ " << endl;
     cout << "지워진놈 : " << uri << endl;
@@ -3847,6 +3876,7 @@ void patch_fan_mode(string _mode, string _record_uri)
         cout << "바꾼후~~ " << endl;
         cout << "fan info" << endl;
         cout << record_get_json((*fan_iter)->odata.id) << endl;
+        resource_save_json(*fan_iter);
 
 
         // 여기서 temperature돌아서 센서넘버 같은녀석의 온도체크후 바꿔줌
@@ -4012,169 +4042,6 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
 
     }
 
-    // if(_jv.as_object().find("Description") != _jv.as_object().end())
-    //     ((EthernetInterfaces *)g_record[_record_uri])->description = _jv.at("Description").as_string();
-
-    // if(_jv.as_object().find("FQDN") != _jv.as_object().end())
-    //     ((EthernetInterfaces *)g_record[_record_uri])->fqdn = _jv.at("FQDN").as_string();
-
-    // if(_jv.as_object().find("HostName") != _jv.as_object().end())
-    //     ((EthernetInterfaces *)g_record[_record_uri])->hostname = _jv.at("HostName").as_string();
-
-    // // if(_jv.as_object().find("LinkStatus") != _jv.as_object().end())
-    // //     ((EthernetInterfaces *)g_record[uri])->link_status = _jv.at("LinkStatus").as_string();
-    // // read-only
-
-    // if(_jv.as_object().find("MACAddress") != _jv.as_object().end())
-    //     ((EthernetInterfaces *)g_record[_record_uri])->mac_address = _jv.at("MACAddress").as_string();
-
-    // // if(_jv.as_object().find("IPv6DefaultGateway") != _jv.as_object().end())
-    // //     ((EthernetInterfaces *)g_record[uri])->ipv6_default_gateway = _jv.at("IPv6DefaultGateway").as_string();
-    // // read-only였음
-
-    // if(_jv.as_object().find("MTUSize") != _jv.as_object().end())
-    //     ((EthernetInterfaces *)g_record[_record_uri])->mtu_size = _jv.at("MTUSize").as_integer();
-
-
-    // // IPv4, IPv6 Addresses는 원래 스키마에는 array로 되어있는데 
-    // // 일단 여기서의 patch는 하나만 있는거라고 생각하고 함
-    // if(_jv.as_object().find("IPv4Addresses") != _jv.as_object().end())
-    // {
-    //     // json::value ip_array = json::value::array();
-    //     // ip_array = _jv.at("IPv4Addresses");
-    //     // int size_v4 = ((EthernetInterfaces *)g_record[uri])->v_ipv4.size();
-    //     // // ((EthernetInterfaces *)g_record[uri])->v_ipv4.clear();
-    //     // // 기존벡터 클리어
-    //     // size_v4 
-    //     // for(int ip_num=0; ip_num<ip_array.size(); ip_num++)
-    //     // {
-    //     //     IPv4_Address tmp;
-    //     //     if(ip_array[ip_num].as_object().find("Address") != ip_array[ip_num].as_object().end())
-    //     //         tmp.address = ip_array[ip_num].at("Address").as_string();
-            
-    //     //     // if(ip_array[ip_num].as_object().find("AddressOrigin") != ip_array[ip_num].as_object().end())
-    //     //     //     tmp.address_origin = ip_array[ip_num].at("AddressOrigin").as_string();
-    //     //     // read-only
-
-    //     //     if(ip_array[ip_num].as_object().find("SubnetMask") != ip_array[ip_num].as_object().end())
-    //     //         tmp.subnet_mask = ip_array[ip_num].at("SubnetMask").as_string();
-
-    //     //     if(ip_array[ip_num].as_object().find("Gateway") != ip_array[ip_num].as_object().end())
-    //     //         tmp.gateway = ip_array[ip_num].at("Gateway").as_string();
-
-
-    //     //     ((EthernetInterfaces *)g_record[uri])->v_ipv4.push_back(tmp);
-    //     // } //원래 여러개일수도있다하고 한부분이고 수정중이었음
-
-    //     json::value j = json::value::object();
-    //     j = _jv.at("IPv4Addresses");
-
-    //     int size_v4 = ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4.size();
-    //     if(size_v4 == 0)
-    //     {
-    //         // 없을때 하나 만들어서 넣어줌
-    //         IPv4_Address tmp;
-    //         if(j.as_object().find("Address") != j.as_object().end())
-    //             tmp.address = j.at("Address").as_string();
-
-    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-    //         //     tmp.address_origin = j.at("AddressOrigin").as_string();
-    //         // read-only
-
-    //         if(j.as_object().find("SubnetMask") != j.as_object().end())
-    //             tmp.subnet_mask = j.at("SubnetMask").as_string();
-
-    //         if(j.as_object().find("Gateway") != j.as_object().end())
-    //             tmp.gateway = j.at("Gateway").as_string();
-
-    //         ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4.push_back(tmp);
-    //     }
-    //     else
-    //     {
-    //         // 1개이상일 때 수정은 1개만있는거로 보기로 했으니깐 v_ipv4벡터의 0번째인덱스만 수정
-    //         if(j.as_object().find("Address") != j.as_object().end())
-    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].address = j.at("Address").as_string();
-            
-    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv4[0].address_origin = j.at("AddressOrigin").as_string();
-    //         // read-only
-
-    //         if(j.as_object().find("SubnetMask") != j.as_object().end())
-    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].subnet_mask = j.at("SubnetMask").as_string();
-
-    //         if(j.as_object().find("Gateway") != j.as_object().end())
-    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv4[0].gateway = j.at("Gateway").as_string();
-    //     }
-    // }
-
-    // if(_jv.as_object().find("IPv6Addresses") != _jv.as_object().end())
-    // {
-    //     // json::value ip_array = json::value::array();
-    //     // ip_array = _jv.at("IPv6Addresses");
-    //     // ((EthernetInterfaces *)g_record[uri])->v_ipv6.clear();
-    //     // // 기존벡터 클리어
-    //     // for(int ip_num=0; ip_num<ip_array.size(); ip_num++)
-    //     // {
-    //     //     IPv6_Address tmp;
-    //     //     if(ip_array[ip_num].as_object().find("Address") != ip_array[ip_num].as_object().end())
-    //     //         tmp.address = ip_array[ip_num].at("Address").as_string();
-            
-    //     //     // if(ip_array[ip_num].as_object().find("AddressOrigin") != ip_array[ip_num].as_object().end())
-    //     //     //     tmp.address_origin = ip_array[ip_num].at("AddressOrigin").as_string();
-
-    //     //     // if(ip_array[ip_num].as_object().find("AddressState") != ip_array[ip_num].as_object().end())
-    //     //     //     tmp.address_state = ip_array[ip_num].at("AddressState").as_string();
-
-    //     //     // if(ip_array[ip_num].as_object().find("PrefixLength") != ip_array[ip_num].as_object().end())
-    //     //     //     tmp.prefix_length = ip_array[ip_num].at("PrefixLength").as_integer();
-    //     //     // else
-    //     //     //     tmp.prefix_length = 0;
-    //     //     // 셋다 read-only
-
-    //     //     ((EthernetInterfaces *)g_record[uri])->v_ipv6.push_back(tmp);
-    //     // }
-
-    //     json::value j = json::value::object();
-    //     j = _jv.at("IPv6Addresses");
-
-    //     int size_v6 = ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6.size();
-    //     if(size_v6 == 0)
-    //     {
-    //         // 없을때 하나 만들어서 넣어줌
-    //         IPv6_Address tmp;
-    //         if(j.as_object().find("Address") != j.as_object().end())
-    //             tmp.address = j.at("Address").as_string();
-
-    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-    //         //     tmp.address_origin = j.at("AddressOrigin").as_string();
-
-    //         // if(j.as_object().find("AddressState") != j.as_object().end())
-    //         //     tmp.address_state = j.at("AddressState").as_string();
-
-    //         // if(j.as_object().find("PrefixLength") != j.as_object().end())
-    //         //     tmp.prefix_length = j.at("PrefixLength").as_integer();
-    //         // 셋다 read-only 지만 prefixlength는 쓰레기값 들어가길래 0넣어줌
-    //         tmp.prefix_length = 0;
-
-    //         ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6.push_back(tmp);
-    //     }
-    //     else
-    //     {
-    //         // 1개이상일 때 수정은 1개만있는거로 보기로 했으니깐 v_ipv6벡터의 0번째인덱스만 수정
-    //         if(j.as_object().find("Address") != j.as_object().end())
-    //             ((EthernetInterfaces *)g_record[_record_uri])->v_ipv6[0].address = j.at("Address").as_string();
-            
-    //         // if(j.as_object().find("AddressOrigin") != j.as_object().end())
-    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].address_origin = j.at("AddressOrigin").as_string();
-
-    //         // if(j.as_object().find("AddressState") != j.as_object().end())
-    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].address_state = j.at("AddressState").as_string();
-
-    //         // if(j.as_object().find("PrefixLength") != j.as_object().end())
-    //         //     ((EthernetInterfaces *)g_record[uri])->v_ipv6[0].prefix_length = j.at("PrefixLength").as_string();
-    //         // read-only
-    //     }
-    // }
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
@@ -4377,6 +4244,8 @@ bool patch_event_service(json::value _jv, string _record_uri)
             service->delivery_retry_interval_seconds = interval;
         if(op_enabled)
             service->service_enabled = service_enabled;
+
+        resource_save_json(service);
     }
 
     cout << "바꾼후~~ " << endl;
@@ -4420,6 +4289,8 @@ bool patch_subscription(json::value _jv, string _record_uri)
             dest->context = context;
         if(op_policy)
             dest->delivery_retry_policy = policy;
+
+        resource_save_json(dest);
     }
 
     cout << "바꾼후~~ " << endl;
@@ -4744,15 +4615,20 @@ json::value get_json_task_manager(Task_Manager *_tm)
         // j_res["ResponseJson"] = response.extract_json().get();
         // log(info) << "[AFTER EXTRACT RESPONSE] : " << response.to_string();
     
-        json::value j_header;
+        json::value j_header = json::value::array();
         http_headers::iterator iter_header;
         http_headers head = response.headers();
-        for(iter_header=head.begin(); iter_header!=head.end(); iter_header++)
+        int j=0;
+        for(iter_header=head.begin(); iter_header!=head.end(); iter_header++, j++)
         {
-            j_header[iter_header->first] = json::value::string(iter_header->second);
+            // j_header[iter_header->first] = json::value::string(iter_header->second);
+            string val = iter_header->first + "::::" + iter_header->second;
+            j_header[j] = json::value::string(val);
         }
         j_res["Headers"] = j_header;
         // header는 헤더에서 하나씩 만들어서 key:value로 저장해서 하는걸로
+        // key-value로 하니깐 읽어들일때 key값을 몰라서 접근이 안되더라
+        // 그래서 j_header를 리스트로하고 안에 string으로 "key:value" 로 넣은다음 :로 파싱할게
         // result_response 부분
 
         j_response["ResultResponse"] = j_res;
@@ -4780,8 +4656,8 @@ void create_task_map_from_json(json::value _jv)
     task_map.clear();
     clear_json = get_json_task_map();
 
-    cout << " !@#$ CLEAR !!!! ------------------- " << endl;
-    cout << clear_json << endl;
+    // cout << " !@#$ CLEAR !!!! ------------------- " << endl;
+    // cout << clear_json << endl;
 
     // 이제 로드
     json::value inner_json;
@@ -4800,6 +4676,160 @@ void create_task_map_from_json(json::value _jv)
 
         create_task_manager_from_json(tm, inner_json);
     }
+
+    if(get_value_from_json_key(_jv, "Systems", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_SYSTEMS) != task_map.end())
+            tm = task_map.find(TASK_TYPE_SYSTEMS)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_SYSTEMS;
+            task_map.insert(make_pair(TASK_TYPE_SYSTEMS, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "Chassis", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_CHASSIS) != task_map.end())
+            tm = task_map.find(TASK_TYPE_CHASSIS)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_CHASSIS;
+            task_map.insert(make_pair(TASK_TYPE_CHASSIS, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "Managers", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_MANAGERS) != task_map.end())
+            tm = task_map.find(TASK_TYPE_MANAGERS)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_MANAGERS;
+            task_map.insert(make_pair(TASK_TYPE_MANAGERS, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "TaskService", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_TASKSERVICE) != task_map.end())
+            tm = task_map.find(TASK_TYPE_TASKSERVICE)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_TASKSERVICE;
+            task_map.insert(make_pair(TASK_TYPE_TASKSERVICE, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "EventService", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_EVENTSERVICE) != task_map.end())
+            tm = task_map.find(TASK_TYPE_EVENTSERVICE)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_EVENTSERVICE;
+            task_map.insert(make_pair(TASK_TYPE_EVENTSERVICE, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "AccountService", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_ACCOUNTSERVICE) != task_map.end())
+            tm = task_map.find(TASK_TYPE_ACCOUNTSERVICE)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_ACCOUNTSERVICE;
+            task_map.insert(make_pair(TASK_TYPE_ACCOUNTSERVICE, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "SessionService", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_SESSIONSERVICE) != task_map.end())
+            tm = task_map.find(TASK_TYPE_SESSIONSERVICE)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_SESSIONSERVICE;
+            task_map.insert(make_pair(TASK_TYPE_SESSIONSERVICE, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "UpdateService", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_UPDATESERVICE) != task_map.end())
+            tm = task_map.find(TASK_TYPE_UPDATESERVICE)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_UPDATESERVICE;
+            task_map.insert(make_pair(TASK_TYPE_UPDATESERVICE, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "CertificateService", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_CERTIFICATESERVICE) != task_map.end())
+            tm = task_map.find(TASK_TYPE_CERTIFICATESERVICE)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_CERTIFICATESERVICE;
+            task_map.insert(make_pair(TASK_TYPE_CERTIFICATESERVICE, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+    if(get_value_from_json_key(_jv, "Completed", inner_json))
+    {
+        // 있으면 task_map만들고
+        if(task_map.find(TASK_TYPE_COMPLETED) != task_map.end())
+            tm = task_map.find(TASK_TYPE_COMPLETED)->second;
+        else
+        {
+            tm = new Task_Manager();
+            tm->task_type = TASK_TYPE_COMPLETED;
+            task_map.insert(make_pair(TASK_TYPE_COMPLETED, tm));
+        }
+
+        create_task_manager_from_json(tm, inner_json);
+    }
+
+
+    // cout << " !@#$ REBUILD !!!! ------------------- " << endl;
+    // cout << get_json_task_map() << endl;
 
     
 
@@ -4840,7 +4870,33 @@ void create_task_manager_from_json(Task_Manager *_tm, json::value _jv)
         json::value j_http_response;
         get_value_from_json_key(j_response, "ResultResponse", j_http_response);
 
+        http_response response;
+        int status_code;
+        if(get_value_from_json_key(j_http_response, "StatusCode", status_code))
+        {
+            response.set_status_code(status_code);
+            get_value_from_json_key(j_http_response, "ResponseJson", m_res.response_json);
+            json::value j_header = json::value::array();
+            if(get_value_from_json_key(j_http_response, "Headers", j_header))
+            {
+                for(int j=0; j<j_header.size(); j++)
+                {
+                    string h_key, h_value;
+                    h_key = get_parent_object_uri(j_header[j].as_string(), "::::");
+                    // cout << "key : " << h_key << endl;
+                    h_value = get_current_object_name(j_header[j].as_string(), "::::");
+                    // cout << "value : " << h_value << endl;
+                    response.headers().add(h_key, h_value);
+                }
+            }
+
+            m_res.result_response = response;
+        }
+
+        m_req.result = m_res;
+        _tm->list_request.push_back(m_req);
     }
 
 }
-
+// task map backup은 액티브cmm에서 스탠바이cmm으로 json 주기적으로 보내면
+// 스탠바이쪽에서 task_map 구축해놓고 있는걸로
