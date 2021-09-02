@@ -252,8 +252,10 @@ void delete_numset_num(int _index, unsigned int num)
  */
 string get_current_object_name(string _uri, string delimiter)
 {
-    return _uri.substr(_uri.rfind(delimiter) + 1);
+    // return _uri.substr(_uri.rfind(delimiter) + 1);
+    return _uri.substr(_uri.rfind(delimiter) + delimiter.length());
 }
+// 문자열 뒤부터 시작해서 delimiter찾고 뒷부분 get
 
 /**
  * @brief get uri, return parent resource uri
@@ -264,6 +266,7 @@ string get_parent_object_uri(string _uri, string delimiter)
 {
     return _uri.substr(0, _uri.rfind(delimiter));
 }
+// 문자열 뒤부터 시작해서 delimiter찾고 앞부분 get
 
 /**
  * @brief get string, check if it is number

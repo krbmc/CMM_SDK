@@ -47,84 +47,211 @@ void Handler::handle_get(http_request _request)
 
 
     //여기에 pplx시작하면 될듯
-    try
-    {
-        // Response Redfish Version
-        if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
+    _request
+    .extract_json()
+    .then([&_request, uri_tokens, uri](pplx::task<json::value> json_value){
+        try
         {
-            json::value j;
-            j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
-            _request.reply(status_codes::OK, j);
-            return ;
-        }
-
-        if(uri_tokens.size() == 1 && uri_tokens[0] == "Map")
-        {
-            json::value j;
-            j = get_json_task_map();
-            _request.reply(status_codes::Found, j);
-            return ;
-        }
-
-        if(uri_tokens.size() == 1 && uri_tokens[0] == "Boom")
-        {
-            cout << " ?? 0" << endl;
-            // json::value j;
-            create_task_map_from_json(json::value::null());
-            cout << " ?? 000" << endl;
-            _request.reply(status_codes::Found);
-            return ;
-        }
-
-        if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
-        {
-            do_task_cmm_get(_request);
-            return ;
-        }
-
-        if(uri_tokens.size() >= 4)
-        {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
-            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
+            log(info) << "json_value : " << json_value.get().to_string();
+            // Response Redfish Version
+            if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
             {
-                //CMM자체 동작으로다가 처리하시면됨
-                do_task_cmm_get(_request);
+                json::value j;
+                j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
+                _request.reply(status_codes::OK, j);
+                return ;
             }
-            else
+
+            if(uri_tokens.size() == 1 && uri_tokens[0] == "Map")
             {
-                if(uri_tokens[3] == CMM_ID)
+                json::value j;
+                j = get_json_task_map();
+                _request.reply(status_codes::Found, j);
+                return ;
+            }
+
+            if(uri_tokens.size() == 1 && uri_tokens[0] == "Boom")
+            {
+                // json::value j;
+                create_task_map_from_json(get_json_task_map());
+                // create_task_map_from_json(json::value::null());
+                _request.reply(status_codes::Found);
+                return ;
+            }
+            
+            // if(uri_tokens.size() == 1 && uri_tokens[0] == "ViewLog")
+            if(uri == "/redfish/v1/Systems/1/ViewLog")
+            {
+                json::value j_res = json::value::array();
+                int index=0;
+                string odata = "/redfish/v1/Systems/1/LogServices/Log1";
+                LogService *service = (LogService *)g_record[odata];
+                vector<Resource *>::iterator iter;
+                for(iter = service->entry->members.begin(); iter!=service->entry->members.end(); iter++, index++)
                 {
-                    //CMM 자체처리
+                    LogEntry *tmp;
+                    tmp = (LogEntry *)*iter;
+                    cout << tmp->get_json() << endl;
+                    json::value j_tmp = tmp->get_json();
+                    j_tmp.erase("type");
+                    j_res[index] = j_tmp;
+                }
+                cout << index << endl;
+                _request.reply(status_codes::OK, j_res);
+                return ;
+        
+            }
+            // if(uri_tokens.size() == 1 && uri_tokens[0] == "GetTemp")
+            if(uri == "/redfish/v1/Managers/1/GetTemp")
+            {
+                json::value j_res = json::value::array();
+                int index=0;
+                string odata = "/redfish/v1/Managers/1/LogServices/Log1";
+                LogService *service = (LogService *)g_record[odata];
+                vector<Resource *>::iterator iter;
+                for(iter = service->entry->members.begin(); iter!=service->entry->members.end(); iter++, index++)
+                {
+                    LogEntry *tmp;
+                    tmp = (LogEntry *)*iter;
+                    cout << tmp->get_json() << endl;
+                    json::value j_tmp = tmp->get_json();
+                    j_tmp.erase("type");
+                    j_res[index] = j_tmp;
+                }
+                _request.reply(status_codes::OK, j_res);
+                return ;
+
+            }
+
+            if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
+            {
+                do_task_cmm_get(_request);
+                return ;
+            }
+
+            if(uri_tokens.size() >= 4)
+            {
+                if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+                || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
+                {
+                    //CMM자체 동작으로다가 처리하시면됨
                     do_task_cmm_get(_request);
                 }
-                else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                else
                 {
-                    if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
-                    // 일단 104번에서 처리
-                        do_task_bmc_get(_request);
-                    else
+                    if(uri_tokens[3] == CMM_ID)
                     {
-                        json::value j;
-                        j[U("Error")] = json::value::string(U("Unvalid Module ID"));
-                        _request.reply(status_codes::BadRequest, j);
-                        cout << "Unvalid BMC_id" << endl;
-                        return ;
+                        //CMM 자체처리
+                        do_task_cmm_get(_request);
+                    }
+                    else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                    {
+                        if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
+                        // 일단 104번에서 처리
+                            do_task_bmc_get(_request);
+                        else
+                        {
+                            json::value j;
+                            j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+                            _request.reply(status_codes::BadRequest, j);
+                            cout << "Unvalid BMC_id" << endl;
+                            return ;
+                        }
                     }
                 }
             }
-        }
-        else
-        {
-            // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
-            _request.reply(status_codes::BadRequest);
-            return ;
-        }
+            else
+            {
+                // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
+                _request.reply(status_codes::BadRequest);
+                return ;
+            }
 
-    }
-    catch(json::json_exception& e)
-    {
-        _request.reply(status_codes::BadRequest);
-    }
+        }
+        catch(json::json_exception& e)
+        {
+            _request.reply(status_codes::BadRequest);
+        }
+    })
+    .wait();
+
+    // try
+    // {
+    //     // Response Redfish Version
+    //     if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
+    //     {
+    //         json::value j;
+    //         j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
+    //         _request.reply(status_codes::OK, j);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() == 1 && uri_tokens[0] == "Map")
+    //     {
+    //         json::value j;
+    //         j = get_json_task_map();
+    //         _request.reply(status_codes::Found, j);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() == 1 && uri_tokens[0] == "Boom")
+    //     {
+    //         // json::value j;
+    //         create_task_map_from_json(get_json_task_map());
+    //         // create_task_map_from_json(json::value::null());
+    //         _request.reply(status_codes::Found);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
+    //     {
+    //         do_task_cmm_get(_request);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() >= 4)
+    //     {
+    //         if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+    //         || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
+    //         {
+    //             //CMM자체 동작으로다가 처리하시면됨
+    //             do_task_cmm_get(_request);
+    //         }
+    //         else
+    //         {
+    //             if(uri_tokens[3] == CMM_ID)
+    //             {
+    //                 //CMM 자체처리
+    //                 do_task_cmm_get(_request);
+    //             }
+    //             else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+    //             {
+    //                 if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
+    //                 // 일단 104번에서 처리
+    //                     do_task_bmc_get(_request);
+    //                 else
+    //                 {
+    //                     json::value j;
+    //                     j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+    //                     _request.reply(status_codes::BadRequest, j);
+    //                     cout << "Unvalid BMC_id" << endl;
+    //                     return ;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     else
+    //     {
+    //         // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
+    //         _request.reply(status_codes::BadRequest);
+    //         return ;
+    //     }
+
+    // }
+    // catch(json::json_exception& e)
+    // {
+    //     _request.reply(status_codes::BadRequest);
+    // }
     
 
     //여기서 create해서 do_task할듯
@@ -1010,6 +1137,7 @@ void Handler::handle_options(http_request _request)
     response.headers().add("Access-Control-Max-Age", "3600");
     response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
     _request.reply(response);
+    return ;
 }
 
 

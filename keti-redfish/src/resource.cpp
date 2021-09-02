@@ -543,8 +543,12 @@ pplx::task<void> Session::start(void)
                 delete(*iter);
                 col->members.erase(iter);
                 // session자체 객체삭제, g_record에서 삭제, session collection에서 삭제
+                delete_resource(path);
+                // session json삭제
+                resource_save_json(col);
+                // collection json갱신
 
-                record_save_json(); // 레코드 json파일 갱신
+                // record_save_json(); // 레코드 json파일 갱신
                 // string json_path = path;
                 // json_path = json_path + ".json";
                 // if(remove(json_path.c_str()) < 0)
@@ -2002,6 +2006,7 @@ json::value EthernetInterfaces::get_json(void)
     j[U("HostName")] = json::value::string(U(this->hostname));
     j[U("FQDN")] = json::value::string(U(this->fqdn));
     j[U("IPv6DefaultGateway")] = json::value::string(U(this->ipv6_default_gateway));
+    j[U("InterfaceEnabled")] = json::value::boolean(U(this->interfaceEnabled));
     
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
@@ -2082,6 +2087,7 @@ bool EthernetInterfaces::load_json(json::value &j)
         this->mtu_size = j.at("MTUSize").as_integer();
         this->hostname = j.at("HostName").as_string();
         this->fqdn = j.at("FQDN").as_string();
+        this->interfaceEnabled = j.at("InterfaceEnabled").as_bool();
         
         step = 1;
         status = j.at("Status");
@@ -3304,6 +3310,7 @@ json::value Certificate::Rekey(json::value body)
     generate_ssl_private_key(key, to_string(key_bit_length));
 
     rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+    resource_save_json(this); // ??
 
     return rsp;
 }
@@ -3329,6 +3336,7 @@ json::value Certificate::Renew(void)
     }
 
     rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+    resource_save_json(this); // ??
     
     return rsp;
 }
@@ -3464,6 +3472,7 @@ json::value CertificateService::GenerateCSR(json::value body)
 
     // #5 CSR 생성 && return request
     rsp = generate_CSR_return_result(conf, key, csr, certificate_odata_id);
+    resource_save_json(this);// ??
 
     return rsp;
 }
@@ -3555,6 +3564,7 @@ bool CertificateService::ReplaceCertificate(json::value body)
     // #3 수정된 certificate 정보 읽어서 g_record 수정
     update_cert_with_pem(cert_file, replacedCert);
     log(info) << "[...]Certificate is replaced..";
+    resource_save_json(replacedCert);
     
     return true;
 }
@@ -3810,6 +3820,8 @@ json::value VirtualMedia::EjectMedia(void)
 
     delete(*iter);
     col->members.erase(iter);
+    resource_save_json(col);
+    delete_resource(odata_id);
 
     cout << "지운후~~ " << endl;
     cout << "지워진놈 : " << odata_id << endl;

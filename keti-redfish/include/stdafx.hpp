@@ -164,6 +164,8 @@ bool record_load_json(void);
 bool record_save_json(void);
 void record_print(void);
 void record_init_load(string _path);
+void delete_resource(string odata_id);
+void synchronize_dir_list();
 
 /**
  * @brief Function of module_id

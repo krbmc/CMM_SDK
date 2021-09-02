@@ -25,7 +25,8 @@ string uuid_str;
 void start_server(utility::string_t &_url, http_listener_config _config)
 {
     g_listener = unique_ptr<Handler>(new Handler(_url, _config));
-    g_listener->open().wait();
+    g_listener->open()
+    .wait();
     log(info) << "Chassis Manager server start";
 }
 
@@ -38,6 +39,9 @@ void start_server(utility::string_t &_url, http_listener_config _config)
  */
 int main(int _argc, char *_argv[])
 {
+    uuid_str = generate_uuid();
+    log(info) << "global uuid : " << uuid_str;
+
     // Initialization
     if(init_gpio())
         log(info) << "GPIO initialization complete";
@@ -48,13 +52,10 @@ int main(int _argc, char *_argv[])
     if (init_resource())
         log(info) << "Redfish resource initialization complete";
 
-    uuid_str = generate_uuid();
-    log(info) << "global uuid : " << uuid_str;
-
-    // ssdp discover (not working yet)
-    std::thread t_ssdp(ssdp_handler);
-    log(info) << "ssdp discover start";
-    t_ssdp.join();
+    // // ssdp discover (not working yet)
+    // std::thread t_ssdp(ssdp_handler);
+    // log(info) << "ssdp discover start";
+    // t_ssdp.join();
 
     pplx::create_task([]{
         sleep(3);
@@ -120,7 +121,8 @@ int main(int _argc, char *_argv[])
             | boost::asio::ssl::context::no_tlsv1_1                                              // NOT use TLS1.1
             | boost::asio::ssl::context::single_dh_use);});
     HAlisten_config.set_timeout(utility::seconds(SERVER_REQUEST_TIMEOUT));
-    utility::string_t HAurl = U("http://0.0.0.0:80");
+    utility::string_t HAurl = U("http://0.0.0.0:8000");
+    // ha용.. http용..
 
     HA_listener = unique_ptr<Handler>(new Handler(HAurl, HAlisten_config));
     HA_listener->open().wait();

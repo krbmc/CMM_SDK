@@ -1461,6 +1461,7 @@ public:
     string hostname;
     string fqdn;
     string ipv6_default_gateway;
+    bool interfaceEnabled;
 
     vector<string> name_servers;
     DHCP_v4 dhcp_v4;
@@ -1470,7 +1471,7 @@ public:
     Vlan vlan;
 
     Status status;
-    
+
     EthernetInterfaces(const string _odata_id) : Resource(ETHERNET_INTERFACE_TYPE, _odata_id, ODATA_ETHERNET_INTERFACE_TYPE)
     { 
         g_record[_odata_id] = this;
@@ -2601,7 +2602,7 @@ void init_voltage(List *voltages_list, string _id);
 void init_power_supply(List *power_supplies_list, string _id);
 void init_manager(Collection *manager_collection, string _id);
 void init_update_service(UpdateService *update_service);
-void init_software_inventory(Collection *software_inventory_collection, string _id);
+SoftwareInventory* init_software_inventory(Collection *software_inventory_collection, string _id);
 void init_task_service(TaskService *task_service);
 void init_event_service(EventService *event_service);
 void init_event_destination(Collection *event_destination_collection, string _id);
@@ -2742,6 +2743,7 @@ bool is_session_valid(const string _token);
 string get_session_odata_id_by_token(string _token);
 void clear_gc();
 void dependency_injection(Resource *res);
+void resource_save_json(Resource *Rsrc);
 json::value get_resource_odata_id_json(Resource *res, string loc);
 json::value get_action_info(unordered_map<string, Actions> act);
 
@@ -2759,5 +2761,8 @@ string make_iptable_cmd(string _op, string _pos, int _index, int _port, int _abl
 void execute_iptables(NetworkProtocol* _net, int _index, string _op);
 void init_iptable(NetworkProtocol* _net);
 void patch_iptable(NetworkProtocol* _net);
+
+
+void generate_test(void);
 
 #endif
