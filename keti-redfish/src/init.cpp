@@ -477,6 +477,20 @@ void init_ethernet(Collection *ethernet_collection, string _id)
         ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
     }
     
+    // !!!!!!!!!!!!!!!!!!! ppt용 init !!!!!!!!!!!!!!!!!!!!!
+    ethernet->dhcp_v4.dhcp_enabled = true;
+    ethernet->dhcp_v4.use_dns_servers = true;
+    ethernet->dhcp_v4.use_gateway = true;
+    ethernet->dhcp_v4.use_ntp_servers = true;
+    ethernet->dhcp_v4.use_static_routes = true;
+    ethernet->dhcp_v4.use_domain_name= true;
+    ethernet->dhcp_v6.operating_mode = "Stateful";
+    ethernet->dhcp_v6.use_dns_servers = true;
+    ethernet->dhcp_v6.use_ntp_servers = true;
+    ethernet->dhcp_v6.use_domain_name = true;
+    ethernet->dhcp_v6.use_rapid_commit = true;
+        
+
     if (fs::exists(DHCPV4_CONF)){
         log(warning) << "NOT IMPLEMENTED : read dhcpv4 conf";
     }

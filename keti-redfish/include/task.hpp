@@ -94,42 +94,58 @@ Task_Manager* category(vector<string> _token);
 m_Request work_before_request_process(string _method, string _host, string _uri, json::value _jv, http_headers _header);
 Task_Manager* work_after_request_process(Task_Manager* _t, m_Request _msg);
 
-http_response treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request treat_uri_cmm_post(http_request _request, m_Request _msg, json::value _jv);
-http_response do_actions(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request do_actions(http_request _request, m_Request _msg, json::value _jv);
+void treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv, http_response& _response);
+// http_response treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_response& _response);
+// http_response do_actions(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+
 m_Request act_bios(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
-http_response act_certificate(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
-// m_Request act_certificate(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
-http_response act_certificate_service(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
-// m_Request act_certificate_service(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
-http_response act_system(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
-// m_Request act_system(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
-http_response act_eventservice(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
-// m_Request act_eventservice(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
-http_response act_logservice(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
-// m_Request act_logservice(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
-http_response act_virtualmedia(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
-// m_Request act_virtualmedia(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what);
-http_response make_account(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request make_account(http_request _request, m_Request _msg, json::value _jv);
-http_response make_session(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request make_session(http_request _request, m_Request _msg, json::value _jv);
-http_response make_role(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request make_role(http_request _request, m_Request _msg, json::value _jv);
-http_response make_subscription(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request make_subscription(http_request _request, m_Request _msg, json::value _jv);
-http_response make_logentry(http_request _request, m_Request& _msg, json::value _jv, http_response _response); // 제거대상
+void act_certificate(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+// http_response act_certificate(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
+
+void act_certificate_service(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+// http_response act_certificate_service(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
+
+void act_system(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+// http_response act_system(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
+
+void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+// http_response act_eventservice(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
+
+void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+// http_response act_logservice(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
+
+void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+// http_response act_virtualmedia(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response);
+
+void make_account(m_Request& _msg, json::value _jv, http_response& _response);
+// http_response make_account(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+
+void make_session(m_Request& _msg, json::value _jv, http_response& _response);
+// http_response make_session(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+
+void make_role(http_request _request, m_Request& _msg, json::value _jv, http_response& _response);
+// http_response make_role(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+// 로그인을 검증해야하는 경우는 _request가 필요함 나중에 로그인검사하는 함수를 만들어서 밖에서 처리하도록
+// 하고 인자제거 하든지 해야함 지금은 로그인검증 대부분 안하는상태에서 몇몇개에 넣어놓은거라 인자 그대로 둠
+
+void make_subscription(m_Request& _msg, json::value _jv, http_response& _response);
+// http_response make_subscription(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+
+// http_response make_logentry(http_request _request, m_Request& _msg, json::value _jv, http_response _response); // 제거대상
 // m_Request make_logentry(http_request _request, m_Request _msg, json::value _jv); // 제거대상
 // m_Request make_virtualmedia(http_request _request, m_Request _msg, json::value _jv);
 
-http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request treat_uri_cmm_patch(http_request _request, m_Request _msg, json::value _jv);
+void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv, http_response& _response);
+// http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+
 m_Request treat_uri_bmc_patch(http_request _request, m_Request _msg, json::value _jv);
-http_response modify_account(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response _response);
-// m_Request modify_account(http_request _request, m_Request _msg, json::value _jv, string _uri);
-http_response modify_role(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response _response);
-// m_Request modify_role(http_request _request, m_Request _msg, json::value _jv, string _uri);
+void modify_account(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response& _response);
+// http_response modify_account(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response _response);
+
+void modify_role(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response& _response);
+// http_response modify_role(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response _response);
+
 bool patch_account_service(json::value _jv, string _record_uri);
 bool patch_session_service(json::value _jv);
 void patch_manager(json::value _jv, string _record_uri);
@@ -155,9 +171,11 @@ http_response remove_subscription(http_request _request, m_Request& _msg, string
 
 http_response reply_error(http_request _request, m_Request& _msg, json::value _jv, web::http::status_code _status, http_response _response);
 // m_Request reply_error(http_request _request, m_Request _msg, json::value _jv, web::http::status_code _status);
+void error_reply(m_Request& _msg, json::value _jv, status_code _status, http_response& _response);
 json::value get_error_json(string _message);
 http_response reply_success(http_request _request, m_Request& _msg, json::value _jv, web::http::status_code _status, http_response _response);
 // m_Request reply_success(http_request _request, m_Request _msg, json::value _jv, web::http::status_code _status);
+void success_reply(m_Request& _msg, json::value _jv, status_code _status, http_response& _response);
 
 void test_send_event(Event _event);
 
