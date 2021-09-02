@@ -158,16 +158,21 @@ void patch_power_control(json::value _jv, string _record_uri);
 bool patch_event_service(json::value _jv, string _record_uri);
 bool patch_subscription(json::value _jv, string _record_uri);
 
-http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
-// m_Request treat_uri_cmm_delete(http_request _request, m_Request _msg, json::value _jv);
-http_response remove_account(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response);
-// m_Request remove_account(http_request _request, m_Request _msg, json::value _jv, string _service_uri);
-http_response remove_session(http_request _request, m_Request& _msg, http_response _response);
-// m_Request remove_session(http_request _request, m_Request _msg);//, json::value _jv, string _service_uri);
-http_response remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response);
-// m_Request remove_role(http_request _request, m_Request _msg, json::value _jv, string _service_uri);
-http_response remove_subscription(http_request _request, m_Request& _msg, string _service_uri, http_response _response);
-// m_Request remove_subscription(http_request _request, m_Request _msg, string _service_uri);
+void treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response& _response);
+// http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response _response);
+
+void remove_account(m_Request& _msg, json::value _jv, string _uri, string _service_uri, http_response& _response);
+// http_response remove_account(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response);
+
+void remove_session(http_request _request, m_Request& _msg, http_response& _response);
+// http_response remove_session(http_request _request, m_Request& _msg, http_response _response);
+
+void remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response& _response);
+// http_response remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response);
+
+void remove_subscription(m_Request& _msg, string _uri, string _service_uri, http_response& _response);
+// http_response remove_subscription(http_request _request, m_Request& _msg, string _service_uri, http_response _response);
+
 
 http_response reply_error(http_request _request, m_Request& _msg, json::value _jv, web::http::status_code _status, http_response _response);
 // m_Request reply_error(http_request _request, m_Request _msg, json::value _jv, web::http::status_code _status);

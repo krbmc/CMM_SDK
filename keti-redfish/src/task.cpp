@@ -870,7 +870,7 @@ void do_task_cmm_delete(http_request _request)
     response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
 
     // 처리처리~~
-    response = treat_uri_cmm_delete(_request, msg, jv, response);
+    treat_uri_cmm_delete(_request, msg, jv, response);
     // msg = treat_uri_cmm_delete(_request, msg, jv);
 
     c_manager = work_after_request_process(t_manager, msg);
@@ -1777,8 +1777,8 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
 //     return _msg;
 // }
 
-// m_Request treat_uri_cmm_delete(http_request _request, m_Request _msg, json::value _jv)
-http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+// http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+void treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response& _response)
 {
     string uri = _request.request_uri().to_string();
     vector<string> uri_tokens = string_split(uri, '/');
@@ -1808,17 +1808,18 @@ http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json:
         // }
         if(minus_one == ODATA_ACCOUNT_ID)
         {
-            _response = remove_account(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID, _response);
-            return _response;
+            remove_account(_msg, _jv, uri, ODATA_ACCOUNT_SERVICE_ID, _response);
+            return ;
+            // return _response;
+            // #공사중
         }
         // /redfish/v1/AccountService/Accounts/[id]로 들어오면 삭제되게끔 변경해놓음
         
         if(minus_one == ODATA_ROLE_ID)
         {
-            _response = remove_role(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID, _response);
-            return _response;
-            // _msg = remove_role(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID);
-            // return _msg;
+            remove_role(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID, _response);
+            return ;
+            // return _response;
             // #공사중
         }
     }
@@ -1827,10 +1828,9 @@ http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json:
         if(uri == ODATA_SESSION_ID)
         {
             // 로그아웃!
-            _response = remove_session(_request, _msg, _response);
-            return _response;
-            // _msg = remove_session(_request, _msg);
-            // return _msg;
+            remove_session(_request, _msg, _response);
+            return ;
+            // return _response;
             // #공사중
         }
     }
@@ -1838,20 +1838,19 @@ http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json:
     {
         if(minus_one == ODATA_EVENT_DESTINATION_ID)
         {
-            _response = remove_subscription(_request, _msg, ODATA_EVENT_SERVICE_ID, _response);
-            return _response;
-            // _msg = remove_subscription(_request, _msg, ODATA_EVENT_SERVICE_ID);
-            // return _msg;
+            remove_subscription(_msg, uri, ODATA_EVENT_SERVICE_ID, _response);
+            return ;
+            // return _response;
             // #공사중
         }
     }
 
 
-    _response = reply_error(_request, _msg, get_error_json("URI Input Error in treat delete"), status_codes::BadRequest, _response);
-    // _msg = reply_error(_request, _msg, get_error_json("URI Input Error in treat delete"), status_codes::BadRequest);
+    error_reply(_msg, get_error_json("URI Input Error in treat delete"), status_codes::BadRequest, _response);
+    return ;
+    // _response = reply_error(_request, _msg, get_error_json("URI Input Error in treat delete"), status_codes::BadRequest, _response);
     // #공사중
-    return _response;
-    // return _msg;
+    // return _response;
 }
 
 
@@ -3193,21 +3192,21 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
 }
 
 
-// m_Request remove_account(http_request _request, m_Request _msg, json::value _jv, string _service_uri)
-http_response remove_account(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response)
+// http_response remove_account(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response)
+void remove_account(m_Request& _msg, json::value _jv, string _uri, string _service_uri, http_response& _response)
 {
     string username, password, odata_id;
-    odata_id = _request.request_uri().to_string(); // ## 방식변경후 추가
+    odata_id = _uri; //_request.request_uri().to_string(); // ## 방식변경후 추가
     // ### 방식변경 : 유저네임 패스워드 받고 /Accounts까지 받던 uri를
     // request body안받고 /Accounts/[id] 까지 받음 uri 
 
     if(((AccountService *)g_record[_service_uri])->service_enabled == false)
     {
-        _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        return _response;
-        
-        // _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     // if(get_value_from_json_key(_jv, "UserName", username) == false
@@ -3246,8 +3245,11 @@ http_response remove_account(http_request _request, m_Request& _msg, json::value
 
     if(!record_is_exist(odata_id))
     {
-        _response = reply_error(_request, _msg, get_error_json("No Account"), status_codes::BadRequest, _response);
-        return _response;
+        error_reply(_msg, get_error_json("No Account"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("No Account"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     // if(!exist)
@@ -3286,31 +3288,33 @@ http_response remove_account(http_request _request, m_Request& _msg, json::value
     cout << "지워진놈 : " << odata_id << endl;
     cout << record_get_json(acc_service->account_collection->odata.id) << endl;
 
-    _response = reply_success(_request, _msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK, _response);
-    return _response;
-    // _msg = reply_success(_request, _msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK);
-    // // status ok로 바꿔
-    // return _msg;
+    success_reply(_msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK, _response);
+    return ;
+    // _response = reply_success(_request, _msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK, _response);
+    // return _response;
+    // #공사중
 }
 
-// m_Request remove_session(http_request _request, m_Request _msg)
-http_response remove_session(http_request _request, m_Request& _msg, http_response _response)
+// http_response remove_session(http_request _request, m_Request& _msg, http_response _response)
+void remove_session(http_request _request, m_Request& _msg, http_response& _response)
 {
     if(((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->service_enabled == false)
     {
-        _response = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     // 아니근데 이거 x-auth-token가지고만 하면 a가 로그인한채로 b꺼 x토큰 보내서 로그아웃 시킬수도있는데??
     if(!(is_session_valid(_request.headers()["X-Auth-Token"])))
     {
-        _response = reply_error(_request, _msg, get_error_json("Unvalid Session"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Unvalid Session"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Unvalid Session"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("Unvalid Session"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     // 토큰에 해당하는 세션 종료
@@ -3324,15 +3328,15 @@ http_response remove_session(http_request _request, m_Request& _msg, http_respon
     // cout << "YYYY : " << session->id << endl;
     session->_remain_expires_time = 1;
 
-    _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-    return _response;
-    // _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
-    // // status ok로..
-    // return _msg;
+    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    return ;
+    // _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
+    // return _response;
+    // #공사중
 }
 
-// m_Request remove_role(http_request _request, m_Request _msg, json::value _jv, string _service_uri)
-http_response remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response)
+// http_response remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response)
+void remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response& _response)
 {
     // 어카운트 서비스 이용가능여부 체크, 관리자만 할수있음
     // uri는 /AccountService/Roles/[Role_id]로 들어올거라서 predefined true만 아니면
@@ -3342,19 +3346,21 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
     string uri = _request.request_uri().to_string();
     if(((AccountService *)g_record[_service_uri])->service_enabled == false)
     {
-        _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     if(!_request.headers().has("X-Auth-Token"))
     {
         // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
-        _response = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     string session_token = _request.headers()["X-Auth-Token"];
@@ -3362,10 +3368,11 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
     if(!is_session_valid(session_token))
     {
         // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
-        _response = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     string session_uri = get_session_odata_id_by_token(session_token);
@@ -3379,19 +3386,21 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
     {
         if(!record_is_exist(uri))
         {
-            _response = reply_error(_request, _msg, get_error_json("Role does not exist"), status_codes::BadRequest, _response);
-            return _response;
-            // _msg = reply_error(_request, _msg, get_error_json("Role does not exist"), status_codes::BadRequest);
-            // return _msg;
+            error_reply(_msg, get_error_json("Role does not exist"), status_codes::BadRequest, _response);
+            return ;
+            // _response = reply_error(_request, _msg, get_error_json("Role does not exist"), status_codes::BadRequest, _response);
+            // return _response;
+            // #공사중
         }
 
         Role *role = (Role *)g_record[uri];
         if(role->is_predefined == true)
         {
-            _response = reply_error(_request, _msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest, _response);
-            return _response;
-            // _msg = reply_error(_request, _msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest);
-            // return _msg;
+            error_reply(_msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest, _response);
+            return ;
+            // _response = reply_error(_request, _msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest, _response);
+            // return _response;
+            // #공사중
         }
 
         string role_id = role->id;
@@ -3433,31 +3442,34 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
         }
 
 
-        _response = reply_success(_request, _msg, record_get_json(role_col->odata.id), status_codes::OK, _response);
-        return _response;
-        // _msg = reply_success(_request, _msg, record_get_json(role_col->odata.id), status_codes::OK);
-        // return _msg;
+        success_reply(_msg, record_get_json(role_col->odata.id), status_codes::OK, _response);
+        return ;
+        // _response = reply_success(_request, _msg, record_get_json(role_col->odata.id), status_codes::OK, _response);
+        // return _response;
+        // #공사중
     }
     else
     {
-        _response = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
     
 }
 
-// m_Request remove_subscription(http_request _request, m_Request _msg, string _service_uri)
-http_response remove_subscription(http_request _request, m_Request& _msg, string _service_uri, http_response _response)
+// http_response remove_subscription(http_request _request, m_Request& _msg, string _service_uri, http_response _response)
+void remove_subscription(m_Request& _msg, string _uri, string _service_uri, http_response& _response)
 {
-    string uri = _request.request_uri().to_string();
+    string uri = _uri; //_request.request_uri().to_string();
     if(!record_is_exist(uri))
     {
-        _response = reply_error(_request, _msg, get_error_json("No Subscription"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("No Subscription"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("No Subscription"), status_codes::BadRequest, _response);
+        return ;
+        // _response = reply_error(_request, _msg, get_error_json("No Subscription"), status_codes::BadRequest, _response);
+        // return _response;
+        // #공사중
     }
 
     EventService *service = (EventService *)g_record[_service_uri];
@@ -3489,12 +3501,12 @@ http_response remove_subscription(http_request _request, m_Request& _msg, string
     cout << "지워진놈 : " << uri << endl;
     cout << record_get_json(col->odata.id) << endl;
 
-    _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-    return _response;
-    // _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
-    // return _msg;
+    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    return ;
+    // _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
+    // return _response;
+    // #공사중
 }
-// #공사중 - reply_error 포함다수부분 주석처리
 
 bool patch_account_service(json::value _jv, string _record_uri)
 {
