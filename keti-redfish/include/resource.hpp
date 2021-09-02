@@ -2524,7 +2524,8 @@ class VirtualMedia : public Resource
     bool write_protected;
     string user_name;
     string password;
-
+    string size;
+    string create_time;
     unordered_map <string, Actions> actions;
 
     VirtualMedia(const string _odata_id) : Resource(VIRTUAL_MEDIA_TYPE, _odata_id, ODATA_VIRTUAL_MEDIA_TYPE)

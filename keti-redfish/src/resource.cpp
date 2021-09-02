@@ -3656,6 +3656,9 @@ json::value VirtualMedia::get_json(void)
     j["Inserted"] = json::value::boolean(this->inserted);
     j["WriteProtected"] = json::value::boolean(this->write_protected);
     j["MediaTypes"] = json::value::array();
+    j["Size"] = json::value::string(this->size);
+    j["CreateTime"] = json::value::string(this->create_time);
+
     for(int i = 0; i < this->media_type.size(); i++)
         j["MediaTypes"][i] = json::value::string(this->media_type[i]);
 
@@ -3677,6 +3680,9 @@ bool VirtualMedia::load_json(json::value &j)
         get_value_from_json_key(j, "Inserted", this->inserted);
         get_value_from_json_key(j, "WriteProtected", this->write_protected);
         get_value_from_json_key(j, "MediaTypes", media_type);
+        get_value_from_json_key(j, "Size", this->size);
+        get_value_from_json_key(j, "CreateTime", this->create_time);
+
         for (auto types : media_type.as_array())
             this->media_type.push_back(types.as_string());
     }
@@ -3736,8 +3742,10 @@ json::value VirtualMedia::InsertMedia(json::value body)
     // this->name = "VirtualMedia";
 
     this->image = image;
-    this->image_name = get_current_object_name(image, "/");
+    this->image_name = "/" + get_current_object_name(image, "/");
     this->connected_via = "URI";
+    this->size = get_popen_string("df -h | grep \"" + image + "\" | awk {\'print $2\'}");
+    this->create_time = currentDateTime();
 
     if(get_value_from_json_key(body, "UserName", user_name))
         this->user_name = user_name;
@@ -3826,7 +3834,6 @@ json::value VirtualMedia::EjectMedia(void)
     cout << "지운후~~ " << endl;
     cout << "지워진놈 : " << odata_id << endl;
     cout << target << endl;
-
     
     return target;
     // #3 return resource
