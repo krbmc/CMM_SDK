@@ -89,7 +89,8 @@
 #define ODATA_UPDATE_SERVICE_TYPE "#UpdateService." ODATA_TYPE_VERSION ".UpdateService" 
 #define ODATA_UPDATE_SERVICE_COLLECTION_TYPE "#UpdateServiceCollection.UpdateServiceCollection" 
 #define ODATA_SOFTWARE_INVENTORY_TYPE "#SoftwareInventory." ODATA_TYPE_VERSION ".SoftwareInventory" 
-#define ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE "#SoftwareInventoryCollection.SoftwareInventoryCollection" 
+#define ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE "#SoftwareInventoryCollection.SoftwareInventoryCollection"
+#define ODATA_SYSLOG_SERVICE_TYPE "#SyslogService." ODATA_TYPE_VERSION ".SyslogService"
 
 // dy : certificate
 #define ODATA_CERTIFICATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/CertificateService"
@@ -161,7 +162,8 @@ const std::string currentDateTime();
  * 
  */
 #define CMM_ID "1"
-#define CMM_ADDRESS "https://10.0.6.107:443"
+#define CMM_ADDRESS "10.0.6.107"
+// #define CMM_ADDRESS "https://10.0.6.107:443"
 
 /**
  * @brief Redfish Certificate Key Usage
@@ -233,7 +235,8 @@ enum RESOURCE_TYPE
     VIRTUAL_MEDIA_TYPE,
     DRIVE_TYPE,
     VOLUME_TYPE,
-    MESSAGE_REGISTRY_TYPE
+    MESSAGE_REGISTRY_TYPE,
+    SYSLOG_SERVICE_TYPE,
 };
 
 enum ACTION_NAME
@@ -1489,6 +1492,34 @@ public:
     bool load_json(json::value &j);
 };
 
+/**
+ * @brief Redfish Resource of SyslogService
+ * 
+ */
+class SyslogService : public Resource
+{
+    public:
+    string port;
+    string ip;
+    bool enabled;
+
+    SyslogService(const string _odata_id) : Resource(SYSLOG_SERVICE_TYPE, _odata_id, ODATA_SYSLOG_SERVICE_TYPE)
+    {
+        this->name = "SyslogService";
+        this->port = "";
+        this->ip = "";
+        this->enabled = false;
+
+        g_record[_odata_id] = this;
+    };
+    ~SyslogService()
+    {
+        g_record.erase(this->odata.id);
+    };
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
+
 class Manager : public Resource
 {
 public:
@@ -1511,6 +1542,7 @@ public:
 
     AccountService *remote_account_service; // BMC의 계정정보를 관리하는 AccountService
     NetworkProtocol *network;
+    SyslogService *syslog;
     
     unordered_map<string, Actions> actions;
 
@@ -1521,6 +1553,7 @@ public:
         this->remote_account_service = nullptr;
         this->network = nullptr;
         this->virtual_media = nullptr;
+        this->syslog = nullptr;
        
         Actions reset;
         reset.type = RESET_MANAGER;
@@ -1553,7 +1586,6 @@ public:
 
     bool Reset(json::value body);
 };
-
 
 /**
  * @brief Redfish Resource of Task

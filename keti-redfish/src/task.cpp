@@ -1266,6 +1266,22 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             }
         }
 
+        // /redfish/v1/Managers/cmm_id/Syslog (Syslog Service resource config) author : kdy
+        if (uri == cmm_manager + "/Syslog"){
+            if (!record_is_exist(uri)){
+                error_reply(_msg, get_error_json("No Syslog Config"), status_codes::BadRequest, _response);
+                return;
+            }
+
+            if (patch_syslog(_jv, uri)){
+                resource_save_json(g_record[uri]);
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+                return;
+            }else{
+                error_reply(_msg, get_error_json("Error Occur in Syslog PATCH"), status_codes::BadRequest, _response);
+                return;
+            }
+        }
 
     }
     else if(uri_part == ODATA_SYSTEM_ID)
@@ -3508,6 +3524,52 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
 
     return result;
 
+}
+
+bool patch_syslog(json::value _jv, string _record_uri)
+{
+    SyslogService *syslog = ((SyslogService *)g_record[_record_uri]);
+    bool result = true;
+
+    bool enable;
+    string port;
+    string server;
+
+    if (get_value_from_json_key(_jv, "EnableSyslog", enable)){
+        if (enable){
+            // todo : syslog service on! (ex. /etc/init.d/S**Syslog restart or start)
+            log(warning) << "Syslog Service is not implemeted now..";
+        } else {
+            // todo : syslog service off! (ex. /etc/init.d/S**Syslog stop)
+            log(warning) << "Syslog Service is not implemeted now..";
+        }
+    }else
+        enable = syslog->enabled;
+
+    if (get_value_from_json_key(_jv, "SyslogPortNumber", port)){
+        // todo : syslog config change (port)
+        log(warning) << "Syslog Service is not implemeted now..";
+        if (!isNumber(port))
+            result = false;        // port가 숫자를 제외한 문자를 포함하고 있을 경우의 예외처리
+    }else
+        port = syslog->port;
+
+    if (get_value_from_json_key(_jv, "SyslogServer", server)){
+        // todo : syslog config change (ip)
+        log(warning) << "Syslog Service is not implemeted now..";
+
+        if (!validateIPv4(server))
+            result = false;
+    }else
+        server = syslog->ip;
+
+    if (result == false)
+        return result;
+    
+    syslog->enabled = enable;
+    syslog->port = port;
+    syslog->ip = server;
+    return true;
 }
 
 bool patch_system(json::value _jv, string _record_uri)

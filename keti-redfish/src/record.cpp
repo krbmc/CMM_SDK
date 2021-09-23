@@ -162,6 +162,8 @@ json::value record_get_json(const string _uri)
         case MESSAGE_REGISTRY_TYPE:
             j = ((MessageRegistry *)g_record[_uri])->get_json();
             break;
+        case SYSLOG_SERVICE_TYPE:
+            j = ((SyslogService *)g_record[_uri])->get_json();
         default:
             break;
     }
@@ -588,6 +590,16 @@ bool record_load_json(void)
                     log(warning) << "load Message Registry failed";
                 //dependency_object.push_back(msg_regi);
                 // Message Registry는 걍 독립적이라 안해도 될듯
+                break;
+            }
+            case SYSLOG_SERVICE_TYPE:{
+                string this_odata_id = it->second->odata.id;
+                gc.push_back(it->second);
+                SyslogService *syslog = new SyslogService(this_odata_id);
+                if (!syslog->load_json(j))
+                    log(warning) << "load Syslog Service failed";
+                dependency_object.push_back(syslog);
+                break;
             }
             default:
                 log(warning) << "NOT IMPLEMETED IN LOAD JSON : " << it->second->odata.id;
@@ -1106,19 +1118,20 @@ void dependency_injection(Resource *res)
         case POWER_TYPE:
             ((Chassis *)g_record[parent_object_id])->power = (Power *)res;
             break;
-    
         // manager
         case NETWORK_PROTOCOL_TYPE:
             ((Manager *)g_record[parent_object_id])->network = (NetworkProtocol *)res;
             break;
-
+        case SYSLOG_SERVICE_TYPE:
+            ((Manager *)g_record[parent_object_id])->syslog = (SyslogService *)res;
+            break;
         // certificate_service
         case CERTIFICATE_LOCATION_TYPE: 
             ((CertificateService *)g_record[parent_object_id])->certificate_location = (CertificateLocation *)res;
             break;
         // case PROCESSOR_SUMMARY_TYPE:
         default:
-            log(warning) << "NOT IMPLEMETED IN DEPENDENCY INJECTION : " << id << " type : " << res->odata.type;
+            log(warning) << "NOT IMPLEMETED IN DEPENDENCY INJECTION : " << id << " type : " << res->type << " parent type : " << g_record[parent_object_id]->type;
             break;
     }
 }
@@ -1170,10 +1183,17 @@ void load_module_id(void)
     json::value j = json::value::parse(string_stream);
     json::value arr = json::value::array();
     
-    if(j.as_object().find("Module") != j.as_object().end())
-        arr = j.at("Module");
+    if(get_value_from_json_key(j, "Module", arr))
+    {
+        ;
+    }
     else
         log(error) << "No Module Key";
+
+    // if(j.as_object().find("Module") != j.as_object().end())
+    //     arr = j.at("Module");
+    // else
+    //     log(error) << "No Module Key";
 
     for(int i=0; i<arr.size(); i++)
     {
@@ -1181,20 +1201,30 @@ void load_module_id(void)
         string m_id;
         string m_address;
 
-        if(tmp.as_object().find("ID") != tmp.as_object().end())
-        {
-            m_id = tmp.at("ID").as_string();
-        }
+        if(get_value_from_json_key(tmp, "ID", m_id))
+            ;
         else
-            // id 나 address가 없으면 저장안하면됨 근데 없으면 그게 더 이상함 저장이 이상하게 된거라
+            continue;
+        
+        if(get_value_from_json_key(tmp, "Address", m_address))
+            ;
+        else
             continue;
 
-        if(tmp.as_object().find("Address") != tmp.as_object().end())
-        {
-            m_address = tmp.at("Address").as_string();
-        }
-        else
-            continue;
+        // if(tmp.as_object().find("ID") != tmp.as_object().end())
+        // {
+        //     m_id = tmp.at("ID").as_string();
+        // }
+        // else
+        //     // id 나 address가 없으면 저장안하면됨 근데 없으면 그게 더 이상함 저장이 이상하게 된거라
+        //     continue;
+
+        // if(tmp.as_object().find("Address") != tmp.as_object().end())
+        // {
+        //     m_address = tmp.at("Address").as_string();
+        // }
+        // else
+        //     continue;
 
         if(module_id_table.find(m_id) == module_id_table.end()) // 없으면 등록
         {
@@ -1202,6 +1232,21 @@ void load_module_id(void)
         }
     }
 }
+
+string make_module_address(string _id)
+{
+    // module_id를 받아서 table의 ip주소로 request를 보낼 주소를 생성
+    // 현재는 http로 고정하고 포트도 443으로 만들어놓음 - 나중에 수정필요
+    string ip;
+    ip = module_id_table.find(_id)->second;
+
+    string address = "http://";
+    address = address + ip + ":443";
+
+    return address;
+}
+
+
 /**
  * @brief g_record init
  * @details g_record를 init하고 연결되어있던 객체또한 모두 free시켜주는 함수

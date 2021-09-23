@@ -1052,7 +1052,9 @@ void init_manager(Collection *manager_collection, string _id)
         // insert_virtual_media(manager->virtual_media, "CD2", "CD");
         // insert_virtual_media(manager->virtual_media, "USB1", "USB");
     }
-    
+    if (!record_is_exist(odata_id + "/Syslog")){
+        manager->syslog = new SyslogService(odata_id + "/Syslog");
+    }
     manager_collection->add_member(manager);
     return;
 }

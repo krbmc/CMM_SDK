@@ -1933,6 +1933,7 @@ json::value Manager::get_json(void)
     j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
     j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
     j["VirtualMedia"] = get_resource_odata_id_json(this->virtual_media, this->odata.id);
+    j["SyslogService"] = get_resource_odata_id_json(this->syslog, this->odata.id);
 
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
@@ -1971,7 +1972,6 @@ bool Manager::load_json(json::value &j)
 
     return true;
 }
-// Manager end
 
 void Manager::new_log_service(string _service_id)
 {
@@ -1983,7 +1983,38 @@ void Manager::new_log_service(string _service_id)
 
     init_log_service(this->log_service, _service_id);
 }
+// Manager end
 
+// Syslog start
+json::value SyslogService::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
+    j["EnableSyslog"] = json::value::boolean(this->enabled);
+    j["SyslogPortNumber"] = json::value::string(this->port);
+    j["SyslogServer"] = json::value::string(this->ip);
+
+    return j;
+}
+
+bool SyslogService::load_json(json::value &j)
+{
+    try
+    {
+        Resource::load_json(j);
+        get_value_from_json_key(j, "EnableSyslog", this->enabled);
+        get_value_from_json_key(j, "SyslogPortNumber", this->port);
+        get_value_from_json_key(j, "SyslogServer", this->ip);
+    }
+    catch(const json::json_exception &e)
+    {
+        return false;
+    }
+    return true;
+}
+
+// Syslog end
 json::value EthernetInterfaces::get_json(void)
 {
     auto j = this->Resource::get_json();
