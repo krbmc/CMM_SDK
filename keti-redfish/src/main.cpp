@@ -39,6 +39,9 @@ void start_server(utility::string_t &_url, http_listener_config _config)
  */
 int main(int _argc, char *_argv[])
 {
+    // 논문을 위한 BMC 등록
+    module_id_table.insert(make_pair("2", "http://10.0.6.104:443"));
+
     uuid_str = generate_uuid();
     log(info) << "global uuid : " << uuid_str;
 

@@ -1135,7 +1135,8 @@ void Handler::handle_options(http_request _request)
     response.headers().add("Access-Control-Allow-Credentials", "true");
     response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
     response.headers().add("Access-Control-Max-Age", "3600");
-    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
     _request.reply(response);
     return ;
 }

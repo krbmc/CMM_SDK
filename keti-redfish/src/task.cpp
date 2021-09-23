@@ -11,8 +11,8 @@ extern unordered_map<string, Event*> event_map;
  * @brief Request GET
  * @author 강
  * @details get handler에서 호출시키는 함수
- * m_Request를 만들어서 해당 타입의 task_manager에 연결시키고 keti-edge에 요청하면서 리소스task json파일을 생성,저장한다.
- * keti-edge에서 응답이 오면 m_Response를 만들어서 연결시키고 처음요청한 사용자에게 응답하며 Complete타입의 task_manager로
+ * m_Request를 만들어서 해당 타입의 task_manager에 연결시키고 리소스task json파일을 생성,저장한다.
+ * 요청 수행 후 Response를 받거나 만들면 m_Request에 m_Response를 만들어 연결시키고 처음요청한 사용자에게 응답하며 Complete타입의 task_manager로
  * m_Request를 이동시킨다.
  */
 
@@ -24,10 +24,6 @@ extern unordered_map<string, Event*> event_map;
 
 void do_task_cmm_get(http_request _request)
 {
-    // cout << "Body가 궁금해서 찍어봄" << endl;
-    // cout << _request.to_string() << endl;
-    // cout << "Body 끝" << endl;
-
     string uri = _request.request_uri().to_string();
     json::value jv = _request.extract_json().get();
     vector<string> uri_tokens = string_split(uri, '/');
@@ -54,27 +50,15 @@ void do_task_cmm_get(http_request _request)
     m_Request msg;
     msg = work_before_request_process("GET", CMM_ADDRESS, uri, jv, _request.headers());
 
-    // msg.request_json = jv;
-    // // msg.host = "https://10.0.6.107:443";
-    // msg.host = CMM_ADDRESS;
-    // msg.method = "GET";
-    // msg.uri = uri;
-    // msg.request_datetime = currentDateTime();
-    // msg.task_number = allocate_task_num(); // @@@@ LOCK
-
-    // Make m_Response
-    // m_Response msg_res;
-    // msg_res.res_number = msg.task_number;
-    // msg.result = msg_res;
-
     http_response response;
     json::value response_json;
 
     response.headers().add("Access-Control-Allow-Origin", "*");
     response.headers().add("Access-Control-Allow-Credentials", "true");
-    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
     response.headers().add("Access-Control-Max-Age", "3600");
-    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
 
     // connect to Task_manager
@@ -116,9 +100,6 @@ void do_task_cmm_get(http_request _request)
         msg.result.result_datetime = currentDateTime();
         msg.result.result_status = WORK_FAIL;
         msg.result.result_response = response;
-        // _request.reply(response);
-        // _request.reply(status_codes::NotFound);
-        // return ;
     }
     else
     {
@@ -128,8 +109,8 @@ void do_task_cmm_get(http_request _request)
         if(jj.as_object().find("Password") != jj.as_object().end())
             jj[U("Password")] = json::value::null();
         // account의 password
-        if(jj.as_object().find("AuthToken") != jj.as_object().end())
-            jj[U("AuthToken")] = json::value::null();
+        // if(jj.as_object().find("AuthToken") != jj.as_object().end())
+        //     jj[U("AuthToken")] = json::value::null();
         // session의 authtoken
         response.set_status_code(status_codes::OK);
         response.set_body(jj);
@@ -137,20 +118,6 @@ void do_task_cmm_get(http_request _request)
         msg.result.result_status = WORK_SUCCESS;
         msg.result.result_response = response;
         msg.result.response_json = jj;
-
-        // http_response test_response = response;
-        // json::value test_jv = response.extract_json().get();
-        // cout << " !@#$ EXTRACT TEST -------- " << endl;
-        // cout << response.to_string() << endl;
-        // cout << "JV : " << test_jv << endl;
-
-        // response.set_body(test_jv);
-        // cout << " !@#$ INSERT TEST ----------" << endl;
-        // cout << response.to_string() << endl;
-        // cout << "JV : " << test_jv << endl;
-        
-
-        // _request.reply(response);
     }
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -216,11 +183,10 @@ void do_task_cmm_get(http_request _request)
 
 
     // Response Json of Resource to Client
-    // _request.reply(status_codes::OK, record_get_json(uri));
     cout << record_get_json(uri) << endl;
     cout << "*************************     Out CMM GET    *******************" << endl;
+    
     _request.reply(response);
-
     return;
 }
 
@@ -237,7 +203,7 @@ void do_task_bmc_get(http_request _request)
     cout << "BMC_uri = " << uri << endl;
     cout << "BMC_new_uri : " << new_uri << endl;
     cout << "BMC_jv = " << jv << endl;
-    cout << "taskmap size : " << task_map.size() << endl;
+    // cout << "taskmap size : " << task_map.size() << endl;
 
     Task_Manager *t_manager; // 작업 매니저
     Task_Manager *c_manager; // 컴플리트 매니저
@@ -272,17 +238,8 @@ void do_task_bmc_get(http_request _request)
 
     msg = work_before_request_process("GET", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
 
-    // msg.request_json = jv;
-    // // msg.host = "http://10.0.6.104:443";
-    // msg.host = module_id_table[uri_tokens[3]];
-    // msg.method = "GET";
-    // msg.uri = new_uri;
-    // msg.request_datetime = currentDateTime();
-    // msg.task_number = allocate_task_num();
-
     // connect to Task_manager
     t_manager->list_request.push_back(msg);
-    // 이거 할때 요청 uri잘못들어오면 /redfish/v1/Managers인데 /Manager로 들어오면 제대론된 포인터가 연결안되어있어서 터짐
     
     http_client client(msg.host);
     http_request req(methods::GET);
@@ -290,11 +247,9 @@ void do_task_bmc_get(http_request _request)
     req.set_request_uri(new_uri);
     req.set_body(jv);
     
-    // cout << "이거 때문이야?" << endl;
     if(_request.headers().find("X-Auth-Token") != _request.headers().end())
         req.headers().add(_request.headers().find("X-Auth-Token")->first, _request.headers().find("X-Auth-Token")->second);
     // req.headers().add(U("TEST_HEADER"), U("VALUE!!"));
-    // cout << "그럴거야 아마" << endl;
     // 나중에는 이 헤더붙이는게 이런식이 아니라 현재 이 cmm을 이용할수있게 하는 세션session에 접근해서 거기에 저장되어있는
     // bmc_id에 맞는 토큰이 있으면 그걸로 여기서 헤더에 추가를 해주면 bmc토큰인증이 되는식으로 바뀌어야함
     // 만약없다면 로그인하라고 해야하고 아 여기가 아니고 응답오는 위치에서 response status가 인증을 못뚫는 status면 그때
@@ -311,10 +266,7 @@ void do_task_bmc_get(http_request _request)
         
         pplx::task<http_response> responseTask = client.request(req);
         response = responseTask.get();
-        // response_json = response.extract_json().get();
         cout << "bmc get reply status : " << response.status_code() << endl;
-        // cout << response.body() << endl;
-        // response.set_body(response_json);
 
         // 여기서 응답온거 이거 get이니까 ok or 아닌거 해서 ok면 성공 아니면 실패로해서 나눠 리플라이
 
@@ -322,13 +274,12 @@ void do_task_bmc_get(http_request _request)
             msg.result.result_status = WORK_SUCCESS;
         else
             msg.result.result_status = WORK_FAIL;
+
         response_json = response.extract_json().get();
         msg.result.response_json = response_json;
         response.set_body(response_json);
         msg.result.result_datetime = currentDateTime();
         msg.result.result_response = response;
-        
-        // _request.reply(response);
         
     }
     catch(const std::exception& e)
@@ -336,9 +287,8 @@ void do_task_bmc_get(http_request _request)
         std::cerr << e.what() << '\n';
         cout << "BMC 서버 닫혀있을거임~~" << endl;
 
-        response = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
-        // msg = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError);
-        // #공사중
+        error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+        // reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
     }
     
 
@@ -420,9 +370,6 @@ void do_task_bmc_get(http_request _request)
     // cout << "c_list result->status : " << completed_msg.result.result_status << endl;
 
 
-    // ((Task *)g_record[task_odata])->end_time = msg.result.result_datetime;
-    // ((Task *)g_record[task_odata])->task_state = TASK_STATE_COMPLETED;
-    // record_save_json();
     // _request.reply(U(response.status_code()), response_json);
     _request.reply(response);
     return ;
@@ -438,8 +385,8 @@ void do_task_cmm_post(http_request _request)
     Task_Manager *c_manager; // 컴플리트 매니저
 
     cout << "!@#$ CMM POST TASK ~~~~" << endl;
-    cout << "Task size : " << task_map.size() << endl;
-    log(error) << "Task size : " << task_map.size();
+    // cout << "Task size : " << task_map.size() << endl;
+    // log(error) << "Task size : " << task_map.size();
 
     t_manager = category(uri_tokens);
     if(!t_manager)
@@ -462,9 +409,10 @@ void do_task_cmm_post(http_request _request)
     t_manager->list_request.push_back(msg);
     response.headers().add("Access-Control-Allow-Origin", "*");
     response.headers().add("Access-Control-Allow-Credentials", "true");
-    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
     response.headers().add("Access-Control-Max-Age", "3600");
-    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
 
     // /*Before Move 테스트용 출력 */
@@ -485,11 +433,6 @@ void do_task_cmm_post(http_request _request)
 
     // Uri에 따른 처리동작
     treat_uri_cmm_post(_request, msg, jv, response);
-    // #공사중
-    // response = treat_uri_cmm_post(_request, msg, jv, response);
-    // msg = treat_uri_cmm_post(_request, msg, jv);
-
-    
 
     c_manager = work_after_request_process(t_manager, msg);
 
@@ -519,17 +462,6 @@ void do_task_cmm_post(http_request _request)
     // cout << "c_list result->resnum : " << completed_msg.result.res_number << endl;
     // cout << "c_list result->datetime : " << completed_msg.result.result_datetime << endl;
     // cout << "c_list result->status : " << completed_msg.result.result_status << endl;
-    
-
-    // msg.result = msg_res;
-
-    // completed로 연결
-    // c_manager->list_request.push_back(msg);
-
-    // // json 파일 내용 갱신
-    // ((Task *)g_record[task_odata])->end_time = msg.result.result_datetime;
-    // ((Task *)g_record[task_odata])->task_state = TASK_STATE_COMPLETED;
-    // record_save_json();
 
     cout << "*****************************     Out CMM POST     *****************************" << endl;
 
@@ -548,7 +480,7 @@ void do_task_bmc_post(http_request _request)
     cout << "BMC_uri = " << uri << endl;
     cout << "BMC_new_uri : " << new_uri << endl;
     cout << "BMC_jv = " << jv << endl;
-    cout << "ss : " << task_map.size() << endl;
+    // cout << "taskmap size : " << task_map.size() << endl;
 
     Task_Manager *t_manager; // 작업 매니저
     Task_Manager *c_manager; // 컴플리트 매니저
@@ -567,27 +499,8 @@ void do_task_bmc_post(http_request _request)
 
     msg = work_before_request_process("POST", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
 
-    // msg.request_json = jv;
-    // // msg.host = "http://10.0.6.104:443";
-    // msg.host = module_id_table[uri_tokens[3]];
-    // msg.method = "POST";
-    // msg.uri = new_uri;
-    // msg.request_datetime = currentDateTime();
-    // msg.task_number = allocate_task_num();
-
     // connect to Task_manager
     t_manager->list_request.push_back(msg);
-
-    // Make Resource Task Json
-    // string task_odata = ODATA_TASK_ID;
-    // task_odata = task_odata + "/" + to_string(msg.task_number);
-    // cout << "task_data : " << task_odata << endl;
-    // Task *task = new Task(task_odata, "Task-" + to_string(msg.task_number));
-    // task->start_time = msg.request_datetime;
-    // task->set_payload(_request.headers(), "POST", jv, uri);
-    // record_save_json();
-
-    // cout << "Before Request" << endl;
 
     http_client client(msg.host);
     http_request req(methods::POST);
@@ -606,7 +519,6 @@ void do_task_bmc_post(http_request _request)
         /* code */
         pplx::task<http_response> responseTask = client.request(req);
         response = responseTask.get();
-        // response_json = response.extract_json().get();
         cout << "bmc post reply status : " << response.status_code() << endl;
 
         if(response.status_code() == status_codes::OK)
@@ -622,70 +534,21 @@ void do_task_bmc_post(http_request _request)
         response.set_body(response_json);
         msg.result.result_datetime = currentDateTime();
         msg.result.result_response = response;
-        // _request.reply(response);
+        
     }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
         cout << "BMC 서버 닫혀있을거임~~" << endl;
 
-        response = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
-        // msg = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError);
-        // #공사중
+        error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+        // reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
     }
 
-    // cout << "********************* In pplx Task **********************" << endl;
-    // cout << response_json << endl;
-    // cout << "********************* Out pplx Task **********************" << endl;
-
-    // Make m_Response
-    // m_Response msg_res;
-    // msg_res.result_datetime = currentDateTime();
-    // msg_res.result_response = response;
-    // msg_res.res_number = msg.task_number;
-    // // msg_res.result_status = WORK_SUCCESS; // 응답 response의 상태에 따라 다르게 해야할텐데
-    // msg.result = msg_res;
-
-
-
-    // Completed로 이동시키기 위해 기존 task_manager에서 삭제
-    // std::list<m_Request>::iterator iter;
-    // for(iter=t_manager->list_request.begin(); iter!=t_manager->list_request.end(); iter++)
-    // {
-    //     if(iter->task_number == msg.task_number)
-    //     {
-    //         t_manager->list_request.erase(iter);
-    //         break;
-    //     }
-    // }
-
-    // if(task_map.find(TASK_TYPE_COMPLETED) == task_map.end())
-    // {
-    //     c_manager = new Task_Manager();
-    //     c_manager->task_type = TASK_TYPE_COMPLETED;
-    //     task_map.insert(make_pair(TASK_TYPE_COMPLETED, c_manager));
-    // }
-    // else
-    //     c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
 
     // work_after_request_process(t_manager, c_manager, msg);
     c_manager = work_after_request_process(t_manager, msg);
 
-
-    // completed로 연결
-    // c_manager->list_request.push_back(msg);
-    
-
-    // ((Task *)g_record[task_odata])->end_time = msg.result.result_datetime;
-    // ((Task *)g_record[task_odata])->task_state = TASK_STATE_COMPLETED;
-    // record_save_json();
-    
-
-    // cout << "After Request" << endl;
-    // cout << req.headers().find("MY_HEADER")->second << endl;
-
-    // _request.reply(response);
-    // _request.reply(U(response.status_code()), response_json);
     _request.reply(response);
     return ;
 }
@@ -719,9 +582,10 @@ void do_task_cmm_patch(http_request _request)
     t_manager->list_request.push_back(msg);
     response.headers().add("Access-Control-Allow-Origin", "*");
     response.headers().add("Access-Control-Allow-Credentials", "true");
-    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
     response.headers().add("Access-Control-Max-Age", "3600");
-    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
 
     // 요청처리
@@ -732,6 +596,7 @@ void do_task_cmm_patch(http_request _request)
     c_manager = work_after_request_process(t_manager, msg);
 
     cout << "*****************************     Out CMM PATCH     *****************************" << endl;
+
     _request.reply(response);
     return ;
 }
@@ -748,7 +613,7 @@ void do_task_bmc_patch(http_request _request)
     cout << "BMC_uri = " << uri << endl;
     cout << "BMC_new_uri : " << new_uri << endl;
     cout << "BMC_jv = " << jv << endl;
-    cout << "ss : " << task_map.size() << endl;
+    // cout << "taskmap size : " << task_map.size() << endl;
 
     Task_Manager *t_manager; // 작업 매니저
     Task_Manager *c_manager; // 컴플리트 매니저
@@ -798,9 +663,8 @@ void do_task_bmc_patch(http_request _request)
         else
         {
             // 실패, 바로응답
-            response = reply_error(_request, msg, get_error_json(""), response.status_code(), response);
-            // msg = reply_error(_request, msg, get_error_json(""), response.status_code());
-            // #공사중
+            error_reply(msg, get_error_json(""), response.status_code(), response);
+            // reply_error(_request, msg, get_error_json(""), response.status_code(), response);
         }
     }
     catch(const std::exception& e)
@@ -808,24 +672,10 @@ void do_task_bmc_patch(http_request _request)
         std::cerr << e.what() << '\n';
         cout << "BMC 서버 닫혀있을거임~~" << endl;
 
-        response = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
-        // msg = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError);
-        // #공사중
+        error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+        // reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
     }
-
-    // cout << "********************* In pplx Task **********************" << endl;
-    // cout << response_json << endl;
-    // cout << "********************* Out pplx Task **********************" << endl;
-
     
-
-    // Make m_Response
-    // m_Response msg_res;
-    // msg_res.result_datetime = currentDateTime();
-    // msg_res.result_response = response;
-    // msg_res.res_number = msg.task_number;
-    // // msg_res.result_status = WORK_SUCCESS; // 응답 response의 상태에 따라 다르게 해야할텐데
-    // msg.result = msg_res;
 
     // work_after_request_process(t_manager, c_manager, msg);
     c_manager = work_after_request_process(t_manager, msg);
@@ -865,12 +715,13 @@ void do_task_cmm_delete(http_request _request)
     t_manager->list_request.push_back(msg);
     response.headers().add("Access-Control-Allow-Origin", "*");
     response.headers().add("Access-Control-Allow-Credentials", "true");
-    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
     response.headers().add("Access-Control-Max-Age", "3600");
-    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
     // 처리처리~~
-    response = treat_uri_cmm_delete(_request, msg, jv, response);
+    treat_uri_cmm_delete(_request, msg, jv, response);
     // msg = treat_uri_cmm_delete(_request, msg, jv);
 
     c_manager = work_after_request_process(t_manager, msg);
@@ -892,7 +743,7 @@ void do_task_bmc_delete(http_request _request)
     cout << "BMC_uri = " << uri << endl;
     cout << "BMC_new_uri : " << new_uri << endl;
     cout << "BMC_jv = " << jv << endl;
-    cout << "ss : " << task_map.size() << endl;
+    // cout << "taskmap size : " << task_map.size() << endl;
 
     Task_Manager *t_manager; // 작업 매니저
     Task_Manager *c_manager; // 컴플리트 매니저
@@ -934,16 +785,15 @@ void do_task_bmc_delete(http_request _request)
         // 응답상태가 그외 (400 badrequest같은) 라면 그냥 그 응답의 상태랑 json reply
         if(response.status_code() == status_codes::OK)
         {
-            response = reply_success(_request, msg, json::value::null(), status_codes::OK, response);
-            // msg = reply_success(_request, msg, json::value::null(), status_codes::OK);
+            success_reply(msg, json::value::null(), status_codes::OK, response);
+            // response = reply_success(_request, msg, json::value::null(), status_codes::OK, response);
             // 임시로 그냥 성공답변
         }
         else
         {
             // 실패
-            response = reply_error(_request, msg, get_error_json("bmc delete fail"), response.status_code(), response);
-            // msg = reply_error(_request, msg, get_error_json("bmc delete fail"), response.status_code());
-            // #공사중
+            error_reply(msg, get_error_json("bmc delete fail"), response.status_code(), response);
+            // response = reply_error(_request, msg, get_error_json("bmc delete fail"), response.status_code(), response);
         }
     }
     catch(const std::exception& e)
@@ -951,9 +801,8 @@ void do_task_bmc_delete(http_request _request)
         std::cerr << e.what() << '\n';
         cout << "BMC 서버 닫혀있을거임~~" << endl;
 
-        response = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
-        // msg = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError);
-        // #공사중
+        error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+        // response = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
     }
 
     c_manager = work_after_request_process(t_manager, msg);
@@ -1106,7 +955,6 @@ m_Request work_before_request_process(string _method, string _host, string _uri,
     msg.request_json = _jv;
     msg.request_datetime = currentDateTime();
     msg.task_number = allocate_numset_num(ALLOCATE_TASK_NUM); // @@@@ LOCK
-    // msg.task_number = allocate_task_num(); // @@@@ LOCK
 
     m_Response res;
     res.res_number = msg.task_number;
@@ -1116,13 +964,16 @@ m_Request work_before_request_process(string _method, string _host, string _uri,
     string task_odata = ODATA_TASK_ID;
     task_odata = task_odata + "/" + to_string(msg.task_number);
     cout << "task_data in wbrp func!! : " << task_odata << endl;
-    Task *task = new Task(task_odata, "Task-" + to_string(msg.task_number));
-    ((Collection *)g_record[ODATA_TASK_ID])->add_member(task);
+    Task *task = new Task(task_odata, to_string(msg.task_number));
+
+    Collection *col = (Collection *)g_record[ODATA_TASK_ID];
+    col->add_member(task);
+
     task->start_time = msg.request_datetime;
     task->set_payload(_header, _method, _jv, _uri);
     resource_save_json(task);
+    resource_save_json(col);
     // 해당하는 task의 리소스 생성후 json파일 생성
-
 
     return msg;
 }
@@ -1165,7 +1016,7 @@ Task_Manager* work_after_request_process(Task_Manager* _t, m_Request _msg)
     return complete;
 }
 
-// http_response treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
 void treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv, http_response& _response)
 {
     string uri = _request.request_uri().to_string();
@@ -1189,23 +1040,17 @@ void treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv,
     {
         do_actions(_request, _msg, _jv, _response);
         return ;
-        // return _response;
-        // #공사중
     }
 
     if(uri == ODATA_ACCOUNT_ID)
     {
         make_account(_msg, _jv, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else if(uri == ODATA_SESSION_ID)
     {
         make_session(_msg, _jv, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else if(uri_part == ODATA_SYSTEM_ID)
     {
@@ -1219,7 +1064,6 @@ void treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv,
             return ;
             // return _response;
             // #공사중 - 얜삭제가능
-            
         } 
 
     }
@@ -1231,30 +1075,19 @@ void treat_uri_cmm_post(http_request _request, m_Request& _msg, json::value _jv,
     {
         make_role(_request, _msg, _jv, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else if(uri == ODATA_EVENT_DESTINATION_ID)
     {
         make_subscription(_msg, _jv, _response);
         return ;
-        // return _response;
-        // _msg = make_subscription(_request, _msg, _jv);
-        // return _msg;
-        // #공사중
     }
-
-    // part화 해야겟네 시스템에서 매니저에서 로그만드는거 >> 핸들러로 필요없음
 
     // 위에서 안걸리면 에러
     error_reply(_msg, get_error_json("URI Input Error in treat POST"), status_codes::NotImplemented, _response);
-    // _response = reply_error(_request, _msg, get_error_json("URI Input Error in treat POST"), status_codes::NotImplemented, _response);
     return ;
-    // return _response;
-    // #공사중
 }
 
-// http_response treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
 void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv, http_response& _response)
 {
     string uri = _request.request_uri().to_string();
@@ -1270,9 +1103,6 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
     }
     // uri_part에는 /redfish/v1/something 까지만
 
-    // json::value response_json;
-    // http_response response;
-
     string minus_one = get_parent_object_uri(uri, "/");
     cout << "MINUS_ONE INFO : " << minus_one << endl;
 
@@ -1286,50 +1116,26 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 resource_save_json(g_record[uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
                 return ;
-                // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
-                // return _response;
-                // #공사중
             }
             else
             {
                 error_reply(_msg, get_error_json("Error Occur in AccountService PATCH"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Error Occur in AccountService PATCH"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
         }
-
-        // /redfish/v1/AccountService/~~~ 관련처리부
-        // string minus_one = get_parent_object_uri(uri, "/");
-        // cout << "MINUS_ONE INFO : " << minus_one << endl;
 
         // /redfish/v1/AccountService/Accounts/[Account_id]
         if(minus_one == ODATA_ACCOUNT_ID)
         {
             modify_account(_request, _msg, _jv, uri, _response);
             return ;
-            // return _response;
-            // #공사중
         }
         // /redfish/v1/AccountService/Roles/[Role_id]
         else if(minus_one == ODATA_ROLE_ID)
         {
             modify_role(_request, _msg, _jv, uri, _response);
             return ;
-            // return _response;
-            // #공사중
         }
-        else
-        {
-            // 에러에러
-            // /redfish/v1/AccountService/다른uri 혹은 /redfish/v1/AccountService/Accounts or Roles 여도 길이 초과하는경우
-            cout << "ERROR POSITION" << endl;
-            // _msg = reply_error(_request, _msg, get_error_json("URI Input Error in AccountService part"), status_codes::BadRequest);
-            // return _msg;
-            // #공사중
-        }
-        // 요기 else밑압축가능
     }
     else if(uri_part == ODATA_SESSION_SERVICE_ID)
     {
@@ -1341,58 +1147,34 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 resource_save_json(g_record[uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
                 return ;
-                // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
-                // return _response;
-                // #공사중
             }
             else
             {
                 error_reply(_msg, get_error_json("Error Occur in SessionService PATCH"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Error Occur in SessionService PATCH"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
         }
-        else
-        {
-            // 세션서비스 자체 그외의 uri는 에러처리
-            // _msg = reply_error(_request, _msg, get_error_json("URI Input Error in SessionService part"), status_codes::BadRequest);
-            // return _msg;
-            // #공사중
-        }
-        // 요기 else밑압축가능
-        
 
     }
     else if(uri_part == ODATA_MANAGER_ID)
     {
         // 매니저는 권한 관리자급이어야함!! 나중에 권한검사 필요
-
-        if(uri_tokens.size() == 3)
-        {
-            // 이거는 딱 /redfish/v1/Managers/ 까지임 아웃
-            // _msg = reply_error(_request, _msg, get_error_json("URI Input Error in Manager part"), status_codes::BadRequest);
-            // return _msg;
-            // #공사중
-        }
-        // 요기 else밑압축가능
-
-        // 통과했으면 cmm_patch로 들어온거라 /redfish/v1/Managers/cmm-id 까지는 붙어있음
         string cmm_manager = ODATA_MANAGER_ID;
         cmm_manager = cmm_manager + "/" + CMM_ID;
 
         // /redfish/v1/Managers/cmm_id 그 자체
         if(uri == cmm_manager)
         {
-            patch_manager(_jv, uri);
-            resource_save_json(g_record[uri]);
-
-            success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            if(patch_manager(_jv, uri))
+            {
+                resource_save_json(g_record[uri]);
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            }
+            else
+            {
+                error_reply(_msg, get_error_json("Error Occur in Manager PATCH"), status_codes::BadRequest, _response);
+            }
             return ;
-            // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
-            // return _response;
-            // #공사중
         }
 
         // /redfish/v1/Managers/cmm_id/NetworkProtocol
@@ -1404,9 +1186,6 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 // 해당 네트워크프로토콜 레코드 없음
                 error_reply(_msg, get_error_json("No NetworkProtocol"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("No NetworkProtocol"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
 
             if(patch_network_protocol(_jv, uri))
@@ -1415,19 +1194,13 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 NetworkProtocol *net = (NetworkProtocol *)g_record[uri];
                 resource_save_json(g_record[uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
-                // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
                 patch_iptable(net);
                 return ;
-                // return _response;
-                // #공사중
             }
             else
             {
                 error_reply(_msg, get_error_json("Error Occur in NetworkProtocol PATCH"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Error Occur in NetworkProtocol PATCH"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
         }
 
@@ -1440,43 +1213,27 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             {
                 error_reply(_msg, get_error_json("Json Body is Null"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Json Body is Null"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
-
-            if(_jv.as_object().find("Mode") != _jv.as_object().end())
+            
+            if(get_value_from_json_key(_jv, "Mode", mode))
             {
-                mode = _jv.at("Mode").as_string();
                 if(!(mode == "Standard" || mode == "FullSpeed" || mode == "Auto"))
                 {
                     error_reply(_msg, get_error_json("Incorrect Mode"), status_codes::BadRequest, _response);
                     return ;
-                    // _response = reply_error(_request, _msg, get_error_json("Incorrect Mode"), status_codes::BadRequest, _response);
-                    // return _response;
-                    // #공사중
                 }
             }
             else
             {
-                error_reply(_msg, get_error_json("No Mode"), status_codes::BadRequest, _response);
+                error_reply(_msg, get_error_json("No Mode in Json Body"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("No Mode"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
 
             patch_fan_mode(mode, uri);
 
             success_reply(_msg, json::value::null(), status_codes::OK, _response);
             return ;
-            // _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-            // return _response;
-            // #공사중
         }
-
-        // string minus_one = get_parent_object_uri(uri, "/");
-        // cout << "MINUS_ONE INFO : " << minus_one << endl;
 
         // /redfish/v1/Managers/cmm_id/EthernetInterfaces/[Ethernet_id]
         if(minus_one == cmm_manager + "/EthernetInterfaces")
@@ -1491,33 +1248,21 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 // 해당 이더넷 레코드 없음
                 error_reply(_msg, get_error_json("No EthernetInterface"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("No EthernetInterface"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
 
-            // patch_ethernet_interface(_jv, uri, 1);
-            // patch_ethernet_interface(_jv, sys_uri, 0);
             // EthernetInterfaces PATCH를 Manager에서 하면 System에도 반영되고
             // System에선 지원안하는걸로
-
             if(patch_ethernet_interface(_jv, uri, 1) && patch_ethernet_interface(_jv, sys_uri, 0))
             {
                 resource_save_json(g_record[uri]);
                 resource_save_json(g_record[sys_uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
                 return ;
-                // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
-                // return _response;
-                // #공사중
             }
             else
             {
                 error_reply(_msg, get_error_json("Error Occur in EthernetInterface PATCH"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Error Occur in EthernetInterface PATCH"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
         }
 
@@ -1530,23 +1275,17 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
 
         if(uri == cmm_system)
         {
-            patch_system(_jv, uri);
-            resource_save_json(g_record[uri]);
-
-            success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            if(patch_system(_jv, uri))
+            {
+                resource_save_json(g_record[uri]);
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            }
+            else
+            {
+                error_reply(_msg, get_error_json("Error Occur in System PATCH"), status_codes::BadRequest, _response);
+            }
             return ;
-            // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
-            // return _response;
-            // #공사중
         }
-        else
-        {
-            error_reply(_msg, get_error_json("URI Input Error in Systems part"), status_codes::BadRequest, _response);
-            return ;
-            // _response = reply_error(_request, _msg, get_error_json("URI Input Error in Systems part"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
-        }// 맨아래 reply_error로 통합가능
     }
     else if(uri_part == ODATA_CHASSIS_ID)
     {
@@ -1555,18 +1294,15 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
 
         if(uri == cmm_chassis)
         {
-            patch_chassis(_jv, uri);
-            resource_save_json(g_record[uri]);
-            success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            if(patch_chassis(_jv, uri))
+            {
+                resource_save_json(g_record[uri]);
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            }
+            else
+                error_reply(_msg, get_error_json("Error Occur in Chassis PATCH"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
-            // return _response;
-            // #공사중
         }
-
-        // int len = uri_tokens.size();
-        // string minus_one = get_parent_object_uri(uri, "/");
-        // cout << "MINUS_ONE INFO : " << minus_one << endl;
 
         if(minus_one == cmm_chassis + "/Power/PowerControl")
         {
@@ -1575,20 +1311,17 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 // 해당 파워컨트롤 레코드 없음
                 error_reply(_msg, get_error_json("No PowerControl"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("No PowerControl"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
 
-            patch_power_control(_jv, uri);
-            resource_save_json(g_record[uri]);
-            success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            if(patch_power_control(_jv, uri))
+            {
+                resource_save_json(g_record[uri]);
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            }
+            else
+                error_reply(_msg, get_error_json("Error Occur in PowerControl PATCH"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
-            // return _response;
-            // #공사중
         }
-        // 아래에서 reply_error
     }
     else if(uri_part == ODATA_EVENT_SERVICE_ID)
     {
@@ -1597,14 +1330,10 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             // 서비스패치
             if(patch_event_service(_jv, uri))
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
-                // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
             else
                 error_reply(_msg, get_error_json("Error Occur in EventService PATCH"), status_codes::BadRequest, _response);
-                // _response = reply_error(_request, _msg, get_error_json("Error Occur in EventService PATCH"), status_codes::BadRequest, _response);
-                // #공사중
             
             return ;
-            // return _response;
         }
 
         if(minus_one == ODATA_EVENT_DESTINATION_ID)
@@ -1614,21 +1343,14 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             {
                 error_reply(_msg, get_error_json("No Subscription"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("No Subscription"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
 
             if(patch_subscription(_jv, uri))
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
-                // _response = reply_success(_request, _msg, record_get_json(uri), status_codes::OK, _response);
             else
                 error_reply(_msg, get_error_json("Error Occur in Subscription PATCH"), status_codes::BadRequest, _response);
-                // _response = reply_error(_request, _msg, get_error_json("Error Occur in Subscription PATCH"), status_codes::BadRequest, _response);
-                // #공사중
             
             return ;
-            // return _response;
         }
 
     }
@@ -1636,18 +1358,10 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
     {
         error_reply(_msg, get_error_json("URI Input Error in Whole part"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("URI Input Error in Whole part"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     error_reply(_msg, get_error_json("URI Input Error in Below part"), status_codes::BadRequest, _response);
     return ;
-    // _response = reply_error(_request, _msg, get_error_json("URI Input Error in Below part"), status_codes::BadRequest, _response);
-    // #공사중
-    // 위에 조건문들에서 처리에 걸렸으면 처리하는거고 아니면 걍 여기서 한꺼번에 reply_error처리로 하지
-    // return _response;
-
 }
 
 // m_Request treat_uri_bmc_patch(http_request _request, m_Request _msg, json::value _jv)
@@ -1777,8 +1491,8 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
 //     return _msg;
 // }
 
-// m_Request treat_uri_cmm_delete(http_request _request, m_Request _msg, json::value _jv)
-http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
+void treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response& _response)
 {
     string uri = _request.request_uri().to_string();
     vector<string> uri_tokens = string_split(uri, '/');
@@ -1794,32 +1508,27 @@ http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json:
     // uri_part에는 /redfish/v1/something 까지만
 
     string minus_one = get_parent_object_uri(uri, "/");
+    cout << "MINUS_ONE INFO : " << minus_one << endl;
 
     if(uri_part == ODATA_ACCOUNT_SERVICE_ID)
     {
         // /redfish/v1/AccountService/Accounts
         // if(uri == ODATA_ACCOUNT_ID)
         // {
-        //     _response = remove_account(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID, _response);
-        //     return _response;
-        //     // _msg = remove_account(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID);
-        //     // return _msg;
-        //     // #공사중
+            // remove_account(_msg, _jv, uri, ODATA_ACCOUNT_SERVICE_ID, _response);
+            // return ;
         // }
         if(minus_one == ODATA_ACCOUNT_ID)
         {
-            _response = remove_account(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID, _response);
-            return _response;
+            remove_account(_msg, _jv, uri, ODATA_ACCOUNT_SERVICE_ID, _response);
+            return ;
         }
         // /redfish/v1/AccountService/Accounts/[id]로 들어오면 삭제되게끔 변경해놓음
         
         if(minus_one == ODATA_ROLE_ID)
         {
-            _response = remove_role(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID, _response);
-            return _response;
-            // _msg = remove_role(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID);
-            // return _msg;
-            // #공사중
+            remove_role(_request, _msg, _jv, ODATA_ACCOUNT_SERVICE_ID, _response);
+            return ;
         }
     }
     else if(uri_part == ODATA_SESSION_SERVICE_ID)
@@ -1827,35 +1536,26 @@ http_response treat_uri_cmm_delete(http_request _request, m_Request& _msg, json:
         if(uri == ODATA_SESSION_ID)
         {
             // 로그아웃!
-            _response = remove_session(_request, _msg, _response);
-            return _response;
-            // _msg = remove_session(_request, _msg);
-            // return _msg;
-            // #공사중
+            remove_session(_request, _msg, _response);
+            return ;
         }
     }
     else if(uri_part == ODATA_EVENT_SERVICE_ID)
     {
         if(minus_one == ODATA_EVENT_DESTINATION_ID)
         {
-            _response = remove_subscription(_request, _msg, ODATA_EVENT_SERVICE_ID, _response);
-            return _response;
-            // _msg = remove_subscription(_request, _msg, ODATA_EVENT_SERVICE_ID);
-            // return _msg;
-            // #공사중
+            remove_subscription(_msg, uri, ODATA_EVENT_SERVICE_ID, _response);
+            return ;
         }
     }
 
 
-    _response = reply_error(_request, _msg, get_error_json("URI Input Error in treat delete"), status_codes::BadRequest, _response);
-    // _msg = reply_error(_request, _msg, get_error_json("URI Input Error in treat delete"), status_codes::BadRequest);
-    // #공사중
-    return _response;
-    // return _msg;
+    error_reply(_msg, get_error_json("URI Input Error in treat delete"), status_codes::BadRequest, _response);
+    return ;
 }
 
 
-// http_response do_actions(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
 void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_response& _response)
 {
     string uri = _request.request_uri().to_string();
@@ -1869,10 +1569,7 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
     if(!record_is_exist(resource_uri))
     {
         error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
-        // _response = reply_error(_request, _msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
         return ;
-        // return _response;
-        // #공사중
     }
 
     string action_by, action_what;
@@ -1890,23 +1587,17 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
     {
         act_certificate(_msg, _jv, resource_uri, action_what, _response);
         return ;
-        // return _response;
-        // #공사중
       
     }
     else if(action_by == "CertificateService")
     {
         act_certificate_service(_msg, _jv, resource_uri, action_what, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else if(action_by == "ComputerSystem")
     {
         act_system(_msg, _jv, resource_uri, action_what, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else if(action_by == "Chassis")
     {}
@@ -1916,15 +1607,11 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
     {
         act_eventservice(_msg, _jv, resource_uri, action_what, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else if(action_by == "LogService")
     {
         act_logservice(_msg, _jv, resource_uri, action_what, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else if(action_by == "UpdateService")
     {}
@@ -1932,17 +1619,11 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
     {
         act_virtualmedia(_msg, _jv, resource_uri, action_what, _response);
         return ;
-        // return _response;
-        // #공사중
     }
     else
     {
         error_reply(_msg, get_error_json("URI Input Error in action_by check"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("URI Input Error in action_by check"), status_codes::BadRequest, _response);
-        // return ;
-        // return _response;
-        // #공사중
     }
 
     // action_by로 캐스팅이 안돼서 action_by로 그냥 액션있는리소스들중에 뭔지 비교일일이 해야함
@@ -1952,10 +1633,6 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
 
     error_reply(_msg, get_error_json("오면안되는곳"), status_codes::BadRequest, _response);
     return ;
-    // _response = reply_error(_request, _msg, get_error_json("오면안되는곳"), status_codes::BadRequest, _response);
-    // return ;
-    // return _response;
-    // #공사중
 }
 
 // m_Request act_bios(http_request _request, m_Request _msg, json::value _jv, string _resource, string _what)
@@ -1987,17 +1664,14 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
 // }
 
 
-// http_response act_certificate(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response)
+
 void act_certificate(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
     Certificate *certi = (Certificate *)g_record[_resource];
     if(certi->actions.find(_what) == certi->actions.end())
     {
-        // _response = reply_error(_request, _msg, get_error_json("No Action in Certificate"), status_codes::BadRequest, _response);
         error_reply(_msg, get_error_json("No Action in Certificate"), status_codes::BadRequest, _response);
         return ;
-        // return _response;
-        // #공사중
     }
 
     if(_what == "Rekey")
@@ -2009,9 +1683,6 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
             // 리퀘스트바디오류
             error_reply(_msg, get_error_json("Request Body error in Certificate Rekey"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("Request Body error in Certificate Rekey"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
         else
         {
@@ -2020,18 +1691,12 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
             {
                 error_reply(_msg, result, status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, result, status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
             else if(get_value_from_json_key(result, "CertificateCollection", check))
             {
 
                 success_reply(_msg, result, status_codes::OK, _response);
                 return ;
-                // _response = reply_success(_request, _msg, result, status_codes::OK, _response);
-                // return _response;
-                // #공사중
             }
         }
         // rsp에 Failed가 있으면 실패
@@ -2046,9 +1711,6 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
             // 리퀘스트바디오류
             error_reply(_msg, get_error_json("No Files Error in Certificate ReNew"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("No Files Error in Certificate ReNew"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
         else
         {
@@ -2057,23 +1719,17 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
             {
                 error_reply(_msg, result, status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, result, status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
             else if(get_value_from_json_key(result, "CertificateCollection", check))
             {
                 success_reply(_msg, result, status_codes::OK, _response);
                 return ;
-                // _response = reply_success(_request, _msg, result, status_codes::OK, _response);
-                // return _response;
-                // #공사중
             }
         }
     }
 }
 
-// http_response act_certificate_service(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response)
+
 void act_certificate_service(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
     CertificateService *cert_service = (CertificateService *)g_record[_resource];
@@ -2081,9 +1737,6 @@ void act_certificate_service(m_Request& _msg, json::value _jv, string _resource,
     {
         error_reply(_msg, get_error_json("No Action in Certificate Service"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Action in Certificate Service"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
     
     if(_what == "GenerateCSR")
@@ -2096,17 +1749,11 @@ void act_certificate_service(m_Request& _msg, json::value _jv, string _resource,
         {
             error_reply(_msg, result, status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, result, status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
         else if(get_value_from_json_key(result, "CertificateCollection", check))
         {
             success_reply(_msg, result, status_codes::OK, _response);
             return ;
-            // _response = reply_success(_request, _msg, result, status_codes::OK, _response);
-            // return _response;
-            // #공사중
         }
 
     }
@@ -2116,20 +1763,14 @@ void act_certificate_service(m_Request& _msg, json::value _jv, string _resource,
         {
             error_reply(_msg, get_error_json("Problem occur in ReplaceCertificate()"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("Problem occur in ReplaceCertificate()"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
 
         success_reply(_msg, json::value::null(), status_codes::OK, _response);
         return ;
-        // _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-        // return _response;
-        // #공사중
     }
 }
 
-// http_response act_system(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response)
+
 void act_system(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
     Systems *system = (Systems *)g_record[_resource];
@@ -2138,29 +1779,20 @@ void act_system(m_Request& _msg, json::value _jv, string _resource, string _what
         // action_what에 해당하는 액션정보가 없음 error
         error_reply(_msg, get_error_json("No Action in ComputerSystem"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Action in ComputerSystem"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     if(!(system->Reset(_jv)))
     {
         error_reply(_msg, get_error_json("Problem occur in Reset()"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Problem occur in Reset()"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     success_reply(_msg, json::value::null(), status_codes::OK, _response);
     return ;
-    // _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-    // return _response;
-    // #공사중
     
 }
 
-// http_response act_eventservice(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response)
+
 void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
     EventService *ev_service = (EventService *)g_record[_resource];
@@ -2169,9 +1801,6 @@ void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string
         // action_what에 해당하는 액션정보가 없음 error
         error_reply(_msg, get_error_json("No Action in EventService"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Action in EventService"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     json::value result;
@@ -2180,9 +1809,6 @@ void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string
     {
         error_reply(_msg, get_error_json("Need Correct Request Body"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Need Correct Request Body"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     // event map 을 이용해서 안에있는 이벤트들을 sub들에게 보내는 걸 한번 해볼게 일단 그 함수를 짤거고
@@ -2193,12 +1819,9 @@ void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string
 
     success_reply(_msg, result, status_codes::OK, _response);
     return ;
-    // _response = reply_success(_request, _msg, result, status_codes::OK, _response);
-    // return _response;
-    // #공사중
 }
 
-// http_response act_logservice(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response)
+
 void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
     LogService *log_service = (LogService *)g_record[_resource];
@@ -2207,9 +1830,6 @@ void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _
         // action_what에 해당하는 액션정보가 없음 error
         error_reply(_msg, get_error_json("No Action in LogService"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Action in LogService"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     // 클리어로그밖에 없으니까 그냥 바로 실행
@@ -2217,19 +1837,13 @@ void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _
     {
         error_reply(_msg, get_error_json("Problem occur in ClearLog()"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Problem occur in ClearLog()"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     success_reply(_msg, json::value::null(), status_codes::OK, _response);
     return ;
-    // _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-    // return _response;
-    // #공사중
 }
 
-// http_response act_virtualmedia(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response _response)
+
 void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
     // 얘는 리소스가 무조건 virtualmedia가 아니라 insert면 virtual컬렉션 eject면 virtualmedia리소스임 그래서 리소스부터 따고
@@ -2239,9 +1853,6 @@ void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string
     {
         error_reply(_msg, get_error_json("No Action in VirtualMedia"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Action in VirtualMedia"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     json::value result_value;
@@ -2302,9 +1913,6 @@ void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string
         }
         error_reply(_msg, get_error_json("Problem Occur in VirtualMedia Actions"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Problem Occur in VirtualMedia Actions"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
     else
     {
@@ -2319,13 +1927,10 @@ void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string
 
         success_reply(_msg, result_value, status_codes::OK, _response);
         return ;
-        // _response = reply_success(_request, _msg, result_value, status_codes::OK, _response);
-        // return _response;
-        // #공사중
     }
 }
 
-// http_response make_account(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
 void make_account(m_Request& _msg, json::value _jv, http_response& _response)
 {
     string user_name;
@@ -2339,9 +1944,6 @@ void make_account(m_Request& _msg, json::value _jv, http_response& _response)
     {
         error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     if(get_value_from_json_key(_jv, "UserName", user_name) == false
@@ -2349,21 +1951,8 @@ void make_account(m_Request& _msg, json::value _jv, http_response& _response)
     {
         error_reply(_msg, get_error_json("No UserName or Password"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     } // json request body에 UserName, Password없으면 BadRequest
   
-    // if(_jv.as_object().find("UserName") == _jv.as_object().end() 
-    // || _jv.as_object().find("Password") == _jv.as_object().end())
-    // {
-    //     _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
-    //     return _msg;
-    // } // json request body에 UserName, Password없으면 BadRequest
-
-    // user_name = _jv.at("UserName").as_string();
-    // password = _jv.at("Password").as_string();
-    // 이거 입력 타입오류 try-catch? 어차피 입력하는곳 만드는 곳에서 입력란에것을 string으로 주게하면되긴함
 
     unsigned int min_pass_length = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->min_password_length;
     unsigned int max_pass_length = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->max_password_length;
@@ -2371,18 +1960,12 @@ void make_account(m_Request& _msg, json::value _jv, http_response& _response)
     {
         error_reply(_msg, get_error_json("Password length must be at least " + to_string(min_pass_length)), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Password length must be at least " + to_string(min_pass_length)), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }// password 길이가 짧으면 BadRequest
 
     if(password.size() > max_pass_length)
     {
         error_reply(_msg, get_error_json("Password length must not exceed " + to_string(max_pass_length)), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Password length must not exceed " + to_string(max_pass_length)), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }// password 길이가 길면 BadRequest
 
     // Collection col = *((Collection *)g_record[ODATA_ACCOUNT_ID]); // 이건 왜 터졌지?
@@ -2394,28 +1977,8 @@ void make_account(m_Request& _msg, json::value _jv, http_response& _response)
         {
             error_reply(_msg, get_error_json("UserName already exists"), status_codes::Conflict, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("UserName already exists"), status_codes::Conflict, _response);
-            // return _response;
-            // #공사중
         }
     }// username이 이미 있으면 Conflict
-
-    // odata_id = ODATA_ACCOUNT_ID;
-    // odata_id = odata_id + '/' + user_name;
-
-    // if(record_is_exist(odata_id))
-    // {
-    //     json::value err;
-    //     err[U("Error")] = json::value::string(U("UserName already exists"));
-    //     http_response res(status_codes::Conflict);
-    //     res.set_body(err);
-    //     _request.reply(res);
-    //     // _request.reply(status_codes::Conflict, err);
-    //     _msg.result.result_datetime = currentDateTime();
-    //     _msg.result.result_status = WORK_FAIL;
-    //     _msg.result.result_response = res;
-    //     return _msg;
-    // }// username 이미 있으면 Conflict
 
     if(_jv.as_object().find("RoleId") != _jv.as_object().end())
     {
@@ -2427,27 +1990,20 @@ void make_account(m_Request& _msg, json::value _jv, http_response& _response)
         {
             error_reply(_msg, get_error_json("No Role"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("No Role"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
     }
 
     if(_jv.as_object().find("Enabled") != _jv.as_object().end())
         enabled = _jv.at("Enabled").as_bool();
 
-    // TODO id를 계정 이름 말고 숫자로 변경 필요
     odata_id = ODATA_ACCOUNT_ID;
     string acc_id = to_string(allocate_numset_num(ALLOCATE_ACCOUNT_NUM));
-    // string acc_id = to_string(allocate_account_num());
+
     odata_id = odata_id + "/" + acc_id;
     // cout << "New account : " << odata_id << endl;
-    // odata_id = odata_id + '/' + user_name;
     account = new Account(odata_id, acc_id, role_id);
-    // account = new Account(odata_id, role_id);
     account->name = "User Account";
     account->user_name = user_name;
-    // account->id = user_name;
     account->password = password;
     account->enabled = enabled;
     account->locked = false;
@@ -2468,7 +2024,7 @@ void make_account(m_Request& _msg, json::value _jv, http_response& _response)
     return ;
 }
 
-// http_response make_session(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
 void make_session(m_Request& _msg, json::value _jv, http_response& _response)
 {
     string user_name;
@@ -2480,9 +2036,6 @@ void make_session(m_Request& _msg, json::value _jv, http_response& _response)
     {
         error_reply(_msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     if(get_value_from_json_key(_jv, "UserName", user_name) == false
@@ -2490,20 +2043,8 @@ void make_session(m_Request& _msg, json::value _jv, http_response& _response)
     {
         error_reply(_msg, get_error_json("No UserName or Password"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     } // json request body에 UserName, Password없으면 BadRequest
 
-    // if(_jv.as_object().find("UserName") == _jv.as_object().end() 
-    // || _jv.as_object().find("Password") == _jv.as_object().end())
-    // {
-    //     _msg = reply_error(_request, _msg, get_error_json("No UserName or Password"), status_codes::BadRequest);
-    //     return _msg;
-    // } // json request body에 UserName, Password없으면 BadRequest
-
-    // user_name = _jv.at("UserName").as_string();
-    // password = _jv.at("Password").as_string();
 
     Collection *col = (Collection *)g_record[ODATA_ACCOUNT_ID];
     std::vector<Resource *>::iterator iter;
@@ -2519,42 +2060,22 @@ void make_session(m_Request& _msg, json::value _jv, http_response& _response)
         }
     }
 
-    // odata_id = ODATA_ACCOUNT_ID;
-    // odata_id = odata_id + '/' + user_name;
-
-    // // Check account exist
-    // if (!record_is_exist(odata_id))
-    // {
-    //     _request.reply(status_codes::BadRequest);
-    //     return;
-    // }
-
-    // account = (Account *)g_record[odata_id]; // 기존 계정검사방법
-
     if(!exist)
     {
         error_reply(_msg, get_error_json("No Account using that UserName"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Account using that UserName"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     } // 입력한 username에 해당하는 계정없음
 
     if(account->password != password)
     {
         error_reply(_msg, get_error_json("Password does not match"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Password does not match"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     } // 비밀번호 맞지않음
 
 
-    // TODO 세션 id로 변경..
     odata_id = ODATA_SESSION_ID;
     string token = generate_token(16);
     string session_id = to_string(allocate_numset_num(ALLOCATE_SESSION_NUM));
-    // string session_id = to_string(allocate_session_num());
     odata_id = odata_id + '/' + session_id;
     // odata_id = odata_id + '/' + token;
     Session *session = new Session(odata_id, session_id, account);
@@ -2576,19 +2097,15 @@ void make_session(m_Request& _msg, json::value _jv, http_response& _response)
     // response_json 반환json없음
 
     return ;
-    // return _response;
 }
 
-// http_response make_role(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
 void make_role(http_request _request, m_Request& _msg, json::value _jv, http_response& _response)
 {
     if(((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->service_enabled == false)
     {
         error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     /* 어카운트 서비스 이용불가면 막히고 .. 관리자만 생성이가능하고.. role 이름(id)를 받아서 만들거고
@@ -2602,9 +2119,6 @@ void make_role(http_request _request, m_Request& _msg, json::value _jv, http_res
         // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
         error_reply(_msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     string session_token = _request.headers()["X-Auth-Token"];
@@ -2614,9 +2128,6 @@ void make_role(http_request _request, m_Request& _msg, json::value _jv, http_res
         // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
         error_reply(_msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     string session_uri = get_session_odata_id_by_token(session_token);
@@ -2645,9 +2156,6 @@ void make_role(http_request _request, m_Request& _msg, json::value _jv, http_res
             // role id를 입력을 안해서 "" 가 들어왔거나 ""를 입력한거지 둘다 아웃으로 한번에 거르자
             error_reply(_msg, get_error_json("Need RoleId"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("Need RoleId"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
 
         Collection *col = (Collection *)g_record[ODATA_ROLE_ID];
@@ -2658,9 +2166,6 @@ void make_role(http_request _request, m_Request& _msg, json::value _jv, http_res
             {
                 error_reply(_msg, get_error_json("RoleId is already in use"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("RoleId is already in use"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
         } // Role id 중복검사
 
@@ -2672,9 +2177,6 @@ void make_role(http_request _request, m_Request& _msg, json::value _jv, http_res
             {
                 error_reply(_msg, get_error_json("Incorrect Privileges"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Incorrect Privileges"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
             tmp_pri.push_back(privileges[i].as_string());
         }
@@ -2684,9 +2186,6 @@ void make_role(http_request _request, m_Request& _msg, json::value _jv, http_res
             // 제대로 된 권한이 하나도 없었다는 것으로 아웃
             error_reply(_msg, get_error_json("Need Correct Privileges"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("Need Correct Privileges"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
 
         // 여기까지 통과했으면 롤아이디도 있고 프리빌리지도 1개이상이니깐 role 생성
@@ -2699,28 +2198,21 @@ void make_role(http_request _request, m_Request& _msg, json::value _jv, http_res
 
         success_reply(_msg, record_get_json(new_role->odata.id), status_codes::Created, _response);
         return ;
-        // _response = reply_success(_request, _msg, record_get_json(new_role->odata.id), status_codes::Created, _response);
-        // return _response;
-        // #공사중
     }
     else
     {
         error_reply(_msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 }
 
 
-// http_response make_subscription(http_request _request, m_Request& _msg, json::value _jv, http_response _response)
+
 void make_subscription(m_Request& _msg, json::value _jv, http_response& _response)
 {
     // todo : protocol, policy, subs_type은 들어갈수있는값이 정해져있어서 검사하는것 추가하기
     string uri = ODATA_EVENT_DESTINATION_ID;
     string service_uri = get_parent_object_uri(uri, "/");
-    unsigned int sub_num = allocate_numset_num(ALLOCATE_SUBSCRIPTION_NUM);
 
     // 필수요소 destination, protocol 존재여부 검사
     string destination;
@@ -2728,9 +2220,6 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
     {
         error_reply(_msg, get_error_json("Need Destination in Request Body"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Need Destination in Request Body"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     string protocol;
@@ -2738,9 +2227,6 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
     {
         error_reply(_msg, get_error_json("Need Protocol in Request Body"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Need Protocol in Request Body"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
     
     // 나머지 멤버변수들 처리
@@ -2767,6 +2253,7 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
 
 
     // EventDestination 생성
+    unsigned int sub_num = allocate_numset_num(ALLOCATE_SUBSCRIPTION_NUM);
     EventService *service = (EventService *)g_record[service_uri];
     // init_event_destination(service->subscriptions, to_string(sub_num));
     string odata_id = uri + "/" + to_string(sub_num);
@@ -2792,9 +2279,6 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
 
     success_reply(_msg, record_get_json(event_dest->odata.id), status_codes::Created, _response);
     return ;
-    // _response = reply_success(_request, _msg, record_get_json(event_dest->odata.id), status_codes::Created, _response);
-    // return _response;
-    // #공사중
 }
 
 // m_Request make_logentry(http_request _request, m_Request _msg, json::value _jv)
@@ -2875,17 +2359,14 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
 
 // }
 
-// http_response modify_account(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response _response)
+
 void modify_account(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response& _response)
 {
     // /redfish/v1/AccountService/Accounts/[Account_id] 처리함수인데
 
-    // 우선 그 계정이 있나 보고
-    // 계정이 있으면 이 계정 patch 를 하는사람이 할 권한이 있는지를 봐야댐
-    // 그래서 로그인 된 녀석의 role이 관리자거나
-    // 혹은 본인계정일때만 patch가능이지
-    // 그걸 뚫으면 이제 비로소 변경가능
-    // 변경하는 와중ㅇ에 유저네임은 중복검사해야하고 롤아이디는 롤존재하는지 검사해야함
+    // #1 계정존재 확인우선 그 계정이 있나 보고
+    // #2 patch 권한있는지 (로그인한 유저의 계정이거나, 관리자거나)
+    // #3 변경시에는 유저네임 중복검사, 롤id는 롤 존재여부검사
 
     // service enabled 검사할건데 일단은 지금은 ODATA_ACCOUNT_SERVICE_ID로 해놓음
     // uri가 account id까지니깐 2번 get_parent해서 accountservice odata구해서 사용하면 bmc꺼도 적용 가능할 듯
@@ -2893,9 +2374,6 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
     {
         error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     if(!(record_is_exist(_uri)))
@@ -2903,9 +2381,6 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
         // 해당 계정이 없음
         error_reply(_msg, get_error_json("No Account"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Account"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     cout << "바뀌기전~~ " << endl;
@@ -2917,9 +2392,6 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
         // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
         error_reply(_msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     string session_token = _request.headers()["X-Auth-Token"];
@@ -2929,9 +2401,6 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
         // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
         error_reply(_msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     string session_uri = get_session_odata_id_by_token(session_token);
@@ -2962,9 +2431,6 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
                 // 해당 롤 없음
                 error_reply(_msg, get_error_json(role_id + " does not exist"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json(role_id + " does not exist"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
             op_role = true;
         }
@@ -2986,9 +2452,6 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
                 {
                     error_reply(_msg, get_error_json("UserName is already in use"), status_codes::BadRequest, _response);
                     return ;
-                    // _response = reply_error(_request, _msg, get_error_json("UserName is already in use"), status_codes::BadRequest, _response);
-                    // return _response;
-                    // #공사중
                 }
 
             } // user_name 중복검사
@@ -3004,26 +2467,17 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
             {
                 error_reply(_msg, get_error_json("Password Range is " + to_string(min) + " ~ " + to_string(max)), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Password Range is " + to_string(min) + " ~ " + to_string(max)), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             } // password 길이 검사
             op_pass = true;   
         }
 
     }
-    // role_id로 하기엔 role을 생성할 수도 있는 거여서 나중에 role안에 privileges에 권한 확인하는걸로 바꿔야 할 수도있음
-    // + 현재 로그인이 관리자로되어있어서 위에서 role관련 수행했는데 성공하고 아래 유저네임 패스워드에서 에러잡혀서
-    // 수행을 하지 않으면 response에는 BadRequest 인데 role은 바뀐게 적용되고있음 기억해 둬야함 .. 리멤버
-    // 로직 수정해야겠는데? ex) jv에 롤있는데 관리자권한이 아니라든가 위에 리멤버라든가 
+    // role_id로 하기엔 role을 생성할 수도 있는 거여서 나중에 role안에 privileges에 권한 확인하는걸로 바꿔야 할 수도 있음
 
     if(!op_role && !op_name && !op_pass) // 다 false면
     {
         error_reply(_msg, get_error_json("Cannot Modify Account"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Cannot Modify Account"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     if(op_role){
@@ -3048,29 +2502,21 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
 
     success_reply(_msg, record_get_json(_uri), status_codes::OK, _response);
     return ;
-    // _response = reply_success(_request, _msg, record_get_json(_uri), status_codes::OK, _response);
-    // return _response;
-    // #공사중
 }
 
-// http_response modify_role(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response _response)
+
 void modify_role(http_request _request, m_Request& _msg, json::value _jv, string _uri, http_response& _response)
 {
     // /redfish/v1/AccountService/Roles/[Role_id]
 
-    // 해당 role이 있나 보고
-    // 있으면 권한 변경은 관리자만 할수있게끔해야지
-    // 로그인된 녀석이 관리자냐 확인하고
-    // 뚫으면 변경하는데 변경할게 assignedprivileges 밖에 없음
+    // #1 해당 role 존재검사
+    // #2 role 변경은 관리자만
+    // 변경할게 assignedprivileges 밖에 없음
     string service_id = get_parent_object_uri(get_parent_object_uri(_uri, "/"), "/");
     if(((AccountService *)g_record[service_id])->service_enabled == false)
     {
         error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
-        
     }
 
 
@@ -3079,9 +2525,6 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
         // 해당 롤이 없음
         error_reply(_msg, get_error_json("No Role"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("No Role"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     if(!_request.headers().has("X-Auth-Token"))
@@ -3089,9 +2532,6 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
         // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
         error_reply(_msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     string session_token = _request.headers()["X-Auth-Token"];
@@ -3101,9 +2541,6 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
         // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
         error_reply(_msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
 
     string session_uri = get_session_odata_id_by_token(session_token);
@@ -3123,9 +2560,6 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
         {
             error_reply(_msg, get_error_json("No Privileges"), status_codes::BadRequest, _response);
             return ;
-            // _response = reply_error(_request, _msg, get_error_json("No Privileges"), status_codes::BadRequest, _response);
-            // return _response;
-            // #공사중
         }
 
         cout << "바뀌기전~~ " << endl;
@@ -3152,16 +2586,14 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
                     store.push_back(input); //모아서 한번에 붙이려고 store에 잠시 보관
                     // target_role->assigned_privileges.push_back(input);
                 else
-                    cout << input << " 이미 있어요!!" << endl;
+                    log(info) << "[" << input << "]" << " is already exist";
+                    // cout << input << " 이미 있어요!!" << endl;
             }
             else
             {
-                //올바른 privilege 가 아님!!
+                //올바른 privilege 가 아님
                 error_reply(_msg, get_error_json("Incorrect Previlege"), status_codes::BadRequest, _response);
                 return ;
-                // _response = reply_error(_request, _msg, get_error_json("Incorrect Previlege"), status_codes::BadRequest, _response);
-                // return _response;
-                // #공사중
             }
         }
 
@@ -3178,36 +2610,27 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
         // 관리자만 변경할수있음!!
         error_reply(_msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
         return ;
-        // _response = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
-        // return _response;
-        // #공사중
     }
     // 일단 assignedprivileges 있는걸 추가하는식으로만 구현해봄 삭제는 보류
 
     resource_save_json(g_record[_uri]);
     success_reply(_msg, record_get_json(_uri), status_codes::OK, _response);
     return ;
-    // _response = reply_success(_request, _msg, record_get_json(_uri), status_codes::OK, _response);
-    // return _response;
-    // #공사중
 }
 
 
-// m_Request remove_account(http_request _request, m_Request _msg, json::value _jv, string _service_uri)
-http_response remove_account(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response)
+
+void remove_account(m_Request& _msg, json::value _jv, string _uri, string _service_uri, http_response& _response)
 {
     string username, password, odata_id;
-    odata_id = _request.request_uri().to_string(); // ## 방식변경후 추가
+    odata_id = _uri; //_request.request_uri().to_string(); // ## 방식변경후 추가
     // ### 방식변경 : 유저네임 패스워드 받고 /Accounts까지 받던 uri를
     // request body안받고 /Accounts/[id] 까지 받음 uri 
 
     if(((AccountService *)g_record[_service_uri])->service_enabled == false)
     {
-        _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        return _response;
-        
-        // _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
+        return ;
     }
 
     // if(get_value_from_json_key(_jv, "UserName", username) == false
@@ -3246,8 +2669,8 @@ http_response remove_account(http_request _request, m_Request& _msg, json::value
 
     if(!record_is_exist(odata_id))
     {
-        _response = reply_error(_request, _msg, get_error_json("No Account"), status_codes::BadRequest, _response);
-        return _response;
+        error_reply(_msg, get_error_json("No Account"), status_codes::BadRequest, _response);
+        return ;
     }
 
     // if(!exist)
@@ -3265,96 +2688,72 @@ http_response remove_account(http_request _request, m_Request& _msg, json::value
     unsigned int id_num;
     id_num = stoi(((Account *)g_record[odata_id])->id);
     delete_numset_num(ALLOCATE_ACCOUNT_NUM, id_num);
-    // delete_account_num(id_num);
-    // numset에서 num id 삭제
-    // 이거땜에 bmc는 username으로 id쓰는거 수정하든가 새로 처리하든가 해야함
 
     delete(*iter);
     acc_service->account_collection->members.erase(iter);
     // account자체 객체삭제, g_record에서 삭제, account collection에서 삭제
 
-    // string delete_path = odata_id + ".json";
-    // if(remove(delete_path.c_str()) < 0)
-    // {
-    //     cout << "account json file delete error" << endl;
-    // }
     delete_resource(odata_id);
     // account json파일 삭제
     resource_save_json(acc_service->account_collection);
+    // collection 반영
 
     cout << "지운후~~ " << endl;
     cout << "지워진놈 : " << odata_id << endl;
     cout << record_get_json(acc_service->account_collection->odata.id) << endl;
 
-    _response = reply_success(_request, _msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK, _response);
-    return _response;
-    // _msg = reply_success(_request, _msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK);
-    // // status ok로 바꿔
-    // return _msg;
+    success_reply(_msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK, _response);
+    return ;
 }
 
-// m_Request remove_session(http_request _request, m_Request _msg)
-http_response remove_session(http_request _request, m_Request& _msg, http_response _response)
+
+void remove_session(http_request _request, m_Request& _msg, http_response& _response)
 {
     if(((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->service_enabled == false)
     {
-        _response = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Session Service isn't Enabled"), status_codes::BadRequest, _response);
+        return ;
     }
 
     // 아니근데 이거 x-auth-token가지고만 하면 a가 로그인한채로 b꺼 x토큰 보내서 로그아웃 시킬수도있는데??
     if(!(is_session_valid(_request.headers()["X-Auth-Token"])))
     {
-        _response = reply_error(_request, _msg, get_error_json("Unvalid Session"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Unvalid Session"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Unvalid Session"), status_codes::BadRequest, _response);
+        return ;
     }
 
     // 토큰에 해당하는 세션 종료
     string token = _request.headers()["X-Auth-Token"];
     string session_uri = get_session_odata_id_by_token(token);
-    // string session_uri = ODATA_SESSION_ID;
-    // session_uri = session_uri + '/' + token;
     Session *session;
 
     session = (Session *)g_record[session_uri];
     // cout << "YYYY : " << session->id << endl;
-    session->_remain_expires_time = 1;
-
-    _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-    return _response;
-    // _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
-    // // status ok로..
-    // return _msg;
+    session->_remain_expires_time = 0;
+    // session->cts.cancel();
+    log(info) << "Session Cancel Call~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    return ;
 }
 
-// m_Request remove_role(http_request _request, m_Request _msg, json::value _jv, string _service_uri)
-http_response remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response _response)
+
+void remove_role(http_request _request, m_Request& _msg, json::value _jv, string _service_uri, http_response& _response)
 {
-    // 어카운트 서비스 이용가능여부 체크, 관리자만 할수있음
-    // uri는 /AccountService/Roles/[Role_id]로 들어올거라서 predefined true만 아니면
-    // 그냥 그 해당하는 role 지워버리면됨 레코드지우고 컬렉션에서지우고 제이슨지우고
-    // 근데 그 role로 만들어둔 계정이 있을거아님? 그래서 그 서비스에서 account컬렉션 한번만 돌아서 roleid비교해서
-    // 지워지는놈이면 ReadOnly로 걍 바꿔줄게 
+    // #1 AccountService enabled체크, 관리자만 가능
+    // #2 지우려는 Role Record가 Predefined Role이 아니면 지움
+    // #3 이때 이 지워진 Roleid로 설정된 계정들이 있으면 ReadOnly로 일괄변경해둠
     string uri = _request.request_uri().to_string();
     if(((AccountService *)g_record[_service_uri])->service_enabled == false)
     {
-        _response = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Account Service isn't Enabled"), status_codes::BadRequest, _response);
+        return ;
     }
 
     if(!_request.headers().has("X-Auth-Token"))
     {
         // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
-        _response = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Login Required"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
+        return ;
     }
 
     string session_token = _request.headers()["X-Auth-Token"];
@@ -3362,10 +2761,8 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
     if(!is_session_valid(session_token))
     {
         // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
-        _response = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Session Unvalid"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
+        return ;
     }
 
     string session_uri = get_session_odata_id_by_token(session_token);
@@ -3379,19 +2776,15 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
     {
         if(!record_is_exist(uri))
         {
-            _response = reply_error(_request, _msg, get_error_json("Role does not exist"), status_codes::BadRequest, _response);
-            return _response;
-            // _msg = reply_error(_request, _msg, get_error_json("Role does not exist"), status_codes::BadRequest);
-            // return _msg;
+            error_reply(_msg, get_error_json("Role does not exist"), status_codes::BadRequest, _response);
+            return ;
         }
 
         Role *role = (Role *)g_record[uri];
         if(role->is_predefined == true)
         {
-            _response = reply_error(_request, _msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest, _response);
-            return _response;
-            // _msg = reply_error(_request, _msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest);
-            // return _msg;
+            error_reply(_msg, get_error_json("Predefined Role Cannot DELETE"), status_codes::BadRequest, _response);
+            return ;
         }
 
         string role_id = role->id;
@@ -3433,31 +2826,25 @@ http_response remove_role(http_request _request, m_Request& _msg, json::value _j
         }
 
 
-        _response = reply_success(_request, _msg, record_get_json(role_col->odata.id), status_codes::OK, _response);
-        return _response;
-        // _msg = reply_success(_request, _msg, record_get_json(role_col->odata.id), status_codes::OK);
-        // return _msg;
+        success_reply(_msg, record_get_json(role_col->odata.id), status_codes::OK, _response);
+        return ;
     }
     else
     {
-        _response = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("Only Administrator Can Use"), status_codes::BadRequest, _response);
+        return ;
     }
     
 }
 
-// m_Request remove_subscription(http_request _request, m_Request _msg, string _service_uri)
-http_response remove_subscription(http_request _request, m_Request& _msg, string _service_uri, http_response _response)
+
+void remove_subscription(m_Request& _msg, string _uri, string _service_uri, http_response& _response)
 {
-    string uri = _request.request_uri().to_string();
+    string uri = _uri; //_request.request_uri().to_string();
     if(!record_is_exist(uri))
     {
-        _response = reply_error(_request, _msg, get_error_json("No Subscription"), status_codes::BadRequest, _response);
-        return _response;
-        // _msg = reply_error(_request, _msg, get_error_json("No Subscription"), status_codes::BadRequest);
-        // return _msg;
+        error_reply(_msg, get_error_json("No Subscription"), status_codes::BadRequest, _response);
+        return ;
     }
 
     EventService *service = (EventService *)g_record[_service_uri];
@@ -3489,12 +2876,9 @@ http_response remove_subscription(http_request _request, m_Request& _msg, string
     cout << "지워진놈 : " << uri << endl;
     cout << record_get_json(col->odata.id) << endl;
 
-    _response = reply_success(_request, _msg, json::value::null(), status_codes::OK, _response);
-    return _response;
-    // _msg = reply_success(_request, _msg, json::value::null(), status_codes::OK);
-    // return _msg;
+    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    return ;
 }
-// #공사중 - reply_error 포함다수부분 주석처리
 
 bool patch_account_service(json::value _jv, string _record_uri)
 {
@@ -3669,23 +3053,46 @@ bool patch_session_service(json::value _jv)
     return result;
 }
 
-void patch_manager(json::value _jv, string _record_uri)
+bool patch_manager(json::value _jv, string _record_uri)
 {
     cout << "바뀌기전~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
     cout << " $$$$$$$ " << endl;
 
-    if(_jv.as_object().find("Description") != _jv.as_object().end())
-        ((Manager *)g_record[_record_uri])->description = _jv.at("Description").as_string();
+    bool result = false;
 
-    if(_jv.as_object().find("DateTime") != _jv.as_object().end())
-        ((Manager *)g_record[_record_uri])->datetime = _jv.at("DateTime").as_string();
+    string description, datetime, offset;
+    if(get_value_from_json_key(_jv, "Description", description))
+    {
+        ((Manager *)g_record[_record_uri])->description = description;
+        result = true;
+    }
 
-    if(_jv.as_object().find("DateTimeLocalOffset") != _jv.as_object().end())
-        ((Manager *)g_record[_record_uri])->datetime_offset = _jv.at("DateTimeLocalOffset").as_string();
+    if(get_value_from_json_key(_jv, "DateTime", datetime))
+    {
+        ((Manager *)g_record[_record_uri])->datetime = datetime;
+        result = true;
+    }
+
+    if(get_value_from_json_key(_jv, "DateTimeLocalOffset", offset))
+    {
+        ((Manager *)g_record[_record_uri])->datetime_offset = offset;
+        result = true;
+    }
+
+    // if(_jv.as_object().find("Description") != _jv.as_object().end())
+    //     ((Manager *)g_record[_record_uri])->description = _jv.at("Description").as_string();
+
+    // if(_jv.as_object().find("DateTime") != _jv.as_object().end())
+    //     ((Manager *)g_record[_record_uri])->datetime = _jv.at("DateTime").as_string();
+
+    // if(_jv.as_object().find("DateTimeLocalOffset") != _jv.as_object().end())
+    //     ((Manager *)g_record[_record_uri])->datetime_offset = _jv.at("DateTimeLocalOffset").as_string();
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
+
+    return result;
 }
 
 bool patch_network_protocol(json::value _jv, string _record_uri)
@@ -3968,7 +3375,6 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
     string hostname;
     if(get_value_from_json_key(_jv, "HostName", hostname))
     {
-        eth->hostname = hostname;
         if(_flag == 1)
         {
             string buf = "hostname ";
@@ -3976,13 +3382,13 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
             cout << "hostname buf : " << buf << endl;
             system(buf.c_str());
         }
+        eth->hostname = hostname;
         result = true;
     }
 
     string mac;
     if(get_value_from_json_key(_jv, "MACAddress", mac))
     {
-        eth->mac_address = mac;
         if(_flag == 1)
         {
             string buf = "macchanger -m ";
@@ -3990,13 +3396,13 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
             cout << "macaddress buf : " << buf << endl;
             // system(buf.c_str());
         }
+        eth->mac_address = mac;
         result = true;
     }
 
     int mtu;
     if(get_value_from_json_key(_jv, "MTUSize", mtu))
     {
-        eth->mtu_size = mtu;
         if(_flag == 1)
         {
             string buf = "ip link set ";
@@ -4005,6 +3411,7 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
             cout << "mtusize buf : " << buf << endl;
             system(buf.c_str());
         }
+        eth->mtu_size = mtu;
         result = true;
     }
 
@@ -4024,7 +3431,6 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
         string gateway;
         if(get_value_from_json_key(ipv4, "Address", address))
         {
-            eth->v_ipv4[0].address = address;
             if(_flag == 1)
             {
                 string buf = "ifconfig eth";
@@ -4032,12 +3438,12 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
                 cout << "ipv4 address buf : " << buf << endl;
                 // system(buf.c_str());
             }
+            eth->v_ipv4[0].address = address;
             result = true;
         }
 
         if(get_value_from_json_key(ipv4, "SubnetMask", netmask))
         {
-            eth->v_ipv4[0].subnet_mask = netmask;
             if(_flag == 1)
             {
                 string buf = "ifconfig eth";
@@ -4045,12 +3451,12 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
                 cout << "ipv4 subnetmask buf : " << buf << endl;
                 // system(buf.c_str());
             }
+            eth->v_ipv4[0].subnet_mask = netmask;
             result = true;
         }
 
         if(get_value_from_json_key(ipv4, "Gateway", gateway))
         {
-            eth->v_ipv4[0].gateway = gateway;
             if(_flag == 1)
             {
                 string buf = "route add default gw ";
@@ -4058,6 +3464,7 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
                 cout << "ipv4 gateway buf : " << buf << endl;
                 // system(buf.c_str());
             }
+            eth->v_ipv4[0].gateway = gateway;
             result = true;
         }
 
@@ -4103,7 +3510,7 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
 
 }
 
-void patch_system(json::value _jv, string _record_uri)
+bool patch_system(json::value _jv, string _record_uri)
 {
     cout << "바뀌기전~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
@@ -4112,141 +3519,331 @@ void patch_system(json::value _jv, string _record_uri)
     // log(debug) << record_get_json(uri);
     // log(info) << " $$$$$$$ ";
 
-    if(_jv.as_object().find("Description") != _jv.as_object().end())
-        ((Systems *)g_record[_record_uri])->description = _jv.at("Description").as_string();
+    bool result = false;
 
-    if(_jv.as_object().find("HostName") != _jv.as_object().end())
-        ((Systems *)g_record[_record_uri])->hostname = _jv.at("HostName").as_string();
+    
 
-    if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
-        ((Systems *)g_record[_record_uri])->asset_tag = _jv.at("AssetTag").as_string();
+    // if(_jv.as_object().find("Description") != _jv.as_object().end())
+    //     ((Systems *)g_record[_record_uri])->description = _jv.at("Description").as_string();
 
-    if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
+    // if(_jv.as_object().find("HostName") != _jv.as_object().end())
+    //     ((Systems *)g_record[_record_uri])->hostname = _jv.at("HostName").as_string();
+
+    // if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
+    //     ((Systems *)g_record[_record_uri])->asset_tag = _jv.at("AssetTag").as_string();
+
+
+    string led;
+    if(get_value_from_json_key(_jv, "IndicatorLED", led))
     {
-        string led = _jv.at("IndicatorLED").as_string();
         if(led == "Off")
             ((Systems *)g_record[_record_uri])->indicator_led = LED_OFF;
         else if(led == "Blinking")
             ((Systems *)g_record[_record_uri])->indicator_led = LED_BLINKING;
         else if(led == "Lit")
             ((Systems *)g_record[_record_uri])->indicator_led = LED_LIT;
+        else
+            return false;
+
+        result = true;
     }
 
-    if(_jv.as_object().find("Boot") != _jv.as_object().end())
+    string description, hostname, asset_tag;
+    if(get_value_from_json_key(_jv, "Description", description))
     {
-        json::value j = json::value::object();
-        j = _jv.at("Boot");
-
-        if(j.as_object().find("BootSourceOverrideEnabled") != j.as_object().end())
-            ((Systems *)g_record[_record_uri])->boot.boot_source_override_enabled = j.at("BootSourceOverrideEnabled").as_string();
-
-        if(j.as_object().find("BootSourceOverrideTarget") != j.as_object().end())
-            ((Systems *)g_record[_record_uri])->boot.boot_source_override_target = j.at("BootSourceOverrideTarget").as_string();
-
-        if(j.as_object().find("BootSourceOverrideMode") != j.as_object().end())
-            ((Systems *)g_record[_record_uri])->boot.boot_source_override_mode = j.at("BootSourceOverrideMode").as_string();
-
-        if(j.as_object().find("UefiTargetBootSourceOverride") != j.as_object().end())
-            ((Systems *)g_record[_record_uri])->boot.uefi_target_boot_source_override = j.at("UefiTargetBootSourceOverride").as_string();
+        ((Systems *)g_record[_record_uri])->description = description;
+        result = true;
     }
+
+    if(get_value_from_json_key(_jv, "HostName", hostname))
+    {
+        ((Systems *)g_record[_record_uri])->hostname = hostname;
+        result = true;
+    }
+
+    if(get_value_from_json_key(_jv, "AssetTag", asset_tag))
+    {
+        ((Systems *)g_record[_record_uri])->asset_tag = asset_tag;
+        result = true;
+    }
+    
+    // if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
+    // {
+    //     string led = _jv.at("IndicatorLED").as_string();
+    //     if(led == "Off")
+    //         ((Systems *)g_record[_record_uri])->indicator_led = LED_OFF;
+    //     else if(led == "Blinking")
+    //         ((Systems *)g_record[_record_uri])->indicator_led = LED_BLINKING;
+    //     else if(led == "Lit")
+    //         ((Systems *)g_record[_record_uri])->indicator_led = LED_LIT;
+    // }
+
+    json::value boot;
+    if(get_value_from_json_key(_jv, "Boot", boot))
+    {
+        string bsoe, bsot, bsom, utbso;
+        if(get_value_from_json_key(boot, "BootSourceOverrideEnabled", bsoe))
+        {
+            ((Systems *)g_record[_record_uri])->boot.boot_source_override_enabled = bsoe;
+            result = true;
+        }
+
+        if(get_value_from_json_key(boot, "BootSourceOverrideTarget", bsot))
+        {
+            ((Systems *)g_record[_record_uri])->boot.boot_source_override_target = bsot;
+            result = true;
+        }
+
+        if(get_value_from_json_key(boot, "BootSourceOverrideMode", bsom))
+        {
+            ((Systems *)g_record[_record_uri])->boot.boot_source_override_mode = bsom;
+            result = true;
+        }
+
+        if(get_value_from_json_key(boot, "UefiTargetBootSourceOverride", utbso))
+        {
+            ((Systems *)g_record[_record_uri])->boot.uefi_target_boot_source_override = utbso;
+            result = true;
+        }
+    }
+
+    // if(_jv.as_object().find("Boot") != _jv.as_object().end())
+    // {
+    //     json::value j = json::value::object();
+    //     j = _jv.at("Boot");
+
+    //     if(j.as_object().find("BootSourceOverrideEnabled") != j.as_object().end())
+    //         ((Systems *)g_record[_record_uri])->boot.boot_source_override_enabled = j.at("BootSourceOverrideEnabled").as_string();
+
+    //     if(j.as_object().find("BootSourceOverrideTarget") != j.as_object().end())
+    //         ((Systems *)g_record[_record_uri])->boot.boot_source_override_target = j.at("BootSourceOverrideTarget").as_string();
+
+    //     if(j.as_object().find("BootSourceOverrideMode") != j.as_object().end())
+    //         ((Systems *)g_record[_record_uri])->boot.boot_source_override_mode = j.at("BootSourceOverrideMode").as_string();
+
+    //     if(j.as_object().find("UefiTargetBootSourceOverride") != j.as_object().end())
+    //         ((Systems *)g_record[_record_uri])->boot.uefi_target_boot_source_override = j.at("UefiTargetBootSourceOverride").as_string();
+    // }
 
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
-    // log(warning) << "바꾼후~~ ";
-    // log(error) << record_get_json(uri);
-    // log(fatal) << "FATAL!";
+    return result;
 }
 
-void patch_chassis(json::value _jv, string _record_uri)
+bool patch_chassis(json::value _jv, string _record_uri)
 {
     cout << "바뀌기전~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
     cout << " $$$$$$$ " << endl;
 
-    if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
-        ((Chassis *)g_record[_record_uri])->asset_tag = _jv.at("AssetTag").as_string();
+    bool result = false;
 
-    if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
+    string led;
+    if(get_value_from_json_key(_jv, "IndicatorLED", led))
     {
-        string led = _jv.at("IndicatorLED").as_string();
         if(led == "Off")
-            // ((Chassis *)g_record[_record_uri])->led_off
             ((Chassis *)g_record[_record_uri])->indicator_led = LED_OFF;
         else if(led == "Blinking")
             ((Chassis *)g_record[_record_uri])->indicator_led = LED_BLINKING;
         else if(led == "Lit")
             ((Chassis *)g_record[_record_uri])->indicator_led = LED_LIT;
+        else
+            return false;
+
+        result = true;
     }
 
-    if(_jv.as_object().find("Location") != _jv.as_object().end())
+    string asset_tag;
+    if(get_value_from_json_key(_jv, "AssetTag", asset_tag))
     {
-        json::value j;
-        j = _jv.at("Location");
+        ((Chassis *)g_record[_record_uri])->asset_tag = asset_tag;
+        result = true;
+    }
 
-        if(j.as_object().find("PostalAddress") != j.as_object().end())
+    // if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
+    //     ((Chassis *)g_record[_record_uri])->asset_tag = _jv.at("AssetTag").as_string();
+
+    // if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
+    // {
+    //     string led = _jv.at("IndicatorLED").as_string();
+    //     if(led == "Off")
+    //         // ((Chassis *)g_record[_record_uri])->led_off
+    //         ((Chassis *)g_record[_record_uri])->indicator_led = LED_OFF;
+    //     else if(led == "Blinking")
+    //         ((Chassis *)g_record[_record_uri])->indicator_led = LED_BLINKING;
+    //     else if(led == "Lit")
+    //         ((Chassis *)g_record[_record_uri])->indicator_led = LED_LIT;
+    // }
+
+    json::value location;
+    if(get_value_from_json_key(_jv, "Location", location))
+    {
+        json::value postal_address, placement;
+        if(get_value_from_json_key(location, "PostalAddress", postal_address))
         {
-            json::value k;
-            k = j.at("PostalAddress");
-
-            if(k.as_object().find("Country") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.postal_address.country = k.at("Country").as_string();
-            if(k.as_object().find("Territory") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.postal_address.territory = k.at("Territory").as_string();
-            if(k.as_object().find("City") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.postal_address.city = k.at("City").as_string();
-            if(k.as_object().find("Street") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.postal_address.street = k.at("Street").as_string();
-            if(k.as_object().find("HouseNumber") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.postal_address.house_number = k.at("HouseNumber").as_string();
-            if(k.as_object().find("Name") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.postal_address.name = k.at("Name").as_string();
-            if(k.as_object().find("PostalCode") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.postal_address.postal_code = k.at("PostalCode").as_string();
+            string country, territory, city, street, house_number, name, postal_code;
+            if(get_value_from_json_key(postal_address, "Country", country))
+            {
+                ((Chassis *)g_record[_record_uri])->location.postal_address.country = country;
+                result = true;
+            }
+            if(get_value_from_json_key(postal_address, "Territory", territory))
+            {
+                ((Chassis *)g_record[_record_uri])->location.postal_address.territory = territory;
+                result = true;
+            }
+            if(get_value_from_json_key(postal_address, "City", city))
+            {
+                ((Chassis *)g_record[_record_uri])->location.postal_address.city = city;
+                result = true;
+            }
+            if(get_value_from_json_key(postal_address, "Street", street))
+            {
+                ((Chassis *)g_record[_record_uri])->location.postal_address.street = street;
+                result = true;
+            }
+            if(get_value_from_json_key(postal_address, "HouseNumber", house_number))
+            {
+                ((Chassis *)g_record[_record_uri])->location.postal_address.house_number = house_number;
+                result = true;
+            }
+            if(get_value_from_json_key(postal_address, "Name", name))
+            {
+                ((Chassis *)g_record[_record_uri])->location.postal_address.name = name;
+                result = true;
+            }
+            if(get_value_from_json_key(postal_address, "PostalCode", postal_code))
+            {
+                ((Chassis *)g_record[_record_uri])->location.postal_address.postal_code = postal_code;
+                result = true;
+            }
         }
 
-        if(j.as_object().find("Placement") != j.as_object().end())
+        if(get_value_from_json_key(location, "Placement", placement))
         {
-            json::value k;
-            k = j.at("Placement");
+            string row, rack, rack_offset_units;
+            unsigned int rack_offset;
+            if(get_value_from_json_key(placement, "Row", row))
+            {
+                ((Chassis *)g_record[_record_uri])->location.placement.row = row;
+                result = true;
+            }
+            if(get_value_from_json_key(placement, "Rack", rack))
+            {
+                ((Chassis *)g_record[_record_uri])->location.placement.rack = rack;
+                result = true;
+            }
+            if(get_value_from_json_key(placement, "RackOffsetUnits", rack_offset_units))
+            {
+                ((Chassis *)g_record[_record_uri])->location.placement.rack_offset_units = rack_offset_units;
+                result = true;
+            }
+            if(get_value_from_json_key(placement, "RackOffset", rack_offset))
+            {
+                ((Chassis *)g_record[_record_uri])->location.placement.rack_offset = rack_offset;
+                result = true;
+            }
 
-            if(k.as_object().find("Row") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.placement.row = k.at("Row").as_string();
-            if(k.as_object().find("Rack") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.placement.rack = k.at("Rack").as_string();
-            if(k.as_object().find("RackOffsetUnits") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.placement.rack_offset_units = k.at("RackOffsetUnits").as_string();
-            if(k.as_object().find("RackOffset") != k.as_object().end())
-                ((Chassis *)g_record[_record_uri])->location.placement.rack_offset = k.at("RackOffset").as_integer();
         }
     }
+
+    // if(_jv.as_object().find("Location") != _jv.as_object().end())
+    // {
+    //     json::value j;
+    //     j = _jv.at("Location");
+
+    //     if(j.as_object().find("PostalAddress") != j.as_object().end())
+    //     {
+    //         json::value k;
+    //         k = j.at("PostalAddress");
+
+    //         if(k.as_object().find("Country") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.postal_address.country = k.at("Country").as_string();
+    //         if(k.as_object().find("Territory") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.postal_address.territory = k.at("Territory").as_string();
+    //         if(k.as_object().find("City") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.postal_address.city = k.at("City").as_string();
+    //         if(k.as_object().find("Street") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.postal_address.street = k.at("Street").as_string();
+    //         if(k.as_object().find("HouseNumber") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.postal_address.house_number = k.at("HouseNumber").as_string();
+    //         if(k.as_object().find("Name") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.postal_address.name = k.at("Name").as_string();
+    //         if(k.as_object().find("PostalCode") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.postal_address.postal_code = k.at("PostalCode").as_string();
+    //     }
+
+    //     if(j.as_object().find("Placement") != j.as_object().end())
+    //     {
+    //         json::value k;
+    //         k = j.at("Placement");
+
+    //         if(k.as_object().find("Row") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.placement.row = k.at("Row").as_string();
+    //         if(k.as_object().find("Rack") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.placement.rack = k.at("Rack").as_string();
+    //         if(k.as_object().find("RackOffsetUnits") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.placement.rack_offset_units = k.at("RackOffsetUnits").as_string();
+    //         if(k.as_object().find("RackOffset") != k.as_object().end())
+    //             ((Chassis *)g_record[_record_uri])->location.placement.rack_offset = k.at("RackOffset").as_integer();
+    //     }
+    // }
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
 
+    return result;
 }
 
-void patch_power_control(json::value _jv, string _record_uri)
+bool patch_power_control(json::value _jv, string _record_uri)
 {
     cout << "바뀌기전~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
     cout << " $$$$$$$ " << endl;
 
-    if(_jv.as_object().find("PowerLimit") != _jv.as_object().end())
-    {
-        json::value j;
-        j = _jv.at("PowerLimit");
+    bool result = false;
 
-        if(j.as_object().find("CorrectionInMs") != j.as_object().end())
-            ((PowerControl *)g_record[_record_uri])->power_limit.correction_in_ms = j.at("CorrectionInMs").as_integer();
-        if(j.as_object().find("LimitException") != j.as_object().end())
-            ((PowerControl *)g_record[_record_uri])->power_limit.limit_exception = j.at("LimitException").as_string();
-        if(j.as_object().find("LimitInWatts") != j.as_object().end())
-            ((PowerControl *)g_record[_record_uri])->power_limit.limit_in_watts = j.at("LimitInWatts").as_double();
+    json::value power_limit;
+    if(get_value_from_json_key(_jv, "PowerLimit", power_limit))
+    {
+        int correction_in_ms;
+        string limit_exception;
+        double limit_in_watts;
+        if(get_value_from_json_key(power_limit, "CorrectionInMs", correction_in_ms))
+        {
+            ((PowerControl *)g_record[_record_uri])->power_limit.correction_in_ms = correction_in_ms;
+            result = true;
+        }
+        if(get_value_from_json_key(power_limit, "LimitException", limit_exception))
+        {
+            ((PowerControl *)g_record[_record_uri])->power_limit.limit_exception = limit_exception;
+            result = true;
+        }
+        if(get_value_from_json_key(power_limit, "LimitInWatts", limit_in_watts))
+        {
+            ((PowerControl *)g_record[_record_uri])->power_limit.limit_in_watts = limit_in_watts;
+            result = true;
+        }
     }
+
+    // if(_jv.as_object().find("PowerLimit") != _jv.as_object().end())
+    // {
+    //     json::value j;
+    //     j = _jv.at("PowerLimit");
+
+    //     if(j.as_object().find("CorrectionInMs") != j.as_object().end())
+    //         ((PowerControl *)g_record[_record_uri])->power_limit.correction_in_ms = j.at("CorrectionInMs").as_integer();
+    //     if(j.as_object().find("LimitException") != j.as_object().end())
+    //         ((PowerControl *)g_record[_record_uri])->power_limit.limit_exception = j.at("LimitException").as_string();
+    //     if(j.as_object().find("LimitInWatts") != j.as_object().end())
+    //         ((PowerControl *)g_record[_record_uri])->power_limit.limit_in_watts = j.at("LimitInWatts").as_double();
+    // }
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;
+
+    return result;
 }
 
 bool patch_event_service(json::value _jv, string _record_uri)
@@ -4352,52 +3949,6 @@ bool patch_subscription(json::value _jv, string _record_uri)
     return result;
 }
 
-// m_Request reply_error(http_request _request, m_Request _msg, string _message, web::http::status_code _status)
-// {
-//     json::value err;
-//     http_response res(_status);
-//     if(_message != "")
-//     {
-//         err[U("Error")] = json::value::string(U(_message));
-//         res.set_body(err);
-//     }
-    
-//     // _request.reply(status_codes::BadRequest, err);
-//     _msg.result.result_datetime = currentDateTime();
-//     _msg.result.result_status = WORK_FAIL;
-//     _msg.result.result_response = res;
-
-//     _request.reply(res);
-//     return _msg;
-// }
-
-// m_Request reply_error(http_request _request, m_Request _msg, json::value _jv, web::http::status_code _status)
-http_response reply_error(http_request _request, m_Request& _msg, json::value _jv, web::http::status_code _status, http_response _response)
-{   
-    log(warning) << "reply error..";
-    // http_response res(_status);
-    _response.set_status_code(_status);
-    if(_jv != json::value::null())
-    {
-        _response.set_body(_jv);
-        _msg.result.response_json = _jv;
-        // res.set_body(_jv);
-    }
-
-    _msg.result.result_datetime = currentDateTime();
-    _msg.result.result_status = WORK_FAIL;
-    _msg.result.result_response = _response;
-    // res.headers().add("Access-Control-Allow-Origin", "*");
-    // res.headers().add("Access-Control-Allow-Credentials", "true");
-    // res.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
-    // res.headers().add("Access-Control-Max-Age", "3600");
-    // res.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
-
-    return _response;
-    // _request.reply(res);
-    // return _msg;
-}
-
 void error_reply(m_Request& _msg, json::value _jv, status_code _status, http_response& _response)
 {
     _response.set_status_code(_status);
@@ -4426,47 +3977,6 @@ json::value get_error_json(string _message)
     return err;
 }
 
-// m_Request reply_success(http_request _request, m_Request _msg, string _uri, web::http::status_code _status)
-// {
-//     http_response response;
-//     json::value response_json;
-
-//     response.set_status_code(_status);
-
-//     if(_uri != "")
-//     {
-//         response_json = record_get_json(_uri);
-//         response.set_body(response_json);
-//     }
-
-//     _msg.result.result_datetime = currentDateTime();
-//     _msg.result.result_response = response;
-//     _msg.result.result_status = WORK_SUCCESS;
-
-//     _request.reply(response);
-//     return _msg;
-// }
-
-// m_Request reply_success(http_request _request, m_Request _msg, json::value _jv, web::http::status_code _status)
-http_response reply_success(http_request _request, m_Request& _msg, json::value _jv, web::http::status_code _status, http_response _response)
-{
-    // http_response res;
-    _response.set_status_code(_status);
-
-    if(_jv != json::value::null())
-    {
-        _response.set_body(_jv);
-        _msg.result.response_json = _jv;
-    }
-
-    _msg.result.result_datetime = currentDateTime();
-    _msg.result.result_response = _response;
-    _msg.result.result_status = WORK_SUCCESS;
-
-    // _request.reply(res);
-    // return _msg;
-    return _response;
-}
 
 void success_reply(m_Request& _msg, json::value _jv, status_code _status, http_response& _response)
 {

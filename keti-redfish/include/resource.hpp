@@ -1671,7 +1671,7 @@ public:
     // @@@@@@@@ authors 강
     pplx::cancellation_token_source cts;
     pplx::cancellation_token c_token = cts.get_token();
-
+    
     string x_token;
 
     // Class constructor, destructor oveloading
@@ -1689,8 +1689,6 @@ public:
         this->account = _account;
         this->account_id = _account->odata.id;
         this->_remain_expires_time = ((SessionService *)g_record[ODATA_SESSION_SERVICE_ID])->session_timeout;
-        cout << "\t\t\t\t\t\t\\t" << _account->odata.id << "kk" << endl;
-        // ((Collection *)g_record[ODATA_SESSION_ID])->add_member(this);
     };
     ~Session()
     {
@@ -2430,8 +2428,6 @@ class Systems : public Resource
         reset.parameters.push_back(reset_type);
 
         this->actions["Reset"] = reset;
-        
-        this->actions["Reset"] = reset; 
 
         g_record[_odata_id] = this;
     }

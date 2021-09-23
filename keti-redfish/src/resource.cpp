@@ -489,30 +489,25 @@ pplx::task<void> Session::start(void)
     * 현재 세션만료시간 조정으로 종료함
     */
     // pplx::cancellation_token *c_token = &this->c_token;
-    return pplx::create_task([remain_expires_time] {
+    return pplx::create_task([remain_expires_time, session] {
                boost::asio::io_service io;
                boost::asio::deadline_timer session_timer(io, boost::posix_time::seconds(1));
                session_timer.async_wait(boost::bind(timer, &session_timer, remain_expires_time));
                io.run();
-
-                // @@@@@
-            //    if(pplx::is_task_cancellation_requested())
-            //    {
-            //     //    cout << session->id << "is Canceled" << endl;
-            //        pplx::cancel_current_task();
-            //        cout << "cancel??" << endl;
-            //    }
-           }) //, *c_token)
-           // 여기 *c_token 추가했음
+            
+               if(session->c_token.is_canceled())
+               {
+                   cout << session->id << "is Canceled" << endl;
+                   pplx::cancel_current_task();
+                   cout << "cancel??" << endl;
+               }
+           })
         .then([session] {
             // @@@@@
-            cout << "IN START : " << session->id << endl;
-            // @TODO : 세션종료되면서 세션.json삭제랑 레코드json들 수정작업 해야함
+            log(info) << "[Session Expired] : " << session->id;
+            // cout << "IN START : " << session->id << endl;
 
             string path = session->odata.id;
-            // string path = ODATA_SESSION_ID;
-            // path = path + '/' + session->id;
-            cout << path << endl;
 
             cout << "지우기 전" << endl;
             cout << record_get_json(ODATA_SESSION_ID) << endl;
@@ -530,7 +525,8 @@ pplx::task<void> Session::start(void)
                     exist = true;
                     break;
                 }
-            } // 컬렉션에서 지운거
+            }
+            // 컬렉션에서 해당 세션 찾아 iterator얻기
 
             if(exist)
             {
@@ -562,7 +558,7 @@ pplx::task<void> Session::start(void)
             cout << "지운 후" << endl;
             cout << record_get_json(ODATA_SESSION_ID) << endl;
             cout << "LOGOUT!!!!" << endl;
-        });
+        }, session->c_token);
 }
 // Session end
 
@@ -2978,7 +2974,6 @@ bool Drive::load_json(json::value &j)
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
-    
     }
     catch (json::json_exception &e)
     {
@@ -3023,6 +3018,29 @@ bool Volume::load_json(json::value &j)
 {
     try{
         Resource::load_json(j);
+
+        get_value_from_json_key(j, "Id", this->id);
+        get_value_from_json_key(j, "Description", this->description);
+        get_value_from_json_key(j, "RAIDType", this->RAID_type);
+        get_value_from_json_key(j, "Name", this->name);
+        get_value_from_json_key(j, "ReadCachePolicy", this->read_cache_policy);
+        get_value_from_json_key(j, "WriteCachePolicy", this->write_cache_policy);
+        get_value_from_json_key(j, "StripSizeBytes", this->strip_size_bytes);
+        get_value_from_json_key(j, "DisplayName", this->display_name);
+        get_value_from_json_key(j, "BlockSizeBytes", this->block_size_bytes);
+        get_value_from_json_key(j, "CapacityBytes", this->capacity_bytes);
+
+        json::value objVec;
+        get_value_from_json_key(j, "AccessCapabilities", objVec);
+        if (objVec != json::value::null()){
+            for (auto str : objVec.as_array())
+                this->access_capabilities.push_back(str.as_string());
+        }
+
+        json::value status;
+        status = j.at("Status");
+        this->status.state = status.at("State").as_string();
+        this->status.health = status.at("Health").as_string();
     }
     catch (json::json_exception &e)
     {
