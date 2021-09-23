@@ -69,6 +69,9 @@ void timer(boost::asio::deadline_timer *_timer, unsigned int *_remain_expires_ti
         --(*_remain_expires_time);
         _timer->expires_at(_timer->expires_at() + boost::posix_time::seconds(1));
         _timer->async_wait(boost::bind(timer, _timer, _remain_expires_time));
+    }else if (*_remain_expires_time == 0){
+        log(info) << "session close call in timer~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+        _timer->expires_from_now();
     }
 }
 
@@ -351,82 +354,136 @@ bool check_role_privileges(string _pri)
  */
 bool get_value_from_json_key(json::value body, string key, int& value)
 {
-    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
-    if (body.has_field(key)){
-        value = body.at(key).as_integer();
+    try
+    {
+        if (body.has_field(key)){
+            value = body.at(key).as_integer();
+        }
+        else{
+            value = 0;
+            log(warning) << "error with parsing " << key << " to int";
+            return false;
+        }
     }
-    else{
+    catch(const std::exception& e)
+    {
         value = 0;
         log(warning) << "error with parsing " << key << " to int";
         return false;
     }
+    
     return true;
 }
 
 bool get_value_from_json_key(json::value body, string key, unsigned int& value)
 {
-    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
-    if (body.has_field(key)){
-        value = body.at(key).as_integer();
+    try
+    {
+        if (body.has_field(key)){
+            value = body.at(key).as_integer();
+        }
+        else{
+            value = 0;
+            log(warning) << "error with parsing " << key << " to unsigned int";
+            return false;
+        }
     }
-    else{
+    catch(const std::exception& e)
+    {
         value = 0;
         log(warning) << "error with parsing " << key << " to unsigned int";
         return false;
     }
+    
     return true;
 }
 
 bool get_value_from_json_key(json::value body, string key, string& value)
 {
-    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
-    if (body.has_field(key)){
-        value = body.at(key).as_string();
+    try
+    {
+        if (body.has_field(key)){
+            value = body.at(key).as_string();
+        }
+        else{
+            value = "";
+            log(warning) << "error with parsing " << key << " to string";
+            return false;
+        }
     }
-    else{
+    catch(const std::exception& e)
+    {
         value = "";
         log(warning) << "error with parsing " << key << " to string";
         return false;
     }
+    
     return true;
 }
 bool get_value_from_json_key(json::value body, string key, json::value& value)
 {
-    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
-    if (body.has_field(key)){
-        value = body.at(key);
+    try
+    {
+        if (body.has_field(key)){
+            value = body.at(key);
+        }
+        else{
+            value = json::value::null();
+            log(warning) << "error with parsing " << key << " to json::value";
+            return false;
+        }
     }
-    else{
+    catch(const std::exception& e)
+    {
         value = json::value::null();
         log(warning) << "error with parsing " << key << " to json::value";
         return false;
     }
+    
     return true;
 }
 bool get_value_from_json_key(json::value body, string key, double& value)
 {
-    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
-    if (body.has_field(key)){
-        value = body.at(key).as_double();
+    try
+    {
+        if (body.has_field(key)){
+            value = body.at(key).as_double();
+        }
+        else{
+            value = 0.0;
+            log(warning) << "error with parsing " << key << " to double";
+            return false;
+        }
     }
-    else{
+    catch(const std::exception& e)
+    {
         value = 0.0;
         log(warning) << "error with parsing " << key << " to double";
         return false;
     }
+    
     return true;
 }
 bool get_value_from_json_key(json::value body, string key, bool& value)
 {
-    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
-    if (body.has_field(key)){
-        value = body.at(key).as_bool();
+    try
+    {
+        if (body.has_field(key)){
+            value = body.at(key).as_bool();
+        }
+        else{
+            value = false;
+            log(warning) << "error with parsing " << key << " to bool";
+            return false;
+        }
     }
-    else{
+    catch(const std::exception& e)
+    {
         value = false;
         log(warning) << "error with parsing " << key << " to bool";
         return false;
     }
+    
     return true;
 }
 
