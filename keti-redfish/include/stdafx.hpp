@@ -141,6 +141,7 @@ void delete_numset_num(int _index, unsigned int num);
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
+bool validateIPv4(const string str);
 string ltrim(string str);
 
 char *get_popen_string(char *command);
@@ -172,6 +173,7 @@ void synchronize_dir_list();
  */
 void save_module_id(void);
 void load_module_id(void);
+string make_module_address(string _id); // module_id 에 대한 주소생성함수
 void remove_if_exists(fs::path file);
 
 bool get_value_from_json_key(json::value body, string key, int& value);
