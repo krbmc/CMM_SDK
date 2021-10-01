@@ -3,7 +3,7 @@
 #include <mutex>
 
 #include <iostream>
-#include <boost/make_shared.hpp>
+//#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include "KETIhaNetService.hpp"
 #include"KETIHA.hpp"

@@ -3764,12 +3764,21 @@ json::value VirtualMedia::InsertMedia(json::value body)
     this->connected_via = "URI";
     this->size = get_popen_string("df -h | grep \"" + image + "\" | awk {\'print $2\'}");
     this->create_time = currentDateTime();
+<<<<<<< HEAD
 
     if(get_value_from_json_key(body, "UserName", user_name))
         this->user_name = user_name;
     if(get_value_from_json_key(body, "Password", password))
         this->password = password;
 
+=======
+
+    if(get_value_from_json_key(body, "UserName", user_name))
+        this->user_name = user_name;
+    if(get_value_from_json_key(body, "Password", password))
+        this->password = password;
+
+>>>>>>> b3b4d5821d29b312ec4e8ea846e298cd087df5e4
     if(get_value_from_json_key(body, "Inserted", inserted))
         this->inserted = inserted;
     else

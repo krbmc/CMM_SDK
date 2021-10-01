@@ -2,7 +2,7 @@
 #include <future>
 #include <atomic>
 
-#include <boost/make_shared.hpp>
+//#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include "KETIHA.hpp"
 #include "handler.hpp"

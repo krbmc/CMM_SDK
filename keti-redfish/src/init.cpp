@@ -471,12 +471,21 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     ethernet->fqdn = get_popen_string("hostname -f");
     ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
     ethernet->interfaceEnabled = (ethernet->link_status == "LinkUp") ? true : false;
+<<<<<<< HEAD
     
     vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
     for (string servers : nameservers){
         ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
     }
     
+=======
+    
+    vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
+    for (string servers : nameservers){
+        ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
+    }
+    
+>>>>>>> b3b4d5821d29b312ec4e8ea846e298cd087df5e4
     // !!!!!!!!!!!!!!!!!!! ppt용 init !!!!!!!!!!!!!!!!!!!!!
     ethernet->dhcp_v4.dhcp_enabled = true;
     ethernet->dhcp_v4.use_dns_servers = true;

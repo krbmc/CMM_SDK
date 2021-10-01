@@ -2428,6 +2428,11 @@ class Systems : public Resource
         reset.parameters.push_back(reset_type);
 
         this->actions["Reset"] = reset;
+<<<<<<< HEAD
+        
+        this->actions["Reset"] = reset; 
+=======
+>>>>>>> b3b4d5821d29b312ec4e8ea846e298cd087df5e4
 
         g_record[_odata_id] = this;
     }
