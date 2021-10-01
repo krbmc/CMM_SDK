@@ -471,12 +471,21 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     ethernet->fqdn = get_popen_string("hostname -f");
     ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
     ethernet->interfaceEnabled = (ethernet->link_status == "LinkUp") ? true : false;
+<<<<<<< HEAD
     
     vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
     for (string servers : nameservers){
         ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
     }
     
+=======
+    
+    vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
+    for (string servers : nameservers){
+        ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
+    }
+    
+>>>>>>> b3b4d5821d29b312ec4e8ea846e298cd087df5e4
     // !!!!!!!!!!!!!!!!!!! ppt용 init !!!!!!!!!!!!!!!!!!!!!
     ethernet->dhcp_v4.dhcp_enabled = true;
     ethernet->dhcp_v4.use_dns_servers = true;
@@ -587,7 +596,7 @@ void init_simple_storage(Collection *simple_storage_collection, string _id)
     // simple_storage->description = "System SATA";
     // simple_storage->uefi_device_path = "Acpi(PNP0A03, 0) / Pci(1F|1) / Ata(Primary,Master) / HD(Part3, Sig00110011)";
     vector<string> vec = string_split(get_popen_string("lsblk | grep disk"), '\n');
-    
+
     for (auto str : vec){
         Device_Info info;
         vector<string> info_vec = string_split(str, ' ');
@@ -770,7 +779,7 @@ void init_thermal(Thermal *thermal)
         thermal->fans = new List(odata_id + "/Fans", FAN_TYPE);
         thermal->fans->name = "Chassis Fans";
 
-        init_temperature(thermal->fans, "0");
+        init_fan(thermal->fans, "0");
     }
     return;
 }
@@ -1002,7 +1011,8 @@ void init_manager(Collection *manager_collection, string _id)
     
     manager->network->ntp_enabled = false;
     manager->network->ntp_port = DEFAULT_NTP_PORT;
-    // manager->network->v_netservers;
+    string getntpcmd = "cat /etc/ntp.conf | grep server | awk {\'print $2\'}"; 
+    manager->network->v_netservers = string_split(get_popen_string(getntpcmd), '\n');
     
     manager->network->kvmip_enabled = true;
     manager->network->kvmip_port = DEFAULT_KVMIP_PORT;
@@ -1021,6 +1031,10 @@ void init_manager(Collection *manager_collection, string _id)
     
     manager->network->status.state = STATUS_STATE_ENABLED;
     manager->network->status.health = STATUS_HEALTH_OK;
+
+    // if(!fs::exists("/etc/iptables.rules"))
+    system("iptables -F");
+    init_iptable(manager->network);
     
     if (!record_is_exist(odata_id + "/EthernetInterfaces")){
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
@@ -1245,6 +1259,8 @@ void init_account_service(AccountService *account_service)
     account_service->service_enabled = true;
     account_service->auth_failure_logging_threshold = 0;
     account_service->min_password_length = 6;
+    account_service->max_password_length = 24;
+//
     account_service->account_lockout_threshold = 0;
     account_service->account_lockout_duration = 0;
     account_service->account_lockout_counter_reset_after = 0;
