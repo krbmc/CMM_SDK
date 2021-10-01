@@ -2,19 +2,51 @@
 
 extern unordered_map<string, Resource *> g_record;
 extern ServiceRoot *g_service_root;
+extern map<int, set<unsigned int> > numset;
+extern map<int, unsigned int> numset_num;
 
 /**
  * @brief Resource initialization
  */
 bool init_resource(void)
 {
+    init_numset();
+
+    // allocate test
+    // for(int ii=ALLOCATE_TASK_NUM; ii<ALLOCATE_NUM_COUNT; ii++)
+    // {
+    //     cout << "numset_num " << ii << " : " << numset_num[ii] << endl;
+    //     cout << "set size " << ii << " : " << numset[ii].size() << endl;
+    // }
+
+    // allocate_numset_num(ALLOCATE_ACCOUNT_NUM);
+    // allocate_numset_num(ALLOCATE_ACCOUNT_NUM);
+    // allocate_numset_num(ALLOCATE_SESSION_NUM);
+    // allocate_numset_num(ALLOCATE_VM_CD_NUM);
+    // allocate_numset_num(ALLOCATE_VM_CD_NUM);
+    // allocate_numset_num(ALLOCATE_VM_CD_NUM);
+
+    // cout << " AFTER ALLOCATE " << endl;
+
+    // for(int ii=ALLOCATE_TASK_NUM; ii<ALLOCATE_NUM_COUNT; ii++)
+    // {
+    //     cout << "numset_num " << ii << " : " << numset_num[ii] << endl;
+    //     cout << "set size " << ii << " : " << numset[ii].size() << endl;
+    // }
+
+
+
     load_module_id(); // 이걸먼저해야되네 load_json보다 - load_json에서 서비스루트init할수있어서 모듈id로드하기전에
-    // 등록해버리고 table.json까지 수정해버림
+    // 등록해버리고 table.json"},까지 수정해버림
     record_load_json();
     log(info) << "[Record Load Json] complete" << endl;
 
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
         g_service_root = new ServiceRoot();
+
+    init_message_registry();
+
+    // generate_test();
 
     // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
@@ -437,9 +469,28 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     ethernet->mtu_size = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/mtu"));
     ethernet->hostname = get_popen_string("cat /etc/hostname");
     ethernet->fqdn = get_popen_string("hostname -f");
-    ethernet->name_servers = string_split(get_popen_string("cat /etc/resolv.conf"), ' ');
     ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
+    ethernet->interfaceEnabled = (ethernet->link_status == "LinkUp") ? true : false;
     
+    vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
+    for (string servers : nameservers){
+        ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
+    }
+    
+    // !!!!!!!!!!!!!!!!!!! ppt용 init !!!!!!!!!!!!!!!!!!!!!
+    ethernet->dhcp_v4.dhcp_enabled = true;
+    ethernet->dhcp_v4.use_dns_servers = true;
+    ethernet->dhcp_v4.use_gateway = true;
+    ethernet->dhcp_v4.use_ntp_servers = true;
+    ethernet->dhcp_v4.use_static_routes = true;
+    ethernet->dhcp_v4.use_domain_name= true;
+    ethernet->dhcp_v6.operating_mode = "Stateful";
+    ethernet->dhcp_v6.use_dns_servers = true;
+    ethernet->dhcp_v6.use_ntp_servers = true;
+    ethernet->dhcp_v6.use_domain_name = true;
+    ethernet->dhcp_v6.use_rapid_commit = true;
+        
+
     if (fs::exists(DHCPV4_CONF)){
         log(warning) << "NOT IMPLEMENTED : read dhcpv4 conf";
     }
@@ -476,7 +527,10 @@ void init_ethernet(Collection *ethernet_collection, string _id)
                 Vlan v;
                 v.vlan_enable = true;
                 v.vlan_id = stoi(string_split(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id), '|')[1]);
-            }   
+            } else {
+                ethernet->vlan.vlan_enable = false;
+                ethernet->vlan.vlan_id = 0;
+            }
         }
     }
     
@@ -988,14 +1042,17 @@ void init_manager(Collection *manager_collection, string _id)
         manager->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
         manager->virtual_media->name = "VirtualMediaCollection";
 
-        insert_virtual_media(manager->virtual_media, "EXT1_test");    // temp
+        // insert_virtual_media(manager->virtual_media, "EXT1_test", "CD");    // temp
+        // insert_virtual_media(manager->virtual_media, "CD1", "CD");
+        // insert_virtual_media(manager->virtual_media, "CD2", "CD");
+        // insert_virtual_media(manager->virtual_media, "USB1", "USB");
     }
     
     manager_collection->add_member(manager);
     return;
 }
 
-void insert_virtual_media(Collection *virtual_media_collection, string _id)
+void insert_virtual_media(Collection *virtual_media_collection, string _id, string _type)
 {
     string odata_id = virtual_media_collection->odata.id + "/" + _id;
     VirtualMedia *virtual_media;
@@ -1010,15 +1067,22 @@ void insert_virtual_media(Collection *virtual_media_collection, string _id)
      */
     virtual_media->id = _id;
     virtual_media->name = "VirtualMedia";
-    virtual_media->image = "http://192.168.1.2/Core-current.iso";
-    virtual_media->image_name = "Core-current.iso";
-    virtual_media->media_type.push_back("CD");
-    virtual_media->media_type.push_back("DVD");
+    // virtual_media->image = "http://192.168.1.2/Core-current.iso";
+    // virtual_media->image_name = "Core-current.iso";
+    if(_type == "CD")
+    {
+        virtual_media->media_type.push_back("CD");
+        virtual_media->media_type.push_back("DVD");
+    }
+    else if(_type == "USB")
+    {
+        virtual_media->media_type.push_back("USBStick");
+    }
     virtual_media->connected_via = "URI";
-    virtual_media->inserted = true;
+    virtual_media->inserted = false;
     virtual_media->write_protected = true;
-    virtual_media->user_name = "test";
-    virtual_media->passwword = "password";
+    // virtual_media->user_name = "test";
+    // virtual_media->passwword = "password";
     
     virtual_media_collection->add_member(virtual_media);
     return;
@@ -1042,25 +1106,38 @@ void init_update_service(UpdateService *update_service)
         update_service->firmware_inventory = new Collection(odata_id + "/FirmwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
         update_service->firmware_inventory->name = "Firmware Inventory Collection";
         
-        init_software_inventory(update_service->firmware_inventory, "CMM");
+        SoftwareInventory* cmm = init_software_inventory(update_service->firmware_inventory, "CMM");
+        cmm->version = "v1.0";
+        cmm->manufacturer = "KETI";
+        cmm->release_date = currentDateTime();
+        cmm->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* web = init_software_inventory(update_service->firmware_inventory, "WEB");
+        web->version = "v1.0";
+        web->manufacturer = "KETI";
+        web->release_date = currentDateTime();
+        web->lowest_supported_version = "v1.0";
+        
+        SoftwareInventory* ha = init_software_inventory(update_service->firmware_inventory, "HA");
+        ha->version = "v1.0";
+        ha->manufacturer = "KETI";
+        ha->release_date = currentDateTime();
+        ha->lowest_supported_version = "v1.0";
     }
 
     if (!record_is_exist(odata_id + "/SoftwareInventory")){
         update_service->software_inventory = new Collection(odata_id + "/SoftwareInventory", ODATA_SOFTWARE_INVENTORY_COLLECTION_TYPE);
         update_service->software_inventory->name = "Software Inventory Collection";
     
-        init_software_inventory(update_service->software_inventory, "CMM");
+        // init_software_inventory(update_service->software_inventory, "CMM");
     }
     return;
 }
 
-void init_software_inventory(Collection *software_inventory_collection, string _id)
+SoftwareInventory* init_software_inventory(Collection *software_inventory_collection, string _id)
 {
     string odata_id = software_inventory_collection->odata.id + "/" + _id;
     SoftwareInventory *software_inventory;
-    
-    if (record_is_exist(odata_id))
-        return;
     
     software_inventory = new SoftwareInventory(odata_id, _id);
     /**
@@ -1073,7 +1150,7 @@ void init_software_inventory(Collection *software_inventory_collection, string _
 
     
     software_inventory_collection->add_member(software_inventory);
-    return;
+    return software_inventory;
 }
 
 void init_task_service(TaskService *task_service)
@@ -1126,7 +1203,7 @@ void init_event_service(EventService *event_service)
         event_service->subscriptions = new Collection(odata_id + "/Subscriptions", ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
         event_service->subscriptions->name = "Subscription Collection";
         
-        init_event_destination(event_service->subscriptions, "1");
+        // init_event_destination(event_service->subscriptions, "1");
     }
     return;
 }
@@ -1145,7 +1222,7 @@ void init_event_destination(Collection *event_destination_collection, string _id
      * Event Destination Configuration
      */
     event_destination->subscription_type = "RedfishEvent";
-    event_destination->delivery_retry_policy = "TerminateAfterRetries";
+    event_destination->delivery_retry_policy = "SuspendRetries";
     event_destination->protocol = "Redfish";
 
     event_destination->status.state = STATUS_STATE_ENABLED;
@@ -1216,7 +1293,8 @@ void init_account_service(AccountService *account_service)
 
         // accountservice - account
         string acc_odata = account_service->account_collection->odata.id;
-        string acc_id = to_string(allocate_account_num());
+        string acc_id = to_string(allocate_numset_num(ALLOCATE_ACCOUNT_NUM));
+        // string acc_id = to_string(allocate_account_num());
         acc_odata = acc_odata + "/" + acc_id;
 
         // account certificate configure
@@ -1264,4 +1342,126 @@ void init_session_service(SessionService *session_service)
         session_service->session_collection->name = "Session Collection";
     }
     return;
+}
+
+void init_numset(void)
+{
+    for(int i=0; i<ALLOCATE_NUM_COUNT; i++)
+    {
+        set<unsigned int> empty;
+        numset_num[i] = 1;
+        numset[i] = empty;
+    }
+}
+
+void init_message_registry(void)
+{
+    MessageRegistry *mr = new MessageRegistry("/redfish/v1/MessageRegistry", "Basic.1.0.0");
+    mr->name = "Message Registry";
+    mr->language = "en";
+    mr->registry_prefix = "Basic";
+    mr->registry_version = "1.0.0";
+
+    Message Test;
+    Test.pattern = "Test"; // msg id
+    Test.description = "For Test";
+    Test.message = "This is test Message!";
+    Test.severity = "OK";
+    Test.number_of_args = 0;
+    Test.resolution = "None";
+    mr->messages.v_msg.push_back(Test);
+
+    // mr->messages.v_msg.push_back();
+}
+
+void generate_test(void)
+{
+    string od_service = "/redfish/v1/Systems/1/LogServices/Log1";
+    LogService *service = (LogService *)g_record[od_service];
+    // Collection *col = (Collection *)g_record[col_service];
+    // LogService *ls_1 = new LogService(col_service + "/StatusChange");
+    // col->add_member(ls_1);
+
+    LogEntry *en1 = new LogEntry(service->entry->odata.id + "/1", "1");
+    en1->entry_type = "Event";
+    en1->name = "Log Entry 1";
+    en1->created = "2021-08-30.15:00:57";
+    en1->severity = "OK";
+    en1->message = "Request Completed";
+    en1->message_id = "Keti.1.0.SuccessRequest";
+    en1->sensor_number = 0;
+
+    LogEntry *en2 = new LogEntry(service->entry->odata.id + "/2", "2");
+    en2->entry_type = "Event";
+    en2->name = "Log Entry 2";
+    en2->created = "2021-08-30.15:30:40";
+    en2->severity = "Critical";
+    en2->message = "Temperature exceed threshold";
+    en2->message_id = "Keti.1.0.TempUpperExceed";
+    en2->message_args.push_back("42");
+    en2->sensor_number = 2;
+
+    LogEntry *en3 = new LogEntry(service->entry->odata.id + "/3", "3");
+    en3->entry_type = "Event";
+    en3->name = "Log Entry 3";
+    en3->created = "2021-08-30.15:32:05";
+    en3->severity = "Warning";
+    en3->message = "Unauthorization occur in this resource";
+    en3->message_id = "Keti.1.0.UnauthorizedRequestResource";
+    en3->sensor_number = 0;
+
+    service->entry->add_member(en1);
+    service->entry->add_member(en2);
+    service->entry->add_member(en3);
+
+
+    string cha = "/redfish/v1/Managers/1/LogServices/Log1";
+    LogService *service_2 = (LogService *)g_record[cha];
+
+    LogEntry *ent1 = new LogEntry(service_2->entry->odata.id + "/1", "1");
+    ent1->entry_type = "Event";
+    ent1->name = "Log Entry 1";
+    ent1->created = "2021-07-25.13:07:10";
+    ent1->severity = "OK";
+    ent1->message = "Current temperature";
+    ent1->message_id = "Keti.1.0.TempReport";
+    ent1->message_args.push_back("27");
+    ent1->sensor_number = 5;
+
+    LogEntry *ent3 = new LogEntry(service_2->entry->odata.id + "/2", "2");
+    ent3->entry_type = "Event";
+    ent3->name = "Log Entry 2";
+    ent3->created = "2021-07-25.13:07:11";
+    ent3->severity = "OK";
+    ent3->message = "Current temperature";
+    ent3->message_id = "Keti.1.0.TempReport";
+    ent3->message_args.push_back("29");
+    ent3->sensor_number = 6;
+
+    LogEntry *ent2 = new LogEntry(service_2->entry->odata.id + "/3", "3");
+    ent2->entry_type = "Event";
+    ent2->name = "Log Entry 3";
+    ent2->created = "2021-07-25.13:07:12";
+    ent2->severity = "OK";
+    ent2->message = "Current temperature";
+    ent2->message_id = "Keti.1.0.TempReport";
+    ent2->message_args.push_back("27");
+    ent2->sensor_number = 5;
+
+    LogEntry *ent4 = new LogEntry(service_2->entry->odata.id + "/4", "4");
+    ent4->entry_type = "Event";
+    ent4->name = "Log Entry 4";
+    ent4->created = "2021-07-25.13:07:13";
+    ent4->severity = "OK";
+    ent4->message = "Current temperature";
+    ent4->message_id = "Keti.1.0.TempReport";
+    ent4->message_args.push_back("28");
+    ent4->sensor_number = 6;
+
+    service_2->entry->add_member(ent1);
+    service_2->entry->add_member(ent3);
+    service_2->entry->add_member(ent2);
+    service_2->entry->add_member(ent4);
+
+    record_save_json();
 }

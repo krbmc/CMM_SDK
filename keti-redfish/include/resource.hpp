@@ -110,6 +110,8 @@
 #define ODATA_VOLUME_TYPE "#Volume" ODATA_TYPE_VERSION ".Volume"
 #define ODATA_VOLUME_COLLECTION_TYPE "#Volume.Volume"
 
+#define ODATA_MESSAGE_REGISTRY_TYPE "#MessageRegistry" ODATA_TYPE_VERSION ".MessageRegistry"
+
 #define NO_DATA_TYPE 0
 
 /**
@@ -230,7 +232,8 @@ enum RESOURCE_TYPE
     CERTIFICATE_SERVICE_TYPE,
     VIRTUAL_MEDIA_TYPE,
     DRIVE_TYPE,
-    VOLUME_TYPE
+    VOLUME_TYPE,
+    MESSAGE_REGISTRY_TYPE
 };
 
 enum ACTION_NAME
@@ -248,6 +251,18 @@ enum ACTION_NAME
     SIMPLE_UPDATE,
     INSERT_MEDIA,
     EJECT_MEDIA
+};
+
+enum NETWORK_PROTOCOL_IPTABLE_INDEX
+{
+    HTTP_INDEX = 1,
+    HTTPS_INDEX,
+    SNMP_INDEX,
+    IPMI_INDEX,
+    KVMIP_INDEX,
+    SSH_INDEX,
+    VM_INDEX,
+    NTP_INDEX
 };
 
 /**
@@ -554,12 +569,29 @@ typedef struct _Event_Info{
     int event_group_id;
     string event_id;
     string event_timestamp;
+    string event_type;
     string message_severity;
     string message;
     string message_id;
     string origin_of_condition;
     vector<string> message_args;
 } Event_Info;
+
+typedef struct _Message
+{
+    string pattern; // id
+    string description;
+    string message;
+    string severity;
+    int number_of_args;
+    vector<string> param_types;
+    string resolution;
+} Message;
+
+typedef struct _Messages
+{
+    vector<Message> v_msg;
+} Messages;
 
 typedef struct _Part_Location{
     int location_ordinal_value;
@@ -690,6 +722,38 @@ public:
 };
 
 /**
+ * @brief Resource of MessageRegistry
+ * 
+ */
+
+class MessageRegistry : public Resource
+{
+    public:
+        string id; // MessageId는 여기 이 id + message pattern
+        string language; // required
+
+        Messages messages; // 라는 object안에 Message구조체가 여러개들은 구조니깐 안에서 vector화
+        string registry_prefix; // required
+        string registry_version; // required
+
+        MessageRegistry(const string _odata_id) : Resource(MESSAGE_REGISTRY_TYPE, _odata_id, ODATA_MESSAGE_REGISTRY_TYPE)
+        {
+            g_record[_odata_id] = this;
+        }
+        MessageRegistry(const string _odata_id, const string _registry_id) : MessageRegistry(_odata_id)
+        {
+            this->id = _registry_id;
+        }
+        ~MessageRegistry()
+        {
+            g_record.erase(this->odata.id);
+        };
+
+        json::value get_json(void);
+        bool load_json(json::value &j);
+};
+
+/**
  * @brief Redfish resource of account
  */
 class Role : public Resource
@@ -780,6 +844,7 @@ public:
     bool service_enabled;
     unsigned int auth_failure_logging_threshold;
     unsigned int min_password_length;
+    unsigned int max_password_length;
     unsigned int account_lockout_threshold;
     unsigned int account_lockout_duration;
     unsigned int account_lockout_counter_reset_after;
@@ -796,6 +861,76 @@ public:
     // Class constructor, destructor oveloading
     AccountService() : Resource(ACCOUNT_SERVICE_TYPE, ODATA_ACCOUNT_SERVICE_ID, ODATA_ACCOUNT_SERVICE_TYPE)
     {
+        // AccountService configuration
+        this->name = "Account Service";
+        this->id = "AccountService";
+        this->status.state = STATUS_STATE_DISABLED;
+        this->status.health = STATUS_HEALTH_OK;
+        this->service_enabled = true;
+        this->auth_failure_logging_threshold = 0;
+        this->min_password_length = 6;
+        this->max_password_length = 35;
+        this->account_lockout_threshold = 0;
+        this->account_lockout_duration = 0;
+        this->account_lockout_counter_reset_after = 0;
+        this->account_lockout_counter_reset_enabled = 0;
+        this->account_collection = nullptr;
+        this->role_collection = nullptr;
+
+        // // Role collection configure
+        // this->role_collection = new Collection(ODATA_ROLE_ID, ODATA_ROLE_COLLECTION_TYPE);
+        // this->role_collection->name = "Roles Collection";
+        // // Account collection configure
+        // this->account_collection = new Collection(ODATA_ACCOUNT_ID, ODATA_ACCOUNT_COLLECTION_TYPE);
+        // this->account_collection->name = "Accounts Collection";
+
+        // ==========================================================================
+        // Administrator role configuration
+        // Role *_administrator = new Role(this->role_collection->odata.id + "/Administrator", "Administrator");
+        // _administrator->id = "Administrator";
+        // _administrator->name = "User Role";
+        // _administrator->is_predefined = true;
+        // _administrator->assigned_privileges.push_back("Login");
+        // _administrator->assigned_privileges.push_back("ConfigureManager");
+        // _administrator->assigned_privileges.push_back("ConfigureUsers");
+        // _administrator->assigned_privileges.push_back("ConfigureSelf");
+        // _administrator->assigned_privileges.push_back("ConfigureComponents");
+        // this->role_collection->add_member(_administrator);
+
+        // // Operator role configuration
+        // Role *_operator = new Role(this->role_collection->odata.id + "/Operator", "Operator");
+        // _operator->id = "Operator";
+        // _operator->name = "User Role";
+        // _operator->is_predefined = true;
+        // _operator->assigned_privileges.push_back("Login");
+        // _operator->assigned_privileges.push_back("ConfigureSelf");
+        // _operator->assigned_privileges.push_back("ConfigureComponents");
+        // this->role_collection->add_member(_operator);
+
+        // // ReadOnly role configuration
+        // Role *_read_only = new Role(this->role_collection->odata.id + "/ReadOnly", "ReadOnly");
+        // _read_only->id = "ReadOnly";
+        // _read_only->name = "User Role";
+        // _read_only->is_predefined = true;
+        // _read_only->assigned_privileges.push_back("Login");
+        // _read_only->assigned_privileges.push_back("ConfigureSelf");
+        // this->role_collection->add_member(_read_only);
+
+        // // Root account configure
+        // string acc_odata = this->account_collection->odata.id + "/";
+        // string acc_id = to_string(allocate_account_num());
+        // acc_odata = acc_odata + acc_id;
+        
+        // ===================================================
+        // Account *_root = new Account(acc_odata, acc_id, "Administrator");
+        // // _root->id = "root";
+        // _root->name = "User Account";
+        // _root->user_name = "root";
+        // _root->password = "ketilinux";
+        // _root->enabled = true;
+        // _root->locked = false;
+        // this->account_collection->add_member(_root);
+
         this->account_collection = nullptr;
         this->role_collection = nullptr;
 
@@ -904,6 +1039,13 @@ class LogService : public Resource
     bool ClearLog();
     // 로그 엔트리생성함수
     void new_log_entry(string _entry_id);
+    void set_description(string _val);
+    void set_datetime(string _val);
+    void set_datetime_offset(string _val);
+    void set_logentry_type(string _val);
+    void set_overwrite_policy(string _val);
+    void set_service_enabled(bool _val);
+    void set_max_record(unsigned int _val);
 };
 
 /**
@@ -988,10 +1130,10 @@ class EventService : public Resource
 
         Actions submit_test_event;
         submit_test_event.type = SUBMIT_TEST_EVENT;
-        submit_test_event.name = "#EventService.submit_test_event";
-        submit_test_event.target = this->odata.id + "Actions/EventService.submit_test_event";
+        submit_test_event.name = "#EventService.SubmitTestEvent";
+        submit_test_event.target = this->odata.id + "Actions/EventService.SubmitTestEvent";
         
-        this->actions["submit_test_event"] = submit_test_event;
+        this->actions["SubmitTestEvent"] = submit_test_event;
         
         g_record[ODATA_EVENT_SERVICE_ID] = this;
     };
@@ -1116,7 +1258,7 @@ class Certificate : public Resource
         Actions rekey;
         rekey.type = RE_KEY;
         rekey.name = "#Certificate.Rekey";
-        rekey.target = this->odata.id + "Actions/Certificate.ReKey";
+        rekey.target = this->odata.id + "Actions/Certificate.Rekey";
 
         // required, allowable_values 바뀔 수 있음
         Parameter key_curve_id;
@@ -1130,14 +1272,14 @@ class Certificate : public Resource
         rekey.parameters.push_back(key_curve_id);
         rekey.parameters.push_back(key_pair_algorithm);
 
-        this->actions["ReKey"] = rekey;
+        this->actions["Rekey"] = rekey;
         
         Actions renew;
         renew.type = RE_NEW;
-        renew.name = "#Certificate.ReNew";
-        renew.target = this->odata.id + "Actions/Certificate.ReNew";
+        renew.name = "#Certificate.Renew";
+        renew.target = this->odata.id + "Actions/Certificate.Renew";
         
-        this->actions["ReNew"] = renew;
+        this->actions["Renew"] = renew;
 
         g_record[_odata_id] = this;
     }
@@ -1319,6 +1461,7 @@ public:
     string hostname;
     string fqdn;
     string ipv6_default_gateway;
+    bool interfaceEnabled;
 
     vector<string> name_servers;
     DHCP_v4 dhcp_v4;
@@ -1328,7 +1471,7 @@ public:
     Vlan vlan;
 
     Status status;
-    
+
     EthernetInterfaces(const string _odata_id) : Resource(ETHERNET_INTERFACE_TYPE, _odata_id, ODATA_ETHERNET_INTERFACE_TYPE)
     { 
         g_record[_odata_id] = this;
@@ -1406,6 +1549,8 @@ public:
 
     json::value get_json(void); 
     bool load_json(json::value &j);
+    void new_log_service(string _service_id);
+
     bool Reset(json::value body);
 };
 
@@ -2283,6 +2428,8 @@ class Systems : public Resource
         reset_type.allowable_values.push_back("GracefulRestart");
         
         reset.parameters.push_back(reset_type);
+
+        this->actions["Reset"] = reset;
         
         this->actions["Reset"] = reset; 
 
@@ -2300,6 +2447,7 @@ class Systems : public Resource
     bool load_json(json::value &j);
     json::value get_json(void);
     bool Reset(json::value body);
+    void new_log_service(string _service_id);
 };
 
 /**
@@ -2332,6 +2480,8 @@ public:
     Power *power;
     Storage *storage;
     Collection *sensors;
+    Collection *log_service;
+    // 로그서비스 나중에 추가한거라서 get_json, load_json 이런곳에 없을거임
 
     // TODO Contains, ManagedBy 추가 필요
     Chassis(const string _odata_id) : Resource(CHASSIS_TYPE, _odata_id, ODATA_CHASSIS_TYPE)
@@ -2340,6 +2490,7 @@ public:
         this->power = nullptr;
         this->storage = nullptr;
         this->sensors = nullptr;
+        this->log_service = nullptr;
 
         g_record[_odata_id] = this;
     }
@@ -2354,6 +2505,7 @@ public:
 
     json::value get_json(void);
     bool load_json(json::value &j);
+    void new_log_service(string _service_id);
 
     pplx::task<void> led_off(uint8_t _led_index);
     pplx::task<void> led_lit(uint8_t _led_index);
@@ -2371,23 +2523,47 @@ class VirtualMedia : public Resource
     bool inserted;
     bool write_protected;
     string user_name;
-    string passwword;
-
+    string password;
+    string size;
+    string create_time;
     unordered_map <string, Actions> actions;
 
     VirtualMedia(const string _odata_id) : Resource(VIRTUAL_MEDIA_TYPE, _odata_id, ODATA_VIRTUAL_MEDIA_TYPE)
     {
-        Actions insert_media;
-        insert_media.type = INSERT_MEDIA;
-        insert_media.name = "#VirtualMedia.InsertMedia";
-        insert_media.target = this->odata.id + "/Actions/VirtualMedia.InsertMedia";
+        // Actions insert_media;
+        // insert_media.type = INSERT_MEDIA;
+        // insert_media.name = "#VirtualMedia.InsertMedia";
+        // insert_media.target = this->odata.id + "/Actions/VirtualMedia.InsertMedia";
+
+        Actions insert_media_cd;
+        insert_media_cd.type = INSERT_MEDIA;
+        insert_media_cd.name = "#VirtualMedia.InsertMediaCD";
+        insert_media_cd.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaCD";
+
+        // Actions insert_media_dvd;
+        // insert_media_dvd.type = INSERT_MEDIA;
+        // insert_media_dvd.name = "#VirtualMedia.InsertMediaDVD";
+        // insert_media_dvd.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaDVD";
+
+        // Actions insert_media_floppy;
+        // insert_media_floppy.type = INSERT_MEDIA;
+        // insert_media_floppy.name = "#VirtualMedia.InsertMediaFloppy";
+        // insert_media_floppy.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaFloppy";
+
+        Actions insert_media_usb;
+        insert_media_usb.type = INSERT_MEDIA;
+        insert_media_usb.name = "#VirtualMedia.InsertMediaUSB";
+        insert_media_usb.target = this->odata.id + "/Actions/VirtualMedia.InsertMediaUSB";
 
         Actions eject_media;
         eject_media.type = EJECT_MEDIA;
         eject_media.name = "#VirtualMedia.EjectMedia";
         eject_media.target = this->odata.id + "/Actions/VirtualMedia.EjectMedia";
 
-        this->actions["InsertMedia"] = insert_media;
+        this->actions["InsertMediaCD"] = insert_media_cd;
+        // this->actions["InsertMediaDVD"] = insert_media_dvd;
+        // this->actions["InsertMediaFloppy"] = insert_media_floppy;
+        this->actions["InsertMediaUSB"] = insert_media_usb;
         this->actions["EjectMedia"] = eject_media;
 
         g_record[_odata_id] = this;
@@ -2427,13 +2603,13 @@ void init_voltage(List *voltages_list, string _id);
 void init_power_supply(List *power_supplies_list, string _id);
 void init_manager(Collection *manager_collection, string _id);
 void init_update_service(UpdateService *update_service);
-void init_software_inventory(Collection *software_inventory_collection, string _id);
+SoftwareInventory* init_software_inventory(Collection *software_inventory_collection, string _id);
 void init_task_service(TaskService *task_service);
 void init_event_service(EventService *event_service);
 void init_event_destination(Collection *event_destination_collection, string _id);
 void init_account_service(AccountService *account_service);
 void init_session_service(SessionService *session_service);
-void insert_virtual_media(Collection *virtual_media_collection, string _id);
+void insert_virtual_media(Collection *virtual_media_collection, string _id, string _type);
 /**
  * @brief Root of redfish
  *        This resource create only once
@@ -2472,11 +2648,11 @@ public:
         {
             module_id_table.insert({CMM_ID, CMM_ADDRESS});
             save_module_id();
-            log(info) << "cmm id 등록했음";
+            //log(info) << "cmm id 등록했음";
         }
         else
         {
-            log(info) << CMM_ID << " 는 이미 있어서 init에서 등록안함";
+            //log(info) << CMM_ID << " 는 이미 있어서 init에서 등록안함";
             // cout << CMM_ID << " 는 이미 있어서 init에서 등록안함" << endl;
         }
         
@@ -2562,10 +2738,13 @@ public:
 bool init_record(void);
 bool init_resource(void);
 
+void init_message_registry(void);
+
 bool is_session_valid(const string _token);
 string get_session_odata_id_by_token(string _token);
 void clear_gc();
 void dependency_injection(Resource *res);
+void resource_save_json(Resource *Rsrc);
 json::value get_resource_odata_id_json(Resource *res, string loc);
 json::value get_action_info(unordered_map<string, Actions> act);
 
@@ -2577,5 +2756,14 @@ void update_cert_with_pem(fs::path cert, Certificate *certificate);
 
 // virtual media
 static int umount();
+
+// iptable(network protocol)
+string make_iptable_cmd(string _op, string _pos, int _index, int _port, int _able);
+void execute_iptables(NetworkProtocol* _net, int _index, string _op);
+void init_iptable(NetworkProtocol* _net);
+void patch_iptable(NetworkProtocol* _net);
+
+
+void generate_test(void);
 
 #endif

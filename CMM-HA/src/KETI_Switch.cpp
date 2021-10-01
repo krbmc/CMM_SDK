@@ -43,5 +43,4 @@ bool KETI_Switch::TryActiveStandbyMode(bool origin, bool IsActived)
     else
     {
     }
-    
 }

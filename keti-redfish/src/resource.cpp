@@ -1,8 +1,11 @@
 #include "resource.hpp"
+#include "handler.hpp"
+#include "task.hpp"
 
 extern unordered_map<string, Resource *> g_record;
 extern ServiceRoot *g_service_root;
 unordered_map<string, Event*> event_map;
+extern unique_ptr<Handler> g_listener, HA_listener;
 
 #define BMC_PORT "443"
 
@@ -354,6 +357,7 @@ json::value AccountService::get_json(void)
     j[U("ServiceEnabled")] = json::value::boolean(U(this->service_enabled));
     j[U("AuthFailureLoggingThreshold")] = json::value::number(U(this->auth_failure_logging_threshold));
     j[U("MinPasswordLength")] = json::value::number(U(this->min_password_length));
+    j[U("MaxPasswordLength")] = json::value::number(U(this->max_password_length));
     j[U("AccountLockoutThreshold")] = json::value::number(U(this->account_lockout_threshold));
     j[U("AccountLockoutDuration")] = json::value::number(U(this->account_lockout_duration));
     j[U("AccountLockoutCounterResetAfter")] = json::value::number(U(this->account_lockout_counter_reset_after));
@@ -375,6 +379,7 @@ bool AccountService::load_json(json::value &j)
         this->service_enabled = j.at("ServiceEnabled").as_bool();
         this->auth_failure_logging_threshold = j.at("AuthFailureLoggingThreshold").as_integer();
         this->min_password_length = j.at("MinPasswordLength").as_integer();
+        this->max_password_length = j.at("MaxPasswordLength").as_integer();
         this->account_lockout_threshold = j.at("AccountLockoutThreshold").as_integer();
         this->account_lockout_duration = j.at("AccountLockoutDuration").as_integer();
         this->account_lockout_counter_reset_after = j.at("AccountLockoutCounterResetAfter").as_integer();
@@ -531,21 +536,27 @@ pplx::task<void> Session::start(void)
             {
                 unsigned int id_num;
                 id_num = stoi(session->id);
-                delete_session_num(id_num);
+                delete_numset_num(ALLOCATE_SESSION_NUM, id_num);
+                // delete_session_num(id_num);
                 // numset에서 num id 삭제
 
                 delete(*iter);
                 col->members.erase(iter);
                 // session자체 객체삭제, g_record에서 삭제, session collection에서 삭제
+                delete_resource(path);
+                // session json삭제
+                resource_save_json(col);
+                // collection json갱신
 
-                record_save_json(); // 레코드 json파일 갱신
-                string json_path = path;
-                json_path = json_path + ".json";
-                if(remove(json_path.c_str()) < 0)
-                {
-                    cout << "delete error in session remove" << endl;
-                }
-                // session json파일 삭제
+                // record_save_json(); // 레코드 json파일 갱신
+                // string json_path = path;
+                // json_path = json_path + ".json";
+                // if(remove(json_path.c_str()) < 0)
+                // {
+                //     cout << "delete error in session remove" << endl;
+                // }
+                // session json파일 삭제 이거 record_save_json하면 레코드에 없는 녀석들의 json파일도
+                // 지워주게끔 되어있어서 중복됨
             }
 
             cout << "지운 후" << endl;
@@ -661,6 +672,28 @@ void LogService::new_log_entry(string _entry_id)
     }
 
     init_log_entry(this->entry, _entry_id);
+}
+
+void LogService::set_description(string _val){
+    this->description = _val;
+}
+void LogService::set_datetime(string _val){
+    this->datetime = _val;
+}
+void LogService::set_datetime_offset(string _val){
+    this->datetime_local_offset = _val;
+}
+void LogService::set_logentry_type(string _val){
+    this->log_entry_type = _val;
+}
+void LogService::set_overwrite_policy(string _val){
+    this->overwrite_policy = _val;
+}
+void LogService::set_service_enabled(bool _val){
+    this->service_enabled = _val;
+}
+void LogService::set_max_record(unsigned int _val){
+    this->max_number_of_records = _val;
 }
 
 json::value LogEntry::get_json(void)
@@ -912,27 +945,59 @@ json::value EventService::SubmitTestEvent(json::value body)
     string egi;
 
     // #1 get json value
-    get_value_from_json_key(body, "EventGroupId", e.event_group_id);
-    egi = to_string(e.event_group_id);
-    get_value_from_json_key(body, "EventId", e.event_id);
-    get_value_from_json_key(body, "EventTimestamp", e.event_timestamp);
-    get_value_from_json_key(body, "Message", e.message);
-    get_value_from_json_key(body, "MessageId", e.message_id);
-    get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition);
-    get_value_from_json_key(body, "MessageArgs", args);
-    for(auto arg : args.as_array())
-        e.message_args.push_back(arg.as_string());
+    if(!get_value_from_json_key(body, "MessageId", e.message_id))
+        return json::value::null();
+    
+    if(!get_value_from_json_key(body, "EventGroupId", e.event_group_id))
+        e.event_group_id = 0;
 
-    // #2 make event and return
-    if (record_is_exist(egi))
-        event_map[egi]->events.push_back(e);
-    else{
-        Event *event = new Event(egi);
-        event->events.push_back(e);
-        event_map[egi] = event;
+    egi = to_string(e.event_group_id);
+    if(!get_value_from_json_key(body, "EventId", e.event_id))
+        e.event_id = "Test Event";
+
+    if(!get_value_from_json_key(body, "EventTimestamp", e.event_timestamp))
+        e.event_timestamp = currentDateTime();
+    
+    if(!get_value_from_json_key(body, "EventType", e.event_type))
+        e.event_type = "Alert";
+
+    if(!get_value_from_json_key(body, "Message", e.message))
+        e.message = "This is Test Message";
+    
+    if(get_value_from_json_key(body, "MessageArgs", args))
+    {
+        for(auto arg : args.as_array())
+            e.message_args.push_back(arg.as_string());
+        // for(int i=0; i<args.size(); i++)
+        // {
+        //     e.message_args.push_back(args[i].as_string());
+        // }
     }
 
-    return event_map[egi]->get_json(); 
+    if(!get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition))
+        e.origin_of_condition = "SubmitTestEvent";
+
+    if(!get_value_from_json_key(body, "Severity", e.message_severity))
+        e.message_severity = "OK";
+
+    Event *event = new Event(e.event_id);
+    event->events.push_back(e);
+
+    test_send_event(*event);
+
+    // #2 make event and return
+    // if (record_is_exist(egi))
+    //     event_map[egi]->events.push_back(e);
+    // else{
+    //     Event *event = new Event(egi);
+    //     event->events.push_back(e);
+    //     event_map[egi] = event;
+    // }
+
+    return event->get_json();
+    // 현재 확인용으로 만들어진 이벤트 get_json찍어보는것
+
+    // return event_map[egi]->get_json(); 
 }
 // Event Service & Event Destination end
 
@@ -1708,6 +1773,7 @@ json::value Chassis::get_json(void)
     j["Power"] = get_resource_odata_id_json(this->power, this->odata.id);
     j["Storage"] = get_resource_odata_id_json(this->storage, this->odata.id);
     j["Sensors"] = get_resource_odata_id_json(this->sensors, this->odata.id);
+    j["LogServices"] = get_resource_odata_id_json(this->log_service, this->odata.id);
 
     return j;
 }
@@ -1829,11 +1895,24 @@ pplx::task<void> Chassis::led_blinking(uint8_t _led_index)
         while (*indicator_led == LED_BLINKING)
         {
             GPIO_CLR = 1 << _led_index;
-            usleep(30000);
+            sleep(1);
+            // usleep(30000);
             GPIO_SET = 1 << _led_index;
-            usleep(30000);
+            // usleep(30000);
+            sleep(1);
         }
     });
+}
+
+void Chassis::new_log_service(string _service_id)
+{
+    if(this->log_service == nullptr)
+    {
+        this->log_service = new Collection(this->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        this->log_service->name = "Log Service Collection";
+    }
+
+    init_log_service(this->log_service, _service_id);
 }
 // Chassis end
 
@@ -1898,7 +1977,17 @@ bool Manager::load_json(json::value &j)
 }
 // Manager end
 
-// EthernetInterface start
+void Manager::new_log_service(string _service_id)
+{
+    if(this->log_service == nullptr)
+    {
+        this->log_service = new Collection(this->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        this->log_service->name = "Log Service Collection";
+    }
+
+    init_log_service(this->log_service, _service_id);
+}
+
 json::value EthernetInterfaces::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -1917,6 +2006,7 @@ json::value EthernetInterfaces::get_json(void)
     j[U("HostName")] = json::value::string(U(this->hostname));
     j[U("FQDN")] = json::value::string(U(this->fqdn));
     j[U("IPv6DefaultGateway")] = json::value::string(U(this->ipv6_default_gateway));
+    j[U("InterfaceEnabled")] = json::value::boolean(U(this->interfaceEnabled));
     
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
@@ -1930,6 +2020,7 @@ json::value EthernetInterfaces::get_json(void)
     json::value dh_v4, dh_v6;
     json::value v_ip4, v_ip6;
     json::value o_ip4, o_ip6;
+    json::value vlan;
 
     dh_v4[U("DHCPEnabled")] = json::value::boolean(U(this->dhcp_v4.dhcp_enabled));
     dh_v4[U("UseDNSServers")] = json::value::boolean(U(this->dhcp_v4.use_dns_servers));
@@ -1970,6 +2061,10 @@ json::value EthernetInterfaces::get_json(void)
     }
     j[U("IPv6Addresses")] = v_ip6;
 
+    vlan["VLANEnable"] = json::value::boolean(this->vlan.vlan_enable);
+    vlan["VLANId"] = json::value::number(this->vlan.vlan_id);
+    j["VLAN"] = vlan;
+    
     return j;
 }
 
@@ -1992,6 +2087,7 @@ bool EthernetInterfaces::load_json(json::value &j)
         this->mtu_size = j.at("MTUSize").as_integer();
         this->hostname = j.at("HostName").as_string();
         this->fqdn = j.at("FQDN").as_string();
+        this->interfaceEnabled = j.at("InterfaceEnabled").as_bool();
         
         step = 1;
         status = j.at("Status");
@@ -2024,21 +2120,29 @@ bool EthernetInterfaces::load_json(json::value &j)
         v_ipv4 = j.at("IPv4Addresses");
         for (auto item : v_ipv4.as_array()){
             IPv4_Address temp;
-            temp.address = v_ipv4.at("Address").as_string();
-            temp.address_origin = v_ipv4.at("AddressOrigin").as_string();
-            temp.subnet_mask = v_ipv4.at("SubnetMask").as_string();
-            temp.gateway = v_ipv4.at("Gateway").as_string();
+            temp.address = item.at("Address").as_string();
+            temp.address_origin = item.at("AddressOrigin").as_string();
+            temp.subnet_mask = item.at("SubnetMask").as_string();
+            temp.gateway = item.at("Gateway").as_string();
+            this->v_ipv4.push_back(temp);
         }
         
         step = 6;
         v_ipv6 = j.at("IPv6Addresses");
         for (auto item : v_ipv6.as_array()){
             IPv6_Address temp;
-            temp.address = v_ipv6.at("Address").as_string();
-            temp.address_origin = v_ipv6.at("AddressOrigin").as_string();
-            temp.address_state = v_ipv6.at("AddressState").as_string();
-            temp.prefix_length = v_ipv6.at("PrefixLength").as_integer();
+            temp.address = item.at("Address").as_string();
+            temp.address_origin = item.at("AddressOrigin").as_string();
+            temp.address_state = item.at("AddressState").as_string();
+            temp.prefix_length = item.at("PrefixLength").as_integer();
+            this->v_ipv6.push_back(temp);
         }
+        this->ipv6_default_gateway = j.at("IPv6DefaultGateway").as_string();
+
+        step = 7;
+        vlan = j.at("VLAN");
+        this->vlan.vlan_enable = vlan.at("VLANEnable").as_bool();
+        this->vlan.vlan_id = vlan.at("VLANId").as_integer();
     }
     catch (json::json_exception &e)
     {
@@ -2416,7 +2520,47 @@ bool Systems::Reset(json::value body)
         sprintf(cmds, "kill -s TERM %d && %s", pid, this_proc_name.c_str());
     }
     if (reset_type == "ForceRestart"){
-        sprintf(cmds, "kill -9 %d && %s", pid, this_proc_name.c_str());
+        sprintf(cmds, "reboot");
+        // int fork_pid;
+        // fork_pid = fork();
+        // if(fork_pid < 0)
+        // {
+        //     fprintf(stderr, "Fork Fail");
+        //     return false;
+        // }
+        // else if(fork_pid == 0)
+        // {
+        //     cout << "!child 0" << endl;
+        //     cout << "pid in child : " << pid << endl;
+        //     //child
+        //     sprintf(cmds, "kill -9 %d", pid);
+        //     sleep(3);
+        //     system(cmds);
+        //     cout << "!child 1" << endl;
+        //     // sleep(10);
+        //     // execl("/bin/ls", "ls", "-l", NULL);
+        //     execlp("./reboot", NULL);
+        //     // execlp(this_proc_name.c_str(), NULL);
+        //     // sprintf(cmds, "%s", this_proc_name.c_str());
+        //     cout << "!child 2" << endl;
+
+        // }
+        // else
+        // {
+        //     cout << "!parent 0" << endl;
+        //     //parent
+        //     // sprintf(cmds, "kill -9 %d", pid);
+        //     // g_listener->close().wait();
+        //     return true;
+        //     cout << "!parent 1" << endl;
+        //     system(cmds);
+        //     // sprintf(cmds, "kill -9 %d && %s", pid, this_proc_name.c_str());
+        //     cout << "!parent 2" << endl;
+        // }
+        // #1 부모는 자기꺼 kill하고 종료 자식은 sleep햇다가 ./keti-redfish실행방법 ->안됨
+        // #2 부모는 리턴해서 OK사인 reply 자식은 짧게슬립했다가 kill하고(부모) ./keti-redfish실행방법 -> 안됨
+        // 보니깐 부모자식 나눠져도 서버가 켜진상태로 나눠져서 부모프로세스 죽어도 자식이 남아있어서 다시
+        // keti-redfish실행했을 때 address already in use 뜨는거 같음
     }
     if (reset_type == "Nmi"){
         // /proc/sys/kernel/nmi_watchdog flag를 1로 체인지.. 현재 해당 파일 없음. buildroot 환경설정?
@@ -2428,6 +2572,17 @@ bool Systems::Reset(json::value body)
     system(cmds);
 
     return true;
+}
+
+void Systems::new_log_service(string _service_id)
+{
+    if(this->log_service == nullptr)
+    {
+        this->log_service = new Collection(this->odata.id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        this->log_service->name = "Log Service Collection";
+    }
+
+    init_log_service(this->log_service, _service_id);
 }
 // System end
 
@@ -3155,6 +3310,7 @@ json::value Certificate::Rekey(json::value body)
     generate_ssl_private_key(key, to_string(key_bit_length));
 
     rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+    resource_save_json(this); // ??
 
     return rsp;
 }
@@ -3180,6 +3336,7 @@ json::value Certificate::Renew(void)
     }
 
     rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+    resource_save_json(this); // ??
     
     return rsp;
 }
@@ -3315,6 +3472,7 @@ json::value CertificateService::GenerateCSR(json::value body)
 
     // #5 CSR 생성 && return request
     rsp = generate_CSR_return_result(conf, key, csr, certificate_odata_id);
+    resource_save_json(this);// ??
 
     return rsp;
 }
@@ -3406,6 +3564,7 @@ bool CertificateService::ReplaceCertificate(json::value body)
     // #3 수정된 certificate 정보 읽어서 g_record 수정
     update_cert_with_pem(cert_file, replacedCert);
     log(info) << "[...]Certificate is replaced..";
+    resource_save_json(replacedCert);
     
     return true;
 }
@@ -3493,10 +3652,13 @@ json::value VirtualMedia::get_json(void)
     j["Image"] = json::value::string(this->image);
     j["ImageName"] = json::value::string(this->image_name);
     j["UserName"] = json::value::string(this->user_name);
-    j["Password"] = json::value::string(this->passwword);
+    j["Password"] = json::value::string(this->password);
     j["Inserted"] = json::value::boolean(this->inserted);
     j["WriteProtected"] = json::value::boolean(this->write_protected);
     j["MediaTypes"] = json::value::array();
+    j["Size"] = json::value::string(this->size);
+    j["CreateTime"] = json::value::string(this->create_time);
+
     for(int i = 0; i < this->media_type.size(); i++)
         j["MediaTypes"][i] = json::value::string(this->media_type[i]);
 
@@ -3514,10 +3676,13 @@ bool VirtualMedia::load_json(json::value &j)
         get_value_from_json_key(j, "Image", this->image);
         get_value_from_json_key(j, "ImageName", this->image_name);
         get_value_from_json_key(j, "UserName", this->user_name);
-        get_value_from_json_key(j, "Password", this->passwword);
+        get_value_from_json_key(j, "Password", this->password);
         get_value_from_json_key(j, "Inserted", this->inserted);
         get_value_from_json_key(j, "WriteProtected", this->write_protected);
         get_value_from_json_key(j, "MediaTypes", media_type);
+        get_value_from_json_key(j, "Size", this->size);
+        get_value_from_json_key(j, "CreateTime", this->create_time);
+
         for (auto types : media_type.as_array())
             this->media_type.push_back(types.as_string());
     }
@@ -3541,12 +3706,15 @@ json::value VirtualMedia::InsertMedia(json::value body)
     int ret = 0;
 
     string image, user_name, password;
-    bool write_protected;
+    bool write_protected, inserted;
     
-    get_value_from_json_key(body, "Image", image);
-    get_value_from_json_key(body, "UserName", user_name);
-    get_value_from_json_key(body, "Password", password);
-    get_value_from_json_key(body, "WriteProtected", write_protected);
+    // get_value_from_json_key(body, "Image", image);
+    // get_value_from_json_key(body, "UserName", user_name);
+    // get_value_from_json_key(body, "Password", password);
+    // get_value_from_json_key(body, "WriteProtected", write_protected);
+
+    if(!(get_value_from_json_key(body, "Image", image)))
+        return json::value::null();
 
     // #0 mount check
     ret = umount();
@@ -3562,6 +3730,7 @@ json::value VirtualMedia::InsertMedia(json::value body)
     
     // #1-2 using nfs, 
     string cmd = "mount -vt nfs " + image + " /etc/nfs";
+    cout << "CMD : " << cmd << endl;
     ret = system(cmd.c_str());
     if (ret == -1){
         log(warning) << "mount error!";
@@ -3569,17 +3738,36 @@ json::value VirtualMedia::InsertMedia(json::value body)
     }
 
     // #2 make virtual media, insert
-    this->connected_via = "URI";
-    this->name = "VirtualMedia";
-    this->inserted = true;
-    this->image = image;
-    this->image_name = get_current_object_name(image, "/");
-    this->id = get_current_object_name(this->odata.id, "/");
-    this->write_protected = write_protected;
-    this->media_type.push_back("CD");
-    this->media_type.push_back("DVD");
+    
+    // this->name = "VirtualMedia";
 
-    ((Collection *)g_record[get_parent_object_uri(this->odata.id, "/")])->add_member(this);
+    this->image = image;
+    this->image_name = "/" + get_current_object_name(image, "/");
+    this->connected_via = "URI";
+    this->size = get_popen_string("df -h | grep \"" + image + "\" | awk {\'print $2\'}");
+    this->create_time = currentDateTime();
+
+    if(get_value_from_json_key(body, "UserName", user_name))
+        this->user_name = user_name;
+    if(get_value_from_json_key(body, "Password", password))
+        this->password = password;
+
+    if(get_value_from_json_key(body, "Inserted", inserted))
+        this->inserted = inserted;
+    else
+        this->inserted = true;
+    if(get_value_from_json_key(body, "WriteProtected", write_protected))
+        this->write_protected = write_protected;
+    else
+        this->write_protected = true;
+
+    
+    // this->id = get_current_object_name(this->odata.id, "/");
+    
+    // this->media_type.push_back("CD");
+    // this->media_type.push_back("DVD");
+
+    // ((Collection *)g_record[get_parent_object_uri(this->odata.id, "/")])->add_member(this);
     
     // #3 return resource
     return this->get_json();
@@ -3588,6 +3776,8 @@ json::value VirtualMedia::InsertMedia(json::value body)
 json::value VirtualMedia::EjectMedia(void)
 {
     int ret;
+    json::value target = this->get_json();
+    string odata_id = this->odata.id;
 
     // #1 unmount
     ret = umount();
@@ -3595,12 +3785,59 @@ json::value VirtualMedia::EjectMedia(void)
         return json::value::null();
 
     // #2 connectedVia => notconnected, inserted => false, image => null  <? data는 보존한다는 얘기??>
-    this->connected_via = "NotConnected";
-    this->inserted = false;
-    this->image = "";
+    // this->connected_via = "NotConnected";
+    // this->inserted = false;
+    // this->image = "";
+    // this->image_name = "";
+    // this->user_name = "";
+    // this->password = "";
+
+    // InsertMedia가 리소스를 그때그때 생성하므로 Eject는 리소스 삭제하겠음
+    string col_uri = get_parent_object_uri(this->odata.id, "/");
+    Collection *col = (Collection *)g_record[col_uri];
+    std::vector<Resource *>::iterator iter;
+    for(iter=col->members.begin(); iter!=col->members.end(); iter++)
+    {
+        VirtualMedia *del = (VirtualMedia *)*iter;
+        if(del->id == this->id)
+        {
+            break;
+        }
+    }
+
+    cout << "지우기전!! " << endl;
+    cout << record_get_json(col->odata.id) << endl;
+    cout << " $$$$$$$ " << endl;
+
+    // numset지우기
+    unsigned int id_num;
+    if(this->media_type[0] == "CD")
+    {
+        string id = this->id;
+        string extract = id.substr(2);
+        id_num = stoi(extract);
+        delete_numset_num(ALLOCATE_VM_CD_NUM, id_num);
+    }
+    else if(this->media_type[0] == "USBStick")
+    {
+        string id = this->id;
+        string extract = id.substr(3);
+        id_num = stoi(extract);
+        delete_numset_num(ALLOCATE_VM_USB_NUM, id_num);
+    }
+
+    delete(*iter);
+    col->members.erase(iter);
+    resource_save_json(col);
+    delete_resource(odata_id);
+
+    cout << "지운후~~ " << endl;
+    cout << "지워진놈 : " << odata_id << endl;
+    cout << target << endl;
     
+    return target;
     // #3 return resource
-    return this->get_json();
+    // return this->get_json();
 }
 
 static int umount()
@@ -3616,6 +3853,72 @@ static int umount()
     return 0;
 }
 // dy : virtual media end
+
+// message registry start
+json::value MessageRegistry::get_json(void)
+{
+    auto j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
+
+    j[U("Id")] = json::value::string(U(this->id));
+    j[U("Language")] = json::value::string(U(this->language));
+    j[U("RegistryPrefix")] = json::value::string(U(this->registry_prefix));
+    j[U("RegistryVersion")] = json::value::string(U(this->registry_version));
+
+    json::value messages;
+    for(int i=0; i<this->messages.v_msg.size(); i++)
+    {
+        Message msg = this->messages.v_msg[i];
+        json::value tmp;
+        tmp[U("Description")] = json::value::string(U(msg.description));
+        tmp[U("Message")] = json::value::string(U(msg.message));
+        tmp[U("Severity")] = json::value::string(U(msg.severity));
+        tmp[U("Resolution")] = json::value::string(U(msg.resolution));
+        tmp[U("NumberOfArgs")] = json::value::number(U(msg.number_of_args));
+
+        if(!msg.param_types.empty())
+        {
+            tmp[U("ParamTypes")] = json::value::array();
+            for(int j=0; j<msg.param_types.size(); j++)
+            {
+                tmp[U("ParamTypes")][j] = json::value::string(U(msg.param_types[j]));
+            }
+        }
+
+        messages[U(msg.pattern)] = tmp;
+    }
+
+
+    j[U("Messages")] = messages;
+
+    return j;
+
+}
+
+bool MessageRegistry::load_json(json::value &j)
+{
+    try
+    {
+        Resource::load_json(j);
+        this->id = j.at("Id").as_string();
+        this->language = j.at("Language").as_string();
+        this->registry_prefix = j.at("RegistryPrefix").as_string();
+        this->registry_version = j.at("RegistryVersion").as_string();
+
+        // 이 외에 this->messages에 들어갈 Message vector요소들은 키워드(pattern)을 일일이
+        // hasfield같은걸로 찾아서 읽은다음 거기서 Message 구조체에 담고 그걸 messages.v_msg에 push_back해주는식
+        // 으로 구현해야함 아직 들어갈 키워드(패턴)들이 지정되지 않아서 자리만 만들어둠
+        
+    }
+    catch(json::json_exception &e)
+    {
+        return false;
+    }
+    
+    return true;
+}
+// message registry end
 
 // ServiceRoot start
 json::value ServiceRoot::get_json(void)
@@ -3744,4 +4047,230 @@ json::value get_action_info(unordered_map<string, Actions> act)
     }
     
     return actions;
+}
+
+void generate_logservice(string _res_odata, string _service_id)
+{
+    // _res_odata는 system, chassis, manager에 해당
+    uint8_t type = g_record[_res_odata]->type;
+
+    switch(type)
+    {
+        case SYSTEM_TYPE:{
+            Systems *sys = (Systems *)g_record[_res_odata];
+            sys->new_log_service(_service_id);
+            break;
+        }
+        case CHASSIS_TYPE:{
+            Chassis *cha = (Chassis *)g_record[_res_odata];
+            cha->new_log_service(_service_id);
+            break;
+        }
+        case MANAGER_TYPE:{
+            Manager *man = (Manager *)g_record[_res_odata];
+            man->new_log_service(_service_id);
+            break;
+        }
+        default:
+            log(error) << "wrong resource in generate logservice";
+            break;   
+    }
+}
+void generate_logentry(string _res_odata, string _entry_id)
+{
+    // _res_odata는 logservice에 해당
+    LogService *log = (LogService *)g_record[_res_odata];
+
+    log->new_log_entry(_entry_id);
+}
+
+string make_iptable_cmd(string _op, string _pos, int _index, int _port, int _able)
+{
+    //  -I/-R, INPUT/OUTPUT, _index, _port, _able
+    string cmd;
+    switch(_able)
+    {
+        case 0:
+            // ACCEPT
+            if(_pos == "INPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " INPUT " + to_string(_index) + " -p tcp --dport ";
+                cmd = cmd + to_string(_port) + " -j ACCEPT";
+            }
+            else if(_pos == "OUTPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " OUTPUT " + to_string(_index) + " -p tcp --sport ";
+                cmd = cmd + to_string(_port) + " -j ACCEPT";
+            }
+            break;
+        case 1:
+            // REJECT
+            if(_pos == "INPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " INPUT " + to_string(_index) + " -p tcp --dport ";
+                cmd = cmd + to_string(_port) + " -j REJECT";
+            }
+            else if(_pos == "OUTPUT")
+            {
+                cmd = "iptables -" + _op;
+                cmd = cmd + " OUTPUT " + to_string(_index) + " -p tcp --sport ";
+                cmd = cmd + to_string(_port) + " -j REJECT";
+            }
+            break;
+        default:
+            break;
+    }
+
+    return cmd;
+}
+
+void execute_iptables(NetworkProtocol* _net, int _index, string _op)
+{
+    string cmd_input, cmd_output;
+    switch(_index)
+    {
+        case HTTP_INDEX:
+            if(_net->http_enabled == true)
+            {
+                // ACCEPT
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTP_INDEX, _net->http_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTP_INDEX, _net->http_port, 0);
+            }
+            else
+            {
+                // REJECT
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTP_INDEX, _net->http_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTP_INDEX, _net->http_port, 1);
+            }
+            break;
+
+        case HTTPS_INDEX:
+            if(_net->https_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTPS_INDEX, _net->https_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTPS_INDEX, _net->https_port, 0);
+
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", HTTPS_INDEX, _net->https_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", HTTPS_INDEX, _net->https_port, 1);
+            }
+            break;
+
+        case SNMP_INDEX:
+            if(_net->snmp_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 1);
+            }
+            break;
+
+        case IPMI_INDEX:
+            if(_net->ipmi_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", IPMI_INDEX, _net->ipmi_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", IPMI_INDEX, _net->ipmi_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", IPMI_INDEX, _net->ipmi_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", IPMI_INDEX, _net->ipmi_port, 1);
+            }
+            break;
+
+        case KVMIP_INDEX:
+            if(_net->kvmip_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", KVMIP_INDEX, _net->kvmip_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", KVMIP_INDEX, _net->kvmip_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", KVMIP_INDEX, _net->kvmip_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", KVMIP_INDEX, _net->kvmip_port, 1);
+            }
+            break;
+
+        case SSH_INDEX:
+            if(_net->ssh_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SSH_INDEX, _net->ssh_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SSH_INDEX, _net->ssh_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", SSH_INDEX, _net->ssh_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SSH_INDEX, _net->ssh_port, 1);
+            }
+            break;
+
+        case VM_INDEX:
+            if(_net->virtual_media_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", VM_INDEX, _net->virtual_media_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", VM_INDEX, _net->virtual_media_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", VM_INDEX, _net->virtual_media_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", VM_INDEX, _net->virtual_media_port, 1);
+            }
+            break;
+
+        case NTP_INDEX:
+            if(_net->ntp_enabled == true)
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp_port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp_port, 0);
+            }
+            else
+            {
+                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp_port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp_port, 1);
+            }
+            break;
+        default:
+            break;
+
+    }
+
+    system(cmd_input.c_str());
+    system(cmd_output.c_str());
+}
+
+void init_iptable(NetworkProtocol* _net)
+{
+    execute_iptables(_net, HTTP_INDEX, "I");
+    execute_iptables(_net, HTTPS_INDEX, "I");
+    execute_iptables(_net, SNMP_INDEX, "I");
+    execute_iptables(_net, IPMI_INDEX, "I");
+    execute_iptables(_net, KVMIP_INDEX, "I");
+    execute_iptables(_net, SSH_INDEX, "I");
+    execute_iptables(_net, VM_INDEX, "I");
+    execute_iptables(_net, NTP_INDEX, "I");
+
+    system("iptables-save > /etc/iptables.rules");
+}
+
+void patch_iptable(NetworkProtocol* _net)
+{
+    execute_iptables(_net, HTTP_INDEX, "R");
+    execute_iptables(_net, HTTPS_INDEX, "R");
+    execute_iptables(_net, SNMP_INDEX, "R");
+    execute_iptables(_net, IPMI_INDEX, "R");
+    execute_iptables(_net, KVMIP_INDEX, "R");
+    execute_iptables(_net, SSH_INDEX, "R");
+    execute_iptables(_net, VM_INDEX, "R");
+    execute_iptables(_net, NTP_INDEX, "R");
+
+    system("iptables-save > /etc/iptables.rules");
 }

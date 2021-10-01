@@ -9,6 +9,9 @@ extern unordered_map<uint8_t, Task_Manager *> task_map;
 extern Value_About_HA ha_value;
 extern int heart_beat_cycle;
 unsigned int g_count = 0;
+//ssdp timer
+long long last_time,findlast_time;
+long long current_time,findcurrent_time;
 
 /**
  * @brief Handler class constructor with method connection
@@ -44,65 +47,211 @@ void Handler::handle_get(http_request _request)
 
 
     //여기에 pplx시작하면 될듯
-    try
-    {
-        // Response Redfish Version
-        if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
+    _request
+    .extract_json()
+    .then([&_request, uri_tokens, uri](pplx::task<json::value> json_value){
+        try
         {
-            json::value j;
-            j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
-            _request.reply(status_codes::OK, j);
-            return ;
-        }
-
-        if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
-        {
-            do_task_cmm_get(_request);
-            return ;
-        }
-
-        if(uri_tokens.size() >= 4)
-        {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            log(info) << "json_value : " << json_value.get().to_string();
+            // Response Redfish Version
+            if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
             {
-                //CMM자체 동작으로다가 처리하시면됨
-                do_task_cmm_get(_request);
+                json::value j;
+                j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
+                _request.reply(status_codes::OK, j);
+                return ;
             }
-            else
+
+            if(uri_tokens.size() == 1 && uri_tokens[0] == "Map")
             {
-                if(uri_tokens[3] == CMM_ID)
+                json::value j;
+                j = get_json_task_map();
+                _request.reply(status_codes::Found, j);
+                return ;
+            }
+
+            if(uri_tokens.size() == 1 && uri_tokens[0] == "Boom")
+            {
+                // json::value j;
+                create_task_map_from_json(get_json_task_map());
+                // create_task_map_from_json(json::value::null());
+                _request.reply(status_codes::Found);
+                return ;
+            }
+            
+            // if(uri_tokens.size() == 1 && uri_tokens[0] == "ViewLog")
+            if(uri == "/redfish/v1/Systems/1/ViewLog")
+            {
+                json::value j_res = json::value::array();
+                int index=0;
+                string odata = "/redfish/v1/Systems/1/LogServices/Log1";
+                LogService *service = (LogService *)g_record[odata];
+                vector<Resource *>::iterator iter;
+                for(iter = service->entry->members.begin(); iter!=service->entry->members.end(); iter++, index++)
                 {
-                    //CMM 자체처리
+                    LogEntry *tmp;
+                    tmp = (LogEntry *)*iter;
+                    cout << tmp->get_json() << endl;
+                    json::value j_tmp = tmp->get_json();
+                    j_tmp.erase("type");
+                    j_res[index] = j_tmp;
+                }
+                cout << index << endl;
+                _request.reply(status_codes::OK, j_res);
+                return ;
+        
+            }
+            // if(uri_tokens.size() == 1 && uri_tokens[0] == "GetTemp")
+            if(uri == "/redfish/v1/Managers/1/GetTemp")
+            {
+                json::value j_res = json::value::array();
+                int index=0;
+                string odata = "/redfish/v1/Managers/1/LogServices/Log1";
+                LogService *service = (LogService *)g_record[odata];
+                vector<Resource *>::iterator iter;
+                for(iter = service->entry->members.begin(); iter!=service->entry->members.end(); iter++, index++)
+                {
+                    LogEntry *tmp;
+                    tmp = (LogEntry *)*iter;
+                    cout << tmp->get_json() << endl;
+                    json::value j_tmp = tmp->get_json();
+                    j_tmp.erase("type");
+                    j_res[index] = j_tmp;
+                }
+                _request.reply(status_codes::OK, j_res);
+                return ;
+
+            }
+
+            if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
+            {
+                do_task_cmm_get(_request);
+                return ;
+            }
+
+            if(uri_tokens.size() >= 4)
+            {
+                if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+                || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
+                {
+                    //CMM자체 동작으로다가 처리하시면됨
                     do_task_cmm_get(_request);
                 }
-                else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                else
                 {
-                    if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
-                    // 일단 104번에서 처리
-                        do_task_bmc_get(_request);
-                    else
+                    if(uri_tokens[3] == CMM_ID)
                     {
-                        json::value j;
-                        j[U("Error")] = json::value::string(U("Unvalid Module ID"));
-                        _request.reply(status_codes::BadRequest, j);
-                        cout << "Unvalid BMC_id" << endl;
-                        return ;
+                        //CMM 자체처리
+                        do_task_cmm_get(_request);
+                    }
+                    else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+                    {
+                        if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
+                        // 일단 104번에서 처리
+                            do_task_bmc_get(_request);
+                        else
+                        {
+                            json::value j;
+                            j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+                            _request.reply(status_codes::BadRequest, j);
+                            cout << "Unvalid BMC_id" << endl;
+                            return ;
+                        }
                     }
                 }
             }
-        }
-        else
-        {
-            // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
-            _request.reply(status_codes::BadRequest);
-            return ;
-        }
+            else
+            {
+                // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
+                _request.reply(status_codes::BadRequest);
+                return ;
+            }
 
-    }
-    catch(json::json_exception& e)
-    {
-        _request.reply(status_codes::BadRequest);
-    }
+        }
+        catch(json::json_exception& e)
+        {
+            _request.reply(status_codes::BadRequest);
+        }
+    })
+    .wait();
+
+    // try
+    // {
+    //     // Response Redfish Version
+    //     if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
+    //     {
+    //         json::value j;
+    //         j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
+    //         _request.reply(status_codes::OK, j);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() == 1 && uri_tokens[0] == "Map")
+    //     {
+    //         json::value j;
+    //         j = get_json_task_map();
+    //         _request.reply(status_codes::Found, j);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() == 1 && uri_tokens[0] == "Boom")
+    //     {
+    //         // json::value j;
+    //         create_task_map_from_json(get_json_task_map());
+    //         // create_task_map_from_json(json::value::null());
+    //         _request.reply(status_codes::Found);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
+    //     {
+    //         do_task_cmm_get(_request);
+    //         return ;
+    //     }
+
+    //     if(uri_tokens.size() >= 4)
+    //     {
+    //         if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+    //         || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
+    //         {
+    //             //CMM자체 동작으로다가 처리하시면됨
+    //             do_task_cmm_get(_request);
+    //         }
+    //         else
+    //         {
+    //             if(uri_tokens[3] == CMM_ID)
+    //             {
+    //                 //CMM 자체처리
+    //                 do_task_cmm_get(_request);
+    //             }
+    //             else //if(uri_tokens[3] == "2") // 여기 나중에 분간하는거 처리 해줘야할듯
+    //             {
+    //                 if(module_id_table.find(uri_tokens[3]) != module_id_table.end())
+    //                 // 일단 104번에서 처리
+    //                     do_task_bmc_get(_request);
+    //                 else
+    //                 {
+    //                     json::value j;
+    //                     j[U("Error")] = json::value::string(U("Unvalid Module ID"));
+    //                     _request.reply(status_codes::BadRequest, j);
+    //                     cout << "Unvalid BMC_id" << endl;
+    //                     return ;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     else
+    //     {
+    //         // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
+    //         _request.reply(status_codes::BadRequest);
+    //         return ;
+    //     }
+
+    // }
+    // catch(json::json_exception& e)
+    // {
+    //     _request.reply(status_codes::BadRequest);
+    // }
     
 
     //여기서 create해서 do_task할듯
@@ -258,7 +407,8 @@ void Handler::handle_delete(http_request _request)
 
         if(uri_tokens.size() >= 4)
         {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
                 //CMM자체 동작으로다가 처리하시면됨
                 do_task_cmm_delete(_request);
@@ -358,8 +508,8 @@ void Handler::handle_delete(http_request _request)
 //             g_record.erase(odata_id);
             
 //             record_save_json();
-//             string delete_path = odata_id + ".json";
-//             // string delete_path = filtered_uri + '/' + user_name + ".json";
+//             string delete_path = odata_id + ".json"},";
+//             // string delete_path = filtered_uri + '/' + user_name + ".json"},";
 //             // cout << "dd2 : " << delete_path2 << endl;
 //             if(remove(delete_path.c_str()) < 0)
 //             {
@@ -682,7 +832,8 @@ void Handler::handle_post(http_request _request)
 
         if(uri_tokens.size() >= 4)
         {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
                 //CMM자체 동작으로다가 처리하시면됨
                 do_task_cmm_post(_request);
@@ -918,7 +1069,8 @@ void Handler::handle_patch(http_request _request)
 
         if(uri_tokens.size() >= 4)
         {
-            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService")
+            if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
+            || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
                 //CMM자체 동작으로다가 처리하시면됨
                 do_task_cmm_patch(_request);
@@ -981,11 +1133,13 @@ void Handler::handle_options(http_request _request)
     http_response response(status_codes::OK);
     response.headers().add("Access-Control-Allow-Origin", "*");
     response.headers().add("Access-Control-Allow-Credentials", "true");
-    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
     response.headers().add("Access-Control-Max-Age", "3600");
     response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me");
     _request.reply(response);
+    return ;
 }
+
 
 /**
  * @brief : CMM모듈이 client가 되어 request요청하기
@@ -1048,7 +1202,7 @@ void redfish_request_post(string _path, string _url)//json::value _jv)
     _jv[U("UserName")] = json::value::string(U("MY_NAME"));
     _jv[U("Password")] = json::value::string(U("MY_PASSWORD"));
     // 파라미터로 json::value를 그대로 받으면 그냥 쓰면 되고
-    // 그 안에 내용물을 받았으면 이렇게 만들어주어야함
+    // 그 안에 내용물을 받았으면 이렇게 만들어주어야함  
 
     http_client client(_url);
 
@@ -1139,14 +1293,33 @@ int show_interface_list_and_rebind_socket(lssdp_ctx * lssdp) {
 }
 
 int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packet_len){
-    log(info) << "packet received..";
-    printf("%s", packet);
-    
+    //printf("%s", packet);
     vector<string> packet_info = string_split(std::string(packet), '\n');
-    // for (auto str : packet_info){
-    //     if (!strncmp(str.c_str(), "LOCATION:", 9))
-    //         log(info) << str;
-    // }
+    string resultaddr;
+    bool checkmyblade=false;
+    for (auto str : packet_info){
+         if(str.find("SMM")!=string::npos||str.find("BMC")!=string::npos)
+        {           
+            checkmyblade=true;      
+        }
+        if(str.find("LOCATION")!=string::npos){
+            
+            resultaddr=str;  
+        }
+    }
+    if (checkmyblade)
+    {
+        string result = resultaddr.substr(resultaddr.find(":")+1);
+        if(result=="")
+            return 0;
+        findcurrent_time = get_current_time();
+        log(info) <<"Find Computing Module ip address: "<<result;
+        for(int i =0; i<7; i++)
+        log(info)<<packet_info[i];
+        log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
+         findlast_time = get_current_time();
+        
+    }
 
     return 0;
 }
@@ -1165,14 +1338,15 @@ int show_neighbor_list(lssdp_ctx * lssdp) {
             nbr->update_time
         );
     }
-    printf("%s\n", i == 0 ? "Empty" : "");
+    //printf("%s\n", i == 0 ? "Empty" : "");
     return 0;
 }
 
 void *ssdp_handler(void)
 {
     lssdp_set_log_callback(log_callback);
-
+    findlast_time = get_current_time();
+    log(info)<<"ssdp discovery Computing Module and Storage Module .. time"<<currentDateTime();;
     lssdp_ctx lssdp = {
         .port = 1900,
         .neighbor_timeout = 15000, // 15seconds
@@ -1191,7 +1365,7 @@ void *ssdp_handler(void)
 
     lssdp_network_interface_update(&lssdp);
 
-    long long last_time = get_current_time();
+    last_time = get_current_time();
     if (last_time < 0){
         log(error) << "Got Invalid Timestamp : " << last_time;
         return 0;
@@ -1213,13 +1387,13 @@ void *ssdp_handler(void)
         if (ret > 0){
             lssdp_socket_read(&lssdp);
         }
-        long long current_time = get_current_time();
+        current_time = get_current_time();
         if (current_time < 0){
             log(error) << "Got Invalid Timestamp : " << last_time;
             break;
         }
-
         // // show neighbor list
+       
         // lssdp_nbr *nbr = lssdp.neighbor_list;
         // if (nbr != NULL){
         //     while (nbr->next != NULL){
@@ -1228,12 +1402,20 @@ void *ssdp_handler(void)
         //         nbr = nbr->next;
         //     }
         // }
+    //     for (int i = 0; i < lssdp->interface_num; i++) {
+    //     printf("%zu. %-6s: %s\n",
+    //         i + 1,
+    //         lssdp->interface[i].name,
+    //         lssdp->interface[i].ip
+    //     );
+    // }
 
         // doing task per 5 seconds
-        if (current_time - last_time >= 5000) {
+        if (current_time - last_time >= 3000) {
+            
             lssdp_network_interface_update(&lssdp);
             lssdp_send_msearch(&lssdp);
-            lssdp_send_notify(&lssdp);
+            //lssdp_send_notify(&lssdp);
             lssdp_neighbor_check_timeout(&lssdp);
 
             last_time = current_time;

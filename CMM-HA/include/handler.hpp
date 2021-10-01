@@ -5,7 +5,7 @@
 #define SERVER_TMP_DH_PATH "/conf/ssl/dh2048.pem"
 
 #define SERVER_REQUEST_TIMEOUT 10
-#define SERVER_ENTRY_POINT "https://0.0.0.0:644"
+#define SERVER_ENTRY_POINT "http://0.0.0.0:644"
 #define SERVER_HTTP_PROTOCOL 443
 
 

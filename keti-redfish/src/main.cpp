@@ -2,6 +2,8 @@
 #include "resource.hpp"
 #include "hwcontrol.hpp"
 #include "task.hpp"
+// #include <glib-2.0/glib.h>
+// #include <gssdp-1.2/libgssdp/gssdp.h>
 
 unique_ptr<Handler> g_listener, HA_listener;
 unordered_map<string, Resource *> g_record;
@@ -23,7 +25,8 @@ string uuid_str;
 void start_server(utility::string_t &_url, http_listener_config _config)
 {
     g_listener = unique_ptr<Handler>(new Handler(_url, _config));
-    g_listener->open().wait();
+    g_listener->open()
+    .wait();
     log(info) << "Chassis Manager server start";
 }
 
@@ -36,6 +39,9 @@ void start_server(utility::string_t &_url, http_listener_config _config)
  */
 int main(int _argc, char *_argv[])
 {
+    uuid_str = generate_uuid();
+    log(info) << "global uuid : " << uuid_str;
+
     // Initialization
     if(init_gpio())
         log(info) << "GPIO initialization complete";
@@ -45,20 +51,6 @@ int main(int _argc, char *_argv[])
 
     if (init_resource())
         log(info) << "Redfish resource initialization complete";
-
-    uuid_str = generate_uuid();
-    log(info) << "global uuid : " << uuid_str;
-    // @@@@@ cmm이 요청보내는 것 테스트용
-    // json::value ddd;
-    // ddd = redfish_request_get("/redfish", "http://10.0.6.104:443");
-    // cout << ddd << endl;
-    // cout << "!@#$ Good GET" << endl;
-
-    // redfish_request_post("/redfish/v1/AccountService/Accounts", "http://10.0.6.104:443");
-    // redfish_request_post("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
-    // redfish_request_patch("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
-    // redfish_request_delete("/redfish/v1/SessionService/Sessions", "http://10.0.6.104:443");
-    // @@@@@
 
     // // ssdp discover (not working yet)
     // std::thread t_ssdp(ssdp_handler);
@@ -70,6 +62,13 @@ int main(int _argc, char *_argv[])
         string cmm_chassis = ODATA_CHASSIS_ID;
         cmm_chassis = cmm_chassis + "/" + CMM_ID;
         ((Chassis *)g_record[cmm_chassis])->led_lit(LED_GREEN);
+        // ((Temperature *)(((Chassis *)g_record[cmm_chassis])->thermal->temperatures->members[0]))->read(0, INTAKE_CONTEXT);
+        // cout << "ASDFASDFASDF : " << ((Temperature *)(((Chassis *)g_record[cmm_chassis])->thermal->temperatures->members[0]))->reading_celsius << endl;
+        // ((Chassis *)g_record[cmm_chassis])->led_lit(LED_YELLOW);
+        // ((Chassis *)g_record[cmm_chassis])->led_lit(LED_RED);
+        sleep(3);
+        // ((Chassis *)g_record[cmm_chassis])->led_off(LED_GREEN);
+        // ((Chassis *)g_record[cmm_chassis])->led_blinking(LED_RED);
         // ((Chassis *)g_service_root->chassis_collection->members[0])->led_lit(LED_GREEN);
     });
 
@@ -90,8 +89,10 @@ int main(int _argc, char *_argv[])
         // });
 
         log(info) << "Server crt file path: " << SERVER_CERTIFICATE_CHAIN_PATH;
+        // _ctx.use_certificate_chain_file("/conf/ssl/server.pem");
         _ctx.use_certificate_chain_file(SERVER_CERTIFICATE_CHAIN_PATH);
         log(info) << "Server key file path: " << SERVER_PRIVATE_KEY_PATH;
+        // _ctx.use_private_key_file("/conf/ssl/server.pem", boost::asio::ssl::context::pem);
         _ctx.use_private_key_file(SERVER_PRIVATE_KEY_PATH, boost::asio::ssl::context::pem);
         log(info) << "Server pem file path: " << SERVER_TMP_DH_PATH;
         _ctx.use_tmp_dh_file(SERVER_TMP_DH_PATH);
@@ -104,7 +105,6 @@ int main(int _argc, char *_argv[])
     // Set server entry point
     log(info) << "Server entry point: " << SERVER_ENTRY_POINT;
     utility::string_t url = U(SERVER_ENTRY_POINT);
-    // cout << "!@#$URL?? : " << url << endl;
 
     // RESTful server start
     start_server(url, listen_config);
@@ -121,7 +121,8 @@ int main(int _argc, char *_argv[])
             | boost::asio::ssl::context::no_tlsv1_1                                              // NOT use TLS1.1
             | boost::asio::ssl::context::single_dh_use);});
     HAlisten_config.set_timeout(utility::seconds(SERVER_REQUEST_TIMEOUT));
-    utility::string_t HAurl = U("http://0.0.0.0:80");
+    utility::string_t HAurl = U("http://0.0.0.0:8000");
+    // ha용.. http용..
 
     HA_listener = unique_ptr<Handler>(new Handler(HAurl, HAlisten_config));
     HA_listener->open().wait();
