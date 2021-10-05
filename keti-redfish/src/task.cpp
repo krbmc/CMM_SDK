@@ -1,5 +1,4 @@
 #include "task.hpp"
-// #include "resource.hpp"
 #include "handler.hpp"
 
 extern unordered_map<uint8_t, Task_Manager *> task_map;
