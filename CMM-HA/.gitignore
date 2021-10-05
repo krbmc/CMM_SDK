@@ -51,3 +51,5 @@ include/divisible/*
 *.tar
 
 bin/
+
+**/xml2json
