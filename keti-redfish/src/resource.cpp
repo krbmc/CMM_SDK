@@ -578,6 +578,19 @@ json::value LogService::get_json(void)
     j[U("ServiceEnabled")] = json::value::boolean(U(this->service_enabled));
     j[U("LogEntryType")] = json::value::string(U(this->log_entry_type));
 
+    j[U("SyslogFilters")] = json::value::array();
+    for(int i=0; i<this->syslogFilters.size(); i++)
+    {
+        json::value filter = json::value::object();
+        filter[U("LogFacilities")] = json::value::array();
+
+        for (int j = 0; j < this->syslogFilters[i].logFacilities.size(); j++){
+            filter[U("LogFacilities")][j] = json::value::string(this->syslogFilters[i].logFacilities[j]);
+        }
+        filter[U("LowestSeverity")] = json::value::string(U(this->syslogFilters[i].lowestSeverity));
+        j[U("SyslogFilters")][i] = filter;
+    }
+
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
     k[U("Health")] = json::value::string(U(this->status.health));
@@ -605,6 +618,20 @@ bool LogService::load_json(json::value &j)
         this->overwrite_policy = j.at("OverWritePolicy").as_string();
         this->service_enabled = j.at("ServiceEnabled").as_bool();
 
+        json::value syslog_filters;
+        get_value_from_json_key(j, "SyslogFilters", syslog_filters);
+        for(auto obj : syslog_filters.as_array()){
+            SyslogFilter temp;
+            json::value log_facilities;
+            
+            get_value_from_json_key(obj, "LogFacilities", log_facilities);
+            for (auto facility : log_facilities.as_array())
+                temp.logFacilities.push_back(facility.as_string());
+             
+            get_value_from_json_key(obj, "LowestSeverity", temp.lowestSeverity);
+            this->syslogFilters.push_back(temp);
+        }
+
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
@@ -626,29 +653,27 @@ bool LogService::ClearLog()
             return false;
         }
         
-        //#1 all logentry delete in g_record and memory
+        // all logentry delete in g_record and memory
         vector<Resource *> temp;
             
         for (int i = 0; i < this->entry->members.size(); i++){
             temp.push_back(this->entry->members[i]);
+            
+            // all logentry json file delete in LogService folder
+            fs::path target_file(this->entry->members[i]->odata.id + ".json");
+            log(debug) << target_file;
+            if (fs::exists(target_file)){
+                log(debug) << target_file;
+                fs::remove(target_file);
+            }
         }
-        temp.push_back(this->entry);
-    
         this->entry->members.clear();
-        this->entry = nullptr;
         
         for(auto item : temp)
             delete(item);
         temp.clear();
         
-        //#2 all logentry json file delete in LogService folder
-        fs::path target_dir(this->odata.id);
-    
-        for (const auto& entry : fs::directory_iterator(target_dir)){
-            if (fs::exists(entry.path())){
-                fs::remove_all(entry.path());
-            }
-        }
+        resource_save_json(this->entry);
     }
     catch(const std::exception& e)
     {
@@ -2013,8 +2038,8 @@ bool SyslogService::load_json(json::value &j)
     }
     return true;
 }
-
 // Syslog end
+
 json::value EthernetInterfaces::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -2200,10 +2225,6 @@ json::value NetworkProtocol::get_json(void)
     k[U("Health")] = json::value::string(U(this->status.health));
     j[U("Status")] = k;
 
-    snmp[U("ProtocolEnabled")] = json::value::boolean(this->snmp_enabled);
-    snmp[U("Port")] = json::value::number(U(this->snmp_port));
-    j[U("SNMP")]=snmp;
-    
     ipmi[U("ProtocolEnabled")] = json::value::boolean(this->ipmi_enabled);
     ipmi[U("Port")] = json::value::number(U(this->ipmi_port));
     j[U("IPMI")]=ipmi;
@@ -2234,6 +2255,33 @@ json::value NetworkProtocol::get_json(void)
         ntp[U("NTPServers")][i] = json::value::string(this->v_netservers[i]);
     j[U("NTP")]=ntp;
 
+    snmp["AuthenticationProtocol"] = json::value::string(this->snmp.authentication_protocol);
+    snmp["CommunityAccessMode"] = json::value::string(this->snmp.community_access_mode);
+    snmp["EnableSNMPv1"] = json::value::boolean(this->snmp.enable_SNMPv1);
+    snmp["EnableSNMPv2c"] = json::value::boolean(this->snmp.enable_SNMPv2c);
+    snmp["EnableSNMPv3"] = json::value::boolean(this->snmp.enable_SNMPv3);
+    snmp["EncryptionProtocol"] = json::value::string(this->snmp.encryption_protocol);
+    snmp["HideCommunityStrings"] = json::value::boolean(this->snmp.hide_community_strings);
+    snmp["Port"] = json::value::number(this->snmp.port);
+    snmp["ProtocolEnabled"] = json::value::boolean(this->snmp.protocol_enabled);
+    
+    json::value engine_id = json::value::object();
+    engine_id["ArchitectureId"] = json::value::string(this->snmp.engine_id.architectureId);
+    engine_id["EnterpriseSpecificMethod"] = json::value::string(this->snmp.engine_id.enterpriseSpecificMethod);
+    engine_id["PrivateEnterpriseId"] = json::value::string(this->snmp.engine_id.privateEnterpriseId);
+    snmp["EngineId"] = engine_id;
+
+    snmp["CommunityStrings"] = json::value::array();
+    for(int i=0; i<this->snmp.community_strings.size(); i++){
+        json::value community_string = json::value::object();
+        community_string["AccessMode"] = json::value::string(this->snmp.community_strings[i].access_mode);
+        community_string["CommunityString"] = json::value::string(this->snmp.community_strings[i].community_string);
+        community_string["Name"] = json::value::string(this->snmp.community_strings[i].name);
+        snmp["CommunityStrings"][i] = community_string;
+    }
+
+    j["SNMP"] = snmp;
+
     j["Certificates"] = get_resource_odata_id_json(this->certificates, this->odata.id);
     return j;
 }
@@ -2254,11 +2302,6 @@ bool NetworkProtocol::load_json(json::value &j)
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
 
-        //test
-        obj = j.at("SNMP");
-        get_value_from_json_key(obj, "ProtocolEnabled", this->snmp_enabled);
-        get_value_from_json_key(obj, "Port", this->snmp_port);
-        
         obj = j.at("IPMI");
         get_value_from_json_key(obj, "ProtocolEnabled", this->ipmi_enabled);
         get_value_from_json_key(obj, "Port", this->ipmi_port);
@@ -2283,6 +2326,35 @@ bool NetworkProtocol::load_json(json::value &j)
             for (auto str : v_netservers.as_array())
                 this->v_netservers.push_back(str.as_string());
         }
+
+        obj = j.at("SNMP");
+        get_value_from_json_key(obj, "AuthenticationProtocol", this->snmp.authentication_protocol);
+        get_value_from_json_key(obj, "CommunityAccessMode", this->snmp.community_access_mode);
+        get_value_from_json_key(obj, "EnableSNMPv1", this->snmp.enable_SNMPv1);
+        get_value_from_json_key(obj, "EnableSNMPv2c", this->snmp.enable_SNMPv2c);
+        get_value_from_json_key(obj, "EnableSNMPv3", this->snmp.enable_SNMPv3);
+        get_value_from_json_key(obj, "EncryptionProtocol", this->snmp.encryption_protocol);
+        get_value_from_json_key(obj, "HideCommunityStrings", this->snmp.hide_community_strings);
+        get_value_from_json_key(obj, "Port", this->snmp.port);
+        get_value_from_json_key(obj, "ProtocolEnabled", this->snmp.protocol_enabled);
+
+        json::value community_strings, engine_id;
+
+        get_value_from_json_key(obj, "EngineId", engine_id);
+        get_value_from_json_key(engine_id, "ArchitectureId", this->snmp.engine_id.architectureId);
+        get_value_from_json_key(engine_id, "EnterpriseSpecificMethod", this->snmp.engine_id.enterpriseSpecificMethod);
+        get_value_from_json_key(engine_id, "PrivateEnterpriseId", this->snmp.engine_id.privateEnterpriseId);
+
+        get_value_from_json_key(obj, "CommunityStrings", community_strings);
+        if (community_strings != json::value::null()){
+            for (auto cs_obj : community_strings.as_array()){
+                Community_String temp;
+                get_value_from_json_key(cs_obj, "AccessMode", temp.access_mode);
+                get_value_from_json_key(cs_obj, "CommunityString", temp.community_string);
+                get_value_from_json_key(cs_obj, "Name", temp.name);
+                this->snmp.community_strings.push_back(temp);
+            }
+        }        
     }
     catch (json::json_exception &e)
     {
@@ -2461,6 +2533,7 @@ json::value Systems::get_json(void)
     j[U("Boot")] = j_boot;
 
     j["Bios"] = get_resource_odata_id_json(this->bios, this->odata.id);
+    j["Storage"] = get_resource_odata_id_json(this->storage, this->odata.id);
     j["Processors"] = get_resource_odata_id_json(this->processor, this->odata.id);
     j["Memory"] = get_resource_odata_id_json(this->memory, this->odata.id);
     j["EthernetInterfaces"] = get_resource_odata_id_json(this->ethernet, this->odata.id);
@@ -2943,8 +3016,8 @@ json::value Drive::get_json(void)
     vector<json::value> vec;
     for (auto idnt : this->identifier){
         json::value k = json::value::object();
-        j["DurableName"] = json::value::string(idnt.durable_name);
-        j["DurableNameFormat"] = json::value::string(idnt.durable_name_format);
+        k["DurableName"] = json::value::string(idnt.durable_name);
+        k["DurableNameFormat"] = json::value::string(idnt.durable_name_format);
         vec.push_back(k);
     }
     j["Identifiers"] = json::value::array(vec);
@@ -4211,15 +4284,20 @@ void execute_iptables(NetworkProtocol* _net, int _index, string _op)
             break;
 
         case SNMP_INDEX:
-            if(_net->snmp_enabled == true)
+            // if(_net->snmp_enabled == true)
+            if(_net->snmp.protocol_enabled == true)
             {
-                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 0);
-                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 0);
+                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp.port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp.port, 0);
+                // cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 0);
+                // cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 0);
             }
             else
             {
-                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 1);
-                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 1);
+                cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp.port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp.port, 1);
+                // cmd_input = make_iptable_cmd(_op, "INPUT", SNMP_INDEX, _net->snmp_port, 1);
+                // cmd_output = make_iptable_cmd(_op, "OUTPUT", SNMP_INDEX, _net->snmp_port, 1);
             }
             break;
 

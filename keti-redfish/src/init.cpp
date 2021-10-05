@@ -46,7 +46,7 @@ bool init_resource(void)
 
     init_message_registry();
 
-    // generate_test();
+    generate_test();
 
     // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
@@ -550,6 +550,8 @@ void init_log_service(Collection *log_service_collection, string _id)
     log_service->overwrite_policy = "WrapsWhenFull";
     log_service->datetime_local_offset = "+09:00";
     log_service->service_enabled = true;
+    log_service->log_entry_type = "Event";
+    log_service->description = "Keti.1.0.TempReport Logs";
     
     log_service->status.state = STATUS_STATE_ENABLED;
     log_service->status.health = STATUS_HEALTH_OK;
@@ -561,6 +563,12 @@ void init_log_service(Collection *log_service_collection, string _id)
         init_log_entry(log_service->entry, "0");
     }
     
+    // syslogfilter test
+    SyslogFilter temp;
+    temp.logFacilities.push_back("Syslog");
+    temp.lowestSeverity = "All";
+    log_service->syslogFilters.push_back(temp);
+    
     log_service_collection->add_member(log_service);
     return;
 }
@@ -571,6 +579,15 @@ void init_log_entry(Collection *log_entry_collection, string _id)
 
     LogEntry *log_entry = new LogEntry(odata_id, _id);
     
+    log_entry->entry_type = "Event";
+    log_entry->name = "Log Entry 1";
+    log_entry->created = "2021-07-25.13:07:10";
+    log_entry->severity = "OK";
+    log_entry->message = "Current temperature";
+    log_entry->message_id = "Keti.1.0.TempReport";
+    log_entry->message_args.push_back("30");
+    log_entry->sensor_number = 4;
+
     log_entry_collection->add_member(log_entry);
     return;
 }
@@ -983,50 +1000,14 @@ void init_manager(Collection *manager_collection, string _id)
 
     manager->status.state = STATUS_STATE_ENABLED;
     manager->status.health = STATUS_HEALTH_OK;
+    
+    if (!record_is_exist(odata_id + "/NetworkProtocol")){
+        manager->network = new NetworkProtocol(odata_id + "/NetworkProtocol", "NetwrokProtocol");
+        manager->network->name = "CMM Network Protocol Config";
 
-    manager->network = new NetworkProtocol(odata_id + "/NetworkProtocol", "NetworkProtocol");
-        
-    /**
-     * Network Protocol Configuration
-     */
-    manager->network->hostname = get_popen_string("cat /etc/hostname");
-    manager->network->description = "Manager Network Service";
-    manager->network->fqdn = get_popen_string("hostname -f");
-    
-    manager->network->snmp_enabled = false;
-    manager->network->snmp_port = DEFAULT_SNMP_PORT;
-    
-    // cmm doesn't use ipmi 
-    manager->network->ipmi_enabled = false;
-    manager->network->ipmi_port = DEFAULT_IPMI_PORT;
-    
-    manager->network->ntp_enabled = false;
-    manager->network->ntp_port = DEFAULT_NTP_PORT;
-    string getntpcmd = "cat /etc/ntp.conf | grep server | awk {\'print $2\'}"; 
-    manager->network->v_netservers = string_split(get_popen_string(getntpcmd), '\n');
-    
-    manager->network->kvmip_enabled = true;
-    manager->network->kvmip_port = DEFAULT_KVMIP_PORT;
-    
-    manager->network->https_enabled = true;
-    manager->network->https_port = DEFAULT_HTTPS_PORT;
-    
-    manager->network->http_enabled = true;
-    manager->network->http_port = DEFAULT_HTTP_PORT;
-    
-    manager->network->virtual_media_enabled = true;
-    manager->network->virtual_media_port = DEFAULT_VIRTUAL_MEDIA_PORT;
-    
-    manager->network->ssh_enabled = true;
-    manager->network->ssh_port = DEFAULT_SSH_PORT;
-    
-    manager->network->status.state = STATUS_STATE_ENABLED;
-    manager->network->status.health = STATUS_HEALTH_OK;
+        init_network_protocol(manager->network);
+    }
 
-    // if(!fs::exists("/etc/iptables.rules"))
-    system("iptables -F");
-    init_iptable(manager->network);
-    
     if (!record_is_exist(odata_id + "/EthernetInterfaces")){
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         manager->ethernet->name = "Manager Ethernet Interface Collection";
@@ -1057,6 +1038,61 @@ void init_manager(Collection *manager_collection, string _id)
     }
     manager_collection->add_member(manager);
     return;
+}
+
+void init_network_protocol(NetworkProtocol *network)
+{
+    /**
+     * Network Protocol Configuration
+     */
+    network->hostname = get_popen_string("cat /etc/hostname");
+    network->description = "Manager Network Service";
+    network->fqdn = get_popen_string("hostname -f");
+    
+    // cmm doesn't use ipmi 
+    network->ipmi_enabled = false;
+    network->ipmi_port = DEFAULT_IPMI_PORT;
+    
+    network->ntp_enabled = false;
+    network->ntp_port = DEFAULT_NTP_PORT;
+    string getntpcmd = "cat /etc/ntp.conf | grep server | awk {\'print $2\'}"; 
+    network->v_netservers = string_split(get_popen_string(getntpcmd), '\n');
+    
+    network->kvmip_enabled = true;
+    network->kvmip_port = DEFAULT_KVMIP_PORT;
+    
+    network->https_enabled = true;
+    network->https_port = DEFAULT_HTTPS_PORT;
+    
+    network->http_enabled = true;
+    network->http_port = DEFAULT_HTTP_PORT;
+    
+    network->virtual_media_enabled = true;
+    network->virtual_media_port = DEFAULT_VIRTUAL_MEDIA_PORT;
+    
+    network->ssh_enabled = true;
+    network->ssh_port = DEFAULT_SSH_PORT;
+    
+    network->status.state = STATUS_STATE_ENABLED;
+    network->status.health = STATUS_HEALTH_OK;
+
+    // ********************* To Do : snmp config init *******************************
+    network->snmp.authentication_protocol = "HMAC_SHA96";
+    network->snmp.community_access_mode = "Full";
+    // network->snmp.community_strings
+    network->snmp.enable_SNMPv1 = false;
+    network->snmp.enable_SNMPv2c = false;
+    network->snmp.enable_SNMPv3 = false;
+    network->snmp.encryption_protocol = "None";
+    // network->snmp.engine_id
+    network->snmp.hide_community_strings = true;
+    network->snmp.port = DEFAULT_SNMP_PORT;
+    network->snmp.protocol_enabled = true;
+    // ******************************************************************************
+
+    // if(!fs::exists("/etc/iptables.rules"))
+    system("iptables -F");
+    init_iptable(network);
 }
 
 void insert_virtual_media(Collection *virtual_media_collection, string _id, string _type)
@@ -1358,7 +1394,10 @@ void init_numset(void)
     for(int i=0; i<ALLOCATE_NUM_COUNT; i++)
     {
         set<unsigned int> empty;
-        numset_num[i] = 1;
+        if(i == ALLOCATE_ACCOUNT_NUM)
+            numset_num[i] = 0;
+        else
+            numset_num[i] = 1;
         numset[i] = empty;
     }
 }

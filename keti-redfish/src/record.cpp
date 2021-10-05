@@ -164,6 +164,7 @@ json::value record_get_json(const string _uri)
             break;
         case SYSLOG_SERVICE_TYPE:
             j = ((SyslogService *)g_record[_uri])->get_json();
+            break;
         default:
             break;
     }
@@ -799,7 +800,14 @@ void dependency_injection(Resource *res)
     {
         //serviceroot
         case ACCOUNT_SERVICE_TYPE: // BMC Manager && ServiceRoot
-            ((ServiceRoot *)g_record[parent_object_id])->account_service = (AccountService *)res;
+            switch (g_record[parent_object_id]->type){
+                case SERVICE_ROOT_TYPE:
+                    ((ServiceRoot *)g_record[parent_object_id])->account_service = (AccountService *)res;
+                    break;
+                case MANAGER_TYPE:
+                    ((Manager *)g_record[parent_object_id])->remote_account_service = (AccountService *)res;
+                    break;
+            }
             break;
         case SESSION_SERVICE_TYPE:
             ((ServiceRoot *)g_record[parent_object_id])->session_service = (SessionService *)res;

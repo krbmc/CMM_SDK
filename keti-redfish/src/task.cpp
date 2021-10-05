@@ -1,5 +1,5 @@
 #include "task.hpp"
-#include "resource.hpp"
+// #include "resource.hpp"
 #include "handler.hpp"
 
 extern unordered_map<uint8_t, Task_Manager *> task_map;
@@ -235,8 +235,10 @@ void do_task_bmc_get(http_request _request)
 
     // Make m_Request
     m_Request msg;
-
-    msg = work_before_request_process("GET", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
+    string module_address = module_id_table[uri_tokens[3]];
+    // string module_address = make_module_address(uri_tokens[3]);
+    msg = work_before_request_process("GET", module_address, uri, jv, _request.headers());
+    // msg = work_before_request_process("GET", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
 
     // connect to Task_manager
     t_manager->list_request.push_back(msg);
@@ -496,8 +498,10 @@ void do_task_bmc_post(http_request _request)
 
     // Make m_Request
     m_Request msg;
-
-    msg = work_before_request_process("POST", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
+    string module_address = module_id_table[uri_tokens[3]];
+    // string module_address = make_module_address(uri_tokens[3]);
+    msg = work_before_request_process("POST", module_address, uri, jv, _request.headers());
+    // msg = work_before_request_process("POST", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
 
     // connect to Task_manager
     t_manager->list_request.push_back(msg);
@@ -629,8 +633,10 @@ void do_task_bmc_patch(http_request _request)
 
     // Make m_Request
     m_Request msg;
-
-    msg = work_before_request_process("PATCH", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
+    string module_address = module_id_table[uri_tokens[3]];
+    // string module_address = make_module_address(uri_tokens[3]);
+    msg = work_before_request_process("PATCH", module_address, uri, jv, _request.headers());
+    // msg = work_before_request_process("PATCH", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
 
     // connect to Task_manager
     t_manager->list_request.push_back(msg);
@@ -758,8 +764,10 @@ void do_task_bmc_delete(http_request _request)
     }
 
     m_Request msg;
-
-    msg = work_before_request_process("DELETE", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
+    string module_address = module_id_table[uri_tokens[3]];
+    // string module_address = make_module_address(uri_tokens[3]);
+    msg = work_before_request_process("DELETE", module_address, uri, jv, _request.headers());
+    // msg = work_before_request_process("DELETE", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
 
     // connect to Task_manager
     t_manager->list_request.push_back(msg);
@@ -3134,13 +3142,15 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
         int port;
         if(get_value_from_json_key(snmp, "ProtocolEnabled", enabled))
         {
-            network->snmp_enabled = enabled;
+            network->snmp.protocol_enabled = enabled;
+            // network->snmp_enabled = enabled;
             result = true;
         }
 
         if(get_value_from_json_key(snmp, "Port", port))
         {
-            network->snmp_port = port;
+            network->snmp.port = port;
+            // network->snmp_port = port;
             result = true;
         }
         // 포트번호 범위검사 해줘야하나? QQQQ

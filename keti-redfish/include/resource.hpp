@@ -3,7 +3,7 @@
 
 #include "stdafx.hpp"
 #include "hwcontrol.hpp"
-#include "chassis_controller.hpp"
+// #include "chassis_controller.hpp"
 
 /**
  * @brief Redfish information
@@ -102,16 +102,16 @@
 #define ODATA_CERTIFICATE_TYPE "#Certificate." ODATA_TYPE_VERSION ".Certificate"
 
 // dy : virtual media
-#define ODATA_VIRTUAL_MEDIA_TYPE "#VirtualMedia" ODATA_TYPE_VERSION ".VirtualMedia"
+#define ODATA_VIRTUAL_MEDIA_TYPE "#VirtualMedia." ODATA_TYPE_VERSION ".VirtualMedia"
 #define ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE "#VirtualMediaCollection.VirtualMediaCollection"
 
 // dy : storage (drive, volume)
-#define ODATA_DRIVE_TYPE "#Drive" ODATA_TYPE_VERSION ".Drive"
-#define ODATA_DRIVE_COLLECTION_TYPE "#Drive.Drive"
-#define ODATA_VOLUME_TYPE "#Volume" ODATA_TYPE_VERSION ".Volume"
-#define ODATA_VOLUME_COLLECTION_TYPE "#Volume.Volume"
+#define ODATA_DRIVE_TYPE "#Drive." ODATA_TYPE_VERSION ".Drive"
+#define ODATA_DRIVE_COLLECTION_TYPE "#DriveCollection.DriveCollection"
+#define ODATA_VOLUME_TYPE "#Volume." ODATA_TYPE_VERSION ".Volume"
+#define ODATA_VOLUME_COLLECTION_TYPE "#VolumeCollection.VolumeCollection"
 
-#define ODATA_MESSAGE_REGISTRY_TYPE "#MessageRegistry" ODATA_TYPE_VERSION ".MessageRegistry"
+#define ODATA_MESSAGE_REGISTRY_TYPE "#MessageRegistry." ODATA_TYPE_VERSION ".MessageRegistry"
 
 #define NO_DATA_TYPE 0
 
@@ -608,6 +608,40 @@ typedef struct _Physical_Location{
     string info_format; // Slot Number. if storage is host bus adaptoer or Raid, this property will be displayed
 } Physical_Location;
 
+typedef struct _Community_String
+{
+    string access_mode;
+    string community_string;
+    string name;
+} Community_String;
+
+typedef struct _EngineId
+{
+    string architectureId;
+    string enterpriseSpecificMethod;
+    string privateEnterpriseId;
+} EngineId;
+
+typedef struct _Snmp
+{
+    string authentication_protocol;
+    string community_access_mode;
+    vector<Community_String> community_strings;
+    bool enable_SNMPv1;
+    bool enable_SNMPv2c;
+    bool enable_SNMPv3;
+    string encryption_protocol;
+    EngineId engine_id;
+    bool hide_community_strings;
+    int port;
+    bool protocol_enabled;
+} Snmp;
+
+typedef struct _SyslogFilter
+{
+    vector<string> logFacilities;
+    string lowestSeverity;
+} SyslogFilter;
 /**
  * @brief Resource of redfish schema
  */
@@ -1010,7 +1044,8 @@ class LogService : public Resource
     string overwrite_policy;
     bool service_enabled;
     Status status;
-
+    vector<SyslogFilter> syslogFilters;
+    
     Collection *entry;
     
     unordered_map<string, Actions> actions;
@@ -1403,7 +1438,6 @@ class NetworkProtocol : public Resource
     string description;
     string fqdn;
     string name;
-    bool snmp_enabled;
     bool ipmi_enabled;
     bool ntp_enabled;
     bool kvmip_enabled;
@@ -1411,7 +1445,6 @@ class NetworkProtocol : public Resource
     bool http_enabled;
     bool virtual_media_enabled;
     bool ssh_enabled;
-    int snmp_port;
     int ipmi_port;
     int ntp_port;
     int kvmip_port;
@@ -1419,7 +1452,7 @@ class NetworkProtocol : public Resource
     int http_port;
     int virtual_media_port;
     int ssh_port;
-
+    Snmp snmp;
     //telnet, ssdp
 
     vector<string> v_netservers;
@@ -2613,6 +2646,7 @@ void init_storage(Storage *storage);
 void init_storage_controller(List *storage_controllers_list, string _id);
 void init_processor(Collection *processor_collection, string _id);
 void init_memory(Collection *memory_collection, string _id);
+void init_network_protocol(NetworkProtocol *network);
 void init_ethernet(Collection *ethernet_collection, string _id);
 void init_log_service(Collection *log_service_collection, string _id);
 void init_log_entry(Collection *log_entry_collection, string _id);
