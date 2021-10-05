@@ -278,7 +278,25 @@ string get_parent_object_uri(string _uri, string delimiter)
  */
 bool isNumber(const string str)
 {
-    return str.find_first_not_of("0123456789") == string::npos;
+    return !str.empty() && (str.find_first_not_of("0123456789") == string::npos);
+}
+
+/**
+ * @brief get string, check if it is validate ipv4 address
+ * @author dyk
+ * @return if string is ipv4 addr, retrun 1. else return 0. 
+ */
+bool validateIPv4(const string str)
+{
+    vector<string> ip_nums = string_split(str, '.');
+    if (ip_nums.size() != 4)
+        return false;
+    
+    for (string num : ip_nums){
+        if (!isNumber(num) || stoi(num) > 255 || stoi(str) < 0)
+            return false;
+    }
+    return true;
 }
 
 char *get_popen_string(char *command)
@@ -398,7 +416,6 @@ bool get_value_from_json_key(json::value body, string key, unsigned int& value)
     return true;
 }
 
-<<<<<<< HEAD
 bool get_value_from_json_key(json::value body, string key, unsigned int& value)
 {
     // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
@@ -412,9 +429,6 @@ bool get_value_from_json_key(json::value body, string key, unsigned int& value)
     }
     return true;
 }
-
-=======
->>>>>>> b3b4d5821d29b312ec4e8ea846e298cd087df5e4
 bool get_value_from_json_key(json::value body, string key, string& value)
 {
     try

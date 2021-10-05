@@ -2,6 +2,7 @@
 #include "resource.hpp"
 #include "hwcontrol.hpp"
 #include "task.hpp"
+#include "chassis_controller.hpp"
 // #include <glib-2.0/glib.h>
 // #include <gssdp-1.2/libgssdp/gssdp.h>
 
@@ -39,12 +40,9 @@ void start_server(utility::string_t &_url, http_listener_config _config)
  */
 int main(int _argc, char *_argv[])
 {
-<<<<<<< HEAD
-=======
     // 논문을 위한 BMC 등록
-    module_id_table.insert(make_pair("2", "http://10.0.6.104:443"));
+    // module_id_table.insert(make_pair("2", "http://10.0.6.104:443"));
 
->>>>>>> b3b4d5821d29b312ec4e8ea846e298cd087df5e4
     uuid_str = generate_uuid();
     log(info) << "global uuid : " << uuid_str;
 
@@ -58,7 +56,11 @@ int main(int _argc, char *_argv[])
     if (init_resource())
         log(info) << "Redfish resource initialization complete";
 
-    // // ssdp discover (not working yet)
+    // add_system("/redfish/v1/Systems/CM1", "http://10.0.6.104:443");
+    // add_manager("/redfish/v1/Managers/CM1", "http://10.0.6.104:443");
+    // add test
+
+    // ssdp discover (not working yet)
     // std::thread t_ssdp(ssdp_handler);
     // log(info) << "ssdp discover start";
     // t_ssdp.join();
@@ -133,6 +135,10 @@ int main(int _argc, char *_argv[])
     HA_listener = unique_ptr<Handler>(new Handler(HAurl, HAlisten_config));
     HA_listener->open().wait();
     log(info) << "HA Heartbeat server start";
+
+    std::thread t_ssdp(ssdp_handler);
+    log(info) << "ssdp discover start";
+    t_ssdp.join();
 
     while (true) 
         pause();
