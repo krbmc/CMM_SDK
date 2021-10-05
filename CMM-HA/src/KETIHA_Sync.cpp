@@ -139,12 +139,10 @@ KETIhaError KETIHA_Sync::SyncData(const KETIhaStatus sw)
         obj["Path"]=json::value::string(sendcmd);
         returnobj = heart_request("/Command", uri, obj);
         log(info) << "Status=" << returnobj.serialize() << endl;
-
         this->OriginEnabled = true;
     }
     catch (...)
     {
-
         log(info) << "orgin not working " << endl;
     }
     return KETIhaError::HA_ERROR_OK;
@@ -155,10 +153,11 @@ void KETIHA_Sync::Thread_File_Sync()
     //log(info) << "Thread_File_Sync 생성";
     for (;;)
     {
-        log(info) << "Thread_File_Sync "<<count<<"COUNT"<<max_count;
+        //log(info) << "Thread_File_Sync "<<count<<"COUNT"<<max_count;
         count++;
         this_thread::sleep_for(this->m_Heartbeat);
         if(count>this->max_count){
+            log(info) << "Thread_File_Sync "<<count<<"COUNT"<<max_count;
             SyncData();
             count=0;
         }

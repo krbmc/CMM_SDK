@@ -1,5 +1,8 @@
 #include "KETIhaNetService.hpp"
 
+/**
+ *  @file CMM HA의 CPPREST API 
+ **/
 unique_ptr<Handler> g_listener;
 src::severity_logger<severity_level> g_logger;
 KETIhaNetService::KETIhaNetService():m_Quit(true)
@@ -86,12 +89,14 @@ void KETIhaNetService::RESTService(void *data)
         //     return "ketilinux";
         // });
 
-        log(info) << "Server crt file path: " << SERVER_CERTIFICATE_CHAIN_PATH;
-        _ctx.use_certificate_chain_file(SERVER_CERTIFICATE_CHAIN_PATH);
-        log(info) << "Server key file path: " << SERVER_PRIVATE_KEY_PATH;
-        _ctx.use_private_key_file(SERVER_PRIVATE_KEY_PATH, boost::asio::ssl::context::pem);
-        log(info) << "Server pem file path: " << SERVER_TMP_DH_PATH;
-        _ctx.use_tmp_dh_file(SERVER_TMP_DH_PATH);
+        //https 용 테스트용으로 주석처리
+        // log(info) << "Server crt file path: " << SERVER_CERTIFICATE_CHAIN_PATH;
+        // _ctx.use_certificate_chain_file(SERVER_CERTIFICATE_CHAIN_PATH);
+        // log(info) << "Server key file path: " << SERVER_PRIVATE_KEY_PATH;
+        // _ctx.use_private_key_file(SERVER_PRIVATE_KEY_PATH, boost::asio::ssl::context::pem);
+        // log(info) << "Server pem file path: " << SERVER_TMP_DH_PATH;
+        // _ctx.use_tmp_dh_file(SERVER_TMP_DH_PATH);
+        //https 용 테스트용으로 주석처리
     });
 
     // Set request timeout

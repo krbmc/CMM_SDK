@@ -6,6 +6,7 @@
 #include<list>
 #define ENTRY_PORT 808
 using namespace std;
+#define HTTPPORT 8000
 // unique_ptr<int> a = unique_ptr<int>(new int(3));
 namespace KETIHA_NSP
 {
