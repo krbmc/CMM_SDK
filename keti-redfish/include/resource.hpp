@@ -2539,7 +2539,8 @@ public:
     // TODO 리소스 변경 필요
     Thermal *thermal;
     Power *power;
-    Storage *storage;
+    Collection *storage;
+    // Storage *storage;
     Collection *sensors;
     Collection *log_service;
     // 로그서비스 나중에 추가한거라서 get_json, load_json 이런곳에 없을거임

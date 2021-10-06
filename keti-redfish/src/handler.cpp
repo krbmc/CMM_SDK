@@ -1306,13 +1306,13 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
 
         if((str.find("SMM")!=string::npos||str.find("BMC")!=string::npos) && (str.find("NT:")!=string::npos)) // ST도 추가해야할수있음
         {           
-            checkmyblade=true;
+            // checkmyblade=true;
             // log(info) << " 확인하자 패킷 : " << str;
             string nt = str;
             result_id = nt.substr(str.find("-")+1, str.find("\r")-str.find("-")-1);
 
-            // if(module_id_table.find(result_id) == module_id_table.end())
-            //     checkmyblade=true;
+            if(module_id_table.find(result_id) == module_id_table.end())
+                checkmyblade=true;
         }
 
         if(str.find("LOCATION")!=string::npos){
@@ -1330,12 +1330,12 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
         if(result=="")
             return 0;
         
-        // module_id_table.insert({result_id, result});
-        // save_module_id();
+        module_id_table.insert({result_id, result});
+        save_module_id();
+        add_new_bmc(result_id, result, "root", "");
         // add_new_bmc(result_id, "10.0.6.104", "443", false, "root", "");
         // 여기서 http://10.0.6.104:443을 쪼개서 함수인자를 받아서 사용한다면 result를 파싱해서 사용해야하고
         // 통으로 받아서 사용한다면 그대로result 쓰면됨 
-        // add_bmc
 
         findcurrent_time = get_current_time();
         log(info) << "Search Result ID & Address : " << result_id << " / " << result;
@@ -1343,7 +1343,7 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
         // for(int i =0; i<7; i++)
         for(int i =0; i<packet_info.size(); i++)
         log(info)<<packet_info[i];
-        log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
+        // log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
         findlast_time = get_current_time();
         
     }

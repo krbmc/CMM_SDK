@@ -82,7 +82,15 @@ json::value obj ;
     log(info) << "Reqeust URL : " << filtered_uri;
     log(info) << "send URL : " << senduri;
     log(info) << "Request Body : " << _request.to_string();
+    
     http_response response;
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
     if (uri_tokens.size() == 1 && uri_tokens[0] == "CMMHA")
     {
         json::value j;
@@ -112,7 +120,11 @@ json::value obj ;
         j[U("ActivePort")] = json::value::string(U(activeport));
         j[U("StandbyIP")] = json::value::string(U(standbyip));
         j[U("StandbyPort")] = json::value::string(U(standbyport));
-        _request.reply(status_codes::OK, j);
+
+        response.set_status_code(status_codes::OK);
+        response.set_body(j);
+
+        _request.reply(response);
     }
     response=All_request(senduri,filtered_uri,_request.method(),obj);
     json::value response_json = response.extract_json().get();

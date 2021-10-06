@@ -416,19 +416,6 @@ bool get_value_from_json_key(json::value body, string key, unsigned int& value)
     return true;
 }
 
-bool get_value_from_json_key(json::value body, string key, unsigned int& value)
-{
-    // 0 : integer, 1 : string, 2 : json::value, 3: double, 4: bool....
-    if (body.has_field(key)){
-        value = body.at(key).as_integer();
-    }
-    else{
-        value = 0;
-        log(warning) << "error with parsing " << key << " to unsigned int";
-        return false;
-    }
-    return true;
-}
 bool get_value_from_json_key(json::value body, string key, string& value)
 {
     try

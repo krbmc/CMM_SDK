@@ -712,16 +712,28 @@ void init_chassis(Collection *chassis_collection, string _id)
         init_thermal(chassis->thermal);
     }
     if (!record_is_exist(odata_id + "/Storage")){
-        chassis->storage = new Storage(odata_id + "/Storage");
-        chassis->storage->name = "CMM Chassis Storage";
-        chassis->storage->id = "/Storage";
-        init_storage(chassis->storage);
+        chassis->storage = new Collection(odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
+        chassis->storage->name = "Chassis Storage Collection";
+    
+        init_storage_collection(chassis->storage, "1");
     }
+    // if (!record_is_exist(odata_id + "/Storage")){
+    //     chassis->storage = new Storage(odata_id + "/Storage");
+    //     chassis->storage->name = "CMM Chassis Storage";
+    //     chassis->storage->id = "/Storage";
+    //     init_storage(chassis->storage);
+    // }
     if (!record_is_exist(odata_id + "/Power")){
         chassis->power = new Power(odata_id + "/Power");
         chassis->power->name = "CMM Chassis Power";        
         
         init_power(chassis->power);
+    }
+    if (!record_is_exist(odata_id + "/LogServices")){
+        chassis->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
+        chassis->log_service->name = "Chassis Log Service Collection";
+    
+        init_log_service(chassis->log_service, "Log1");
     }
 
     chassis_collection->add_member(chassis);

@@ -58,6 +58,7 @@ int main(int _argc, char *_argv[])
 
     // add_system("/redfish/v1/Systems/CM1", "http://10.0.6.104:443");
     // add_manager("/redfish/v1/Managers/CM1", "http://10.0.6.104:443");
+    // add_chassis("/redfish/v1/Chassis/CM1", "http://10.0.6.104:443");
     // add test
 
     // ssdp discover (not working yet)

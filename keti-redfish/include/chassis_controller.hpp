@@ -5,7 +5,8 @@
 #include "resource.hpp"
 
 
-void add_new_bmc(string _bmc_id, string _ip, string _port, bool _is_https, string _username, string _password);
+void add_new_bmc(string _bmc_id, string _address, string _username, string _password);
+// void add_new_bmc(string _bmc_id, string _ip, string _port, bool _is_https, string _username, string _password);
 void add_system(string _uri, string _host);
 void add_manager(string _uri, string _host);
 void add_chassis(string _uri, string _host);
@@ -30,6 +31,16 @@ void bring_simple_storages(Collection *_collection, json::value _info, string _a
 void bring_manager(Manager *_manager, json::value _info, string _addr);
 void bring_virtual_media(Collection *_collection, json::value _info, string _addr);
 void bring_account_service(Manager *_manager, json::value _info, string _addr);
+void bring_accounts(Collection *_collection, json::value _info, string _addr);
+void bring_roles(Collection *_collection, json::value _info, string _addr);
+
+void bring_chassis(Chassis *_chassis, json::value _info, string _addr);
+void bring_temperatures(List *_list, json::value _info, string _addr);
+void bring_fans(List *_list, json::value _info, string _addr);
+void bring_power_controls(List *_list, json::value _info, string _addr);
+void bring_voltages(List *_list, json::value _info, string _addr);
+void bring_power_supplies(List *_list, json::value _info, string _addr);
+void bring_sensors(Collection *_collection, json::value _info, string _addr);
 
 
 // void add_new_account_service(string _bmc_id);
