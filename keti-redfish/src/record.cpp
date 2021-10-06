@@ -874,6 +874,10 @@ void dependency_injection(Resource *res)
                 case CHASSIS_TYPE:
                     if (res->odata.type == ODATA_SENSOR_COLLECTION_TYPE){
                         ((Chassis *)g_record[parent_object_id])->sensors = (Collection *)res;
+                    }else if (res->odata.type == ODATA_LOG_SERVICE_COLLECTION_TYPE){
+                        ((Chassis *)g_record[parent_object_id])->log_service = (Collection *)res;
+                    }else if (res->odata.type == ODATA_STORAGE_COLLECTION_TYPE){
+                        ((Chassis *)g_record[parent_object_id])->storage = (Collection *)res;
                     }else{
                         log(warning) << "\t\t dy : what is this in chassis? : " << id << " type : " << res->odata.type;
                     }
@@ -980,7 +984,7 @@ void dependency_injection(Resource *res)
                     ((Collection *)g_record[parent_object_id])->add_member((Storage *)res);
                     break;
                 case CHASSIS_TYPE:
-                    ((Chassis *)g_record[parent_object_id])->storage = ((Storage *)res);
+                    // ((Chassis *)g_record[parent_object_id])->storage = ((Storage *)res);
                     break;
                 default:
                     log(warning) << "\t\t dy : what is this in Storage : " << id << " type : " << res->odata.type;
