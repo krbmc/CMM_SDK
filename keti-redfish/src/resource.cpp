@@ -2608,16 +2608,20 @@ bool Systems::Reset(json::value body)
     memset(cmds, 0, sizeof(cmds));
     
     if (reset_type == "On"){
-        sprintf(cmds, "%s", this_proc_name.c_str());
+        this->power_state = "On";
+        // todo: led 켜기
+        return true;
     }
     if (reset_type == "ForceOff"){
         sprintf(cmds, "kill -9 %d", pid);
     }
     if (reset_type == "GracefulShutdown"){
-        sprintf(cmds, "kill -s TERM %d", pid);
+        this->power_state = "Off";
+        // todo: led 끄기
+        return true;
     }
     if (reset_type == "GracefulRestart"){
-        sprintf(cmds, "kill -s TERM %d && %s", pid, this_proc_name.c_str());
+        sprintf(cmds, "/etc/init.d/rcK && /etc/init.d/rcS");
     }
     if (reset_type == "ForceRestart"){
         sprintf(cmds, "reboot");

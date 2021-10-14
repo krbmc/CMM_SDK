@@ -3137,22 +3137,112 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
     json::value snmp;
     if(get_value_from_json_key(_jv, "SNMP", snmp))
     {
+        /* jv example
+            SNMP {
+                ProtocolEnabled : bool,
+                EnableSNMPv1 : bool,
+                EnableSNMPv2c : bool,
+                Port : 161,
+                HideCommunityStrings : bool,
+                CommunityStrings : object[
+                    AccessMode : "Full" or "Limited",
+                    CommunityString : "test",
+                    Name : "bmc"
+                ],
+                CommunityAccessMode : "Full" or "Limited"
+                ==================== snmpv3 =====================
+                EnableSNMPv3 : bool,
+                EncryptionProtocol : "Account" or "CBC_DES" or "CFB128_AES128" or "None",
+                EngineID : object[
+                    "ArchitectureID" : "",
+                    "EnterpriseSpecificMethod" : "",
+                    "PrivateEnterpriseId" : ""
+                ],
+                AuthenticationProtocol : "Account" or "CommunityString" or "HMAC_MD5" or "HMAC_SHA96",
+            }
+        */
+        // #1 snmp version check
         bool enabled;
-        int port;
-        if(get_value_from_json_key(snmp, "ProtocolEnabled", enabled))
-        {
+        if (get_value_from_json_key(snmp, "ProtocolEnabled", enabled)){
             network->snmp.protocol_enabled = enabled;
-            // network->snmp_enabled = enabled;
-            result = true;
-        }
+            if (enabled){
+                // #2 snmp version select
+                int version_selected = 0;
+                bool v_enabled = false;
 
-        if(get_value_from_json_key(snmp, "Port", port))
-        {
-            network->snmp.port = port;
-            // network->snmp_port = port;
+                if (get_value_from_json_key(snmp, "EnableSNMPv1", v_enabled))
+                {
+                    if (v_enabled && !version_selected){
+                        version_selected = 1;
+                    }
+                    network->snmp.enable_SNMPv1 = v_enabled;
+                    
+                }
+                if (get_value_from_json_key(snmp, "EnableSNMPv2c", v_enabled))
+                {
+                    if (v_enabled && !version_selected){
+                        version_selected = 2;
+                    }
+                    network->snmp.enable_SNMPv1 = v_enabled;
+                    
+                }
+                if (get_value_from_json_key(snmp, "EnableSNMPv3", v_enabled))
+                {
+                    if (v_enabled && !version_selected){
+                        version_selected = 3;
+                    }
+                    network->snmp.enable_SNMPv1 = v_enabled;
+                }
+                
+                int port;
+                if (get_value_from_json_key(snmp, "Port", port))
+                    network->snmp.port = port;
+
+                switch (version_selected) {
+                    case 1: case 2:{
+                        bool hide_community_strings; 
+                        if (get_value_from_json_key(snmp, "HideCommunityStrings", hide_community_strings))
+                            network->snmp.hide_community_strings = hide_community_strings;
+                        
+                        string community_access_mode;
+                        if (get_value_from_json_key(snmp, "CommunityAccessMode", community_access_mode))
+                            network->snmp.community_access_mode = community_access_mode;
+                        
+                        json::value community_strings;
+                        if (get_value_from_json_key(snmp, "CommunityStrings", community_strings)){
+                            for (auto obj : community_strings.as_array()){
+                                Community_String temp;
+                                
+                                get_value_from_json_key(obj, "AccessMode", temp.access_mode);
+                                get_value_from_json_key(obj, "CommunityString", temp.community_string);
+                                get_value_from_json_key(obj, "Name", temp.name);
+
+                                network->snmp.community_strings.push_back(temp);
+                            }
+                        }
+                        // snmp의 실질적인 가동
+                        break;
+                    }
+                    case 3:{
+                        string authentication_protocol;
+                        if (get_value_from_json_key(snmp, "AuthenticationProtocol", authentication_protocol))
+                            network->snmp.authentication_protocol = authentication_protocol;
+                        
+                        string encryption_protocol;
+                        if (get_value_from_json_key(snmp, "EncryptionProtocol", encryption_protocol))
+                            network->snmp.encryption_protocol = encryption_protocol;
+                        // snmp의 실질적인 가동 및 engine 정보 수정
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            } else {
+                // protocol 사용 x
+                snmp_config_init(&(network->snmp));
+            }
             result = true;
         }
-        // 포트번호 범위검사 해줘야하나? QQQQ
     }
     
     json::value ipmi;
@@ -3290,6 +3380,12 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
     // request에서 json에 두 공간에서 받아야할듯 a,b입력란이라고 하면
     // a에서 받은 ntpservers가 존재하면 b검사하고 b에도 입력한게 있으면 그걸로 수정
     // a에서 받은 ntpservers가 존재하지않으면 걍 추가 이런식으로??
+    
+    // dyk  
+    // client 에서 NTP Servers 배열을 받아 Primary Server, Secondary Server를 선택할 수 있음. NTP Servers를 추가하거나
+    // 삭제하는 부분은 구현되어있지 않음. 즉 서버에 등록되어있는 NTP Servers에서만 선택 가능
+    // 혹은 client에서 ntp Server를 지정하지 않고 [YYYY-MM-DD hh:mm:ss] 형식으로 서버 시간을 조정할 수 있음.
+    // 이러한 값들을 다루기 위해 NTP 리소스를 Manager 밑에 구현해야 함.
 
     cout << "바꾼후~~ " << endl;
     cout << record_get_json(_record_uri) << endl;

@@ -145,7 +145,7 @@ void init_system(Collection *system_collection, string _id)
     system->hostname = get_popen_string("hostname");       
     // system->hosting_roles.push_back("null");
     system->indicator_led = LED_OFF;
-    system->power_state = "On";
+    system->power_state = "OFF";
     system->bios_version = "";
     
     system->status.state = STATUS_STATE_ENABLED;
@@ -1052,6 +1052,31 @@ void init_manager(Collection *manager_collection, string _id)
     return;
 }
 
+void snmp_config_init(Snmp *snmp)
+{
+    snmp->enable_SNMPv1 = false;
+    snmp->enable_SNMPv2c = false;
+    snmp->enable_SNMPv3 = false;
+    
+    snmp->port = DEFAULT_SNMP_PORT;
+    
+    snmp->hide_community_strings = false;
+    
+    // vector swap trick을 통한 community string 벡터 초기화
+    snmp->community_strings.clear();
+    vector<Community_String>().swap(snmp->community_strings);
+
+    snmp->community_access_mode = "Limited";
+
+    // ==== SNMPv3 ====
+    snmp->authentication_protocol = "CommunityString";
+    snmp->encryption_protocol = "None";
+    
+    snmp->engine_id.architectureId = "";
+    snmp->engine_id.enterpriseSpecificMethod = "";
+    snmp->engine_id.privateEnterpriseId = "";
+}
+
 void init_network_protocol(NetworkProtocol *network)
 {
     /**
@@ -1088,19 +1113,7 @@ void init_network_protocol(NetworkProtocol *network)
     network->status.state = STATUS_STATE_ENABLED;
     network->status.health = STATUS_HEALTH_OK;
 
-    // ********************* To Do : snmp config init *******************************
-    network->snmp.authentication_protocol = "HMAC_SHA96";
-    network->snmp.community_access_mode = "Full";
-    // network->snmp.community_strings
-    network->snmp.enable_SNMPv1 = false;
-    network->snmp.enable_SNMPv2c = false;
-    network->snmp.enable_SNMPv3 = false;
-    network->snmp.encryption_protocol = "None";
-    // network->snmp.engine_id
-    network->snmp.hide_community_strings = true;
-    network->snmp.port = DEFAULT_SNMP_PORT;
-    network->snmp.protocol_enabled = true;
-    // ******************************************************************************
+    snmp_config_init(&(network->snmp));
 
     // if(!fs::exists("/etc/iptables.rules"))
     system("iptables -F");
