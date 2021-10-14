@@ -642,6 +642,18 @@ typedef struct _SyslogFilter
     vector<string> logFacilities;
     string lowestSeverity;
 } SyslogFilter;
+
+typedef struct _NTP
+{
+    bool protocol_enabled;
+    int port;
+    string primary_ntp_server;
+    string secondary_ntp_server;
+    vector<string> ntp_servers;
+    string date_str;
+    string time_str;
+    string timezone;
+} NTP;
 /**
  * @brief Resource of redfish schema
  */
@@ -1439,23 +1451,20 @@ class NetworkProtocol : public Resource
     string fqdn;
     string name;
     bool ipmi_enabled;
-    bool ntp_enabled;
     bool kvmip_enabled;
     bool https_enabled;
     bool http_enabled;
     bool virtual_media_enabled;
     bool ssh_enabled;
     int ipmi_port;
-    int ntp_port;
     int kvmip_port;
     int https_port;
     int http_port;
     int virtual_media_port;
     int ssh_port;
     Snmp snmp;
+    NTP ntp;
     //telnet, ssdp
-
-    vector<string> v_netservers;
 
     Status status;
 

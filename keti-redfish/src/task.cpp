@@ -3339,41 +3339,51 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
     json::value ntp;
     if(get_value_from_json_key(_jv, "NTP", ntp))
     {
+        /*
+        NTP {
+            "ProtocolEnabled" : bool,
+            ==== use ntp ====
+            "Port" : integer,
+            "PrimaryNTPServer" : string,
+            "SecondaryNTPServer" : string,
+            "NTPServers" : string[]
+            ""
+            
+            ==== not use ntp ====
+            "Date" : string,
+            "Time" : string,
+            "TimeZone" : string
+        }
+        */
         bool enabled;
-        int port;
-        json::value ntp_servers = json::value::array();
         if(get_value_from_json_key(ntp, "ProtocolEnabled", enabled))
         {
-            network->ntp_enabled = enabled;
-            result = true;
-        }
-
-        if(get_value_from_json_key(ntp, "Port", port))
-        {
-            network->ntp_port = port;
-            result = true;
-        }
-
-        if(get_value_from_json_key(ntp, "NTPServers", ntp_servers))
-        {
-            for(int i=0; i<ntp_servers.size(); i++)
-            {
-                bool add = true;
-                for(int j=0; j<network->v_netservers.size(); j++)
-                {
-                    if(ntp_servers[i].as_string() == network->v_netservers[j])
-                    {
-                        add = false;
-                        break;
-                    }
-                }
-                if(add)
-                    network->v_netservers.push_back(ntp_servers[i].as_string());
-
-                result = true;
+            network->ntp.protocol_enabled = enabled;
+            
+            if (enabled){
+                int port;
+                string primary_ntp_server, secondary_ntp_server;
+                if (get_value_from_json_key(ntp, "Port", port))
+                    network->ntp.port = port;
+                if (get_value_from_json_key(ntp, "PrimaryNTPServer", primary_ntp_server))
+                    network->ntp.primary_ntp_server = primary_ntp_server;
+                if (get_value_from_json_key(ntp, "SecondaryNTPServer", secondary_ntp_server))
+                    network->ntp.secondary_ntp_server = secondary_ntp_server;
+                // ntp 설정을 바꾼 후 서버 시간 동기화 작업 필요
+            }else {
+                string date_str, time_str, timezone;
+                if (get_value_from_json_key(ntp, "Date", date_str))
+                    network->ntp.date_str = date_str;
+                
+                if (get_value_from_json_key(ntp, "Time", time_str))
+                    network->ntp.time_str = time_str;
+                
+                if (get_value_from_json_key(ntp, "TimeZone", timezone))
+                    network->ntp.timezone = timezone;
+                // ubuntu date 명령어를 통해 서버 시간 동기화
             }
+            result = true;
         }
-        // ntpservers 는 현재 존재하지않으면 추가하는 식으로만 구현
     }
 
     // NTPServers 는 여러개가 들어가있는 형식인데 어떻게 수정해야하지?

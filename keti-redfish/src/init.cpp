@@ -1054,6 +1054,8 @@ void init_manager(Collection *manager_collection, string _id)
 
 void snmp_config_init(Snmp *snmp)
 {
+    snmp->protocol_enabled = false;
+
     snmp->enable_SNMPv1 = false;
     snmp->enable_SNMPv2c = false;
     snmp->enable_SNMPv3 = false;
@@ -1077,6 +1079,23 @@ void snmp_config_init(Snmp *snmp)
     snmp->engine_id.privateEnterpriseId = "";
 }
 
+void ntp_config_init(NTP *ntp)
+{
+    ntp->protocol_enabled = false;
+
+    // use NTP
+    ntp->port = DEFAULT_NTP_PORT;
+    string getntpcmd = "cat /etc/ntp.conf | grep server | awk {\'print $2\'}";
+    ntp->ntp_servers = string_split(get_popen_string(getntpcmd), '\n');
+    ntp->primary_ntp_server = "";
+    ntp->secondary_ntp_server = "";
+
+    // not use NTP
+    ntp->date_str = "";
+    ntp->time_str = "";
+    ntp->timezone = "";
+}
+
 void init_network_protocol(NetworkProtocol *network)
 {
     /**
@@ -1089,11 +1108,6 @@ void init_network_protocol(NetworkProtocol *network)
     // cmm doesn't use ipmi 
     network->ipmi_enabled = false;
     network->ipmi_port = DEFAULT_IPMI_PORT;
-    
-    network->ntp_enabled = false;
-    network->ntp_port = DEFAULT_NTP_PORT;
-    string getntpcmd = "cat /etc/ntp.conf | grep server | awk {\'print $2\'}"; 
-    network->v_netservers = string_split(get_popen_string(getntpcmd), '\n');
     
     network->kvmip_enabled = true;
     network->kvmip_port = DEFAULT_KVMIP_PORT;
@@ -1114,6 +1128,8 @@ void init_network_protocol(NetworkProtocol *network)
     network->status.health = STATUS_HEALTH_OK;
 
     snmp_config_init(&(network->snmp));
+
+    ntp_config_init(&(network->ntp));
 
     // if(!fs::exists("/etc/iptables.rules"))
     system("iptables -F");
