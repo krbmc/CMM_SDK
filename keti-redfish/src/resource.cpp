@@ -2249,10 +2249,16 @@ json::value NetworkProtocol::get_json(void)
     https[U("Port")] = json::value::number(U(this->https_port));
     j[U("HTTPS")]=https;
 
-    ntp[U("ProtocolEnabled")] = json::value::boolean(this->ntp_enabled);
+    ntp[U("ProtocolEnabled")] = json::value::boolean(this->ntp.protocol_enabled);
+    ntp["Port"] = json::value::number(this->ntp.port);
+    ntp["PrimaryNTPServer"] = json::value::string(this->ntp.primary_ntp_server);
+    ntp["SecondaryNTPServer"] = json::value::string(this->ntp.secondary_ntp_server);
+    ntp["Date"] = json::value::string(this->ntp.date_str);
+    ntp["Time"] = json::value::string(this->ntp.time_str);
+    ntp["TimeZone"] = json::value::string(this->ntp.timezone);
     ntp["NTPServers"] = json::value::array();
-    for (unsigned int i = 0; i < this->v_netservers.size(); i++)
-        ntp[U("NTPServers")][i] = json::value::string(this->v_netservers[i]);
+    for (unsigned int i = 0; i < this->ntp.ntp_servers.size(); i++)
+        ntp[U("NTPServers")][i] = json::value::string(this->ntp.ntp_servers[i]);
     j[U("NTP")]=ntp;
 
     snmp["AuthenticationProtocol"] = json::value::string(this->snmp.authentication_protocol);
@@ -2319,12 +2325,17 @@ bool NetworkProtocol::load_json(json::value &j)
         get_value_from_json_key(obj, "Port", this->https_port);
          
         obj = j.at("NTP");
-        get_value_from_json_key(obj, "ProtocolEnabled", this->ntp_enabled);
-        
+        get_value_from_json_key(obj, "ProtocolEnabled", this->ntp.protocol_enabled);
+        get_value_from_json_key(obj, "Port", this->ntp.port);
+        get_value_from_json_key(obj, "PrimaryNTPServer", this->ntp.primary_ntp_server);
+        get_value_from_json_key(obj, "SecondaryNTPServer", this->ntp.secondary_ntp_server);
+        get_value_from_json_key(obj, "Date", this->ntp.date_str);
+        get_value_from_json_key(obj, "Time", this->ntp.time_str);
+        get_value_from_json_key(obj, "TimeZone", this->ntp.timezone);
         get_value_from_json_key(obj, "NTPServers", v_netservers);
         if (v_netservers != json::value::null()){
             for (auto str : v_netservers.as_array())
-                this->v_netservers.push_back(str.as_string());
+                this->ntp.ntp_servers.push_back(str.as_string());
         }
 
         obj = j.at("SNMP");
@@ -2608,16 +2619,20 @@ bool Systems::Reset(json::value body)
     memset(cmds, 0, sizeof(cmds));
     
     if (reset_type == "On"){
-        sprintf(cmds, "%s", this_proc_name.c_str());
+        this->power_state = "On";
+        // todo: led 켜기
+        return true;
     }
     if (reset_type == "ForceOff"){
         sprintf(cmds, "kill -9 %d", pid);
     }
     if (reset_type == "GracefulShutdown"){
-        sprintf(cmds, "kill -s TERM %d", pid);
+        this->power_state = "Off";
+        // todo: led 끄기
+        return true;
     }
     if (reset_type == "GracefulRestart"){
-        sprintf(cmds, "kill -s TERM %d && %s", pid, this_proc_name.c_str());
+        sprintf(cmds, "/etc/init.d/rcK && /etc/init.d/rcS");
     }
     if (reset_type == "ForceRestart"){
         sprintf(cmds, "reboot");
@@ -4354,15 +4369,15 @@ void execute_iptables(NetworkProtocol* _net, int _index, string _op)
             break;
 
         case NTP_INDEX:
-            if(_net->ntp_enabled == true)
+            if(_net->ntp.protocol_enabled == true)
             {
-                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp_port, 0);
-                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp_port, 0);
+                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp.port, 0);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp.port, 0);
             }
             else
             {
-                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp_port, 1);
-                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp_port, 1);
+                cmd_input = make_iptable_cmd(_op, "INPUT", NTP_INDEX, _net->ntp.port, 1);
+                cmd_output = make_iptable_cmd(_op, "OUTPUT", NTP_INDEX, _net->ntp.port, 1);
             }
             break;
         default:
