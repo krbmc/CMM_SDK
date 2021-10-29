@@ -14,6 +14,7 @@
 #include <functional>
 #include <set>
 #include <thread>
+#include <sstream>
 
 #include <unistd.h>
 #include <dirent.h>
@@ -25,6 +26,7 @@
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
 #include <cpprest/http_client.h>
+#include <cpprest/filestream.h>
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
@@ -64,6 +66,7 @@ using namespace web::http;
 using namespace web::http::experimental::listener;
 using namespace web::http::client; 
 using namespace utility;
+// using namespace concurrency::streams;
 
 namespace logging = boost::log;
 namespace src = boost::log::sources;

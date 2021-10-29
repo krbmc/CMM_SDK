@@ -137,9 +137,11 @@ int main(int _argc, char *_argv[])
     HA_listener->open().wait();
     log(info) << "HA Heartbeat server start";
 
-    std::thread t_ssdp(ssdp_handler);
-    log(info) << "ssdp discover start";
-    t_ssdp.join();
+    cout << "This is Original File!!!" << endl;
+
+    // std::thread t_ssdp(ssdp_handler);
+    // log(info) << "ssdp discover start";
+    // t_ssdp.join();
 
     while (true) 
         pause();

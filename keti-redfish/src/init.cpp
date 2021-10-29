@@ -46,7 +46,7 @@ bool init_resource(void)
 
     init_message_registry();
 
-    generate_test();
+    // generate_test();
 
     // add_new_bmc("1", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");
     // add_new_bmc("500", "10.0.6.104", BMC_PORT, false, "TEST_ONE", "PASS_ONE");

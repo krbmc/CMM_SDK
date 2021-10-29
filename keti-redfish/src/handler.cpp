@@ -4,6 +4,7 @@
 #include "lssdp.hpp"
 #include "chassis_controller.hpp"
 
+
 extern unordered_map<string, Resource *> g_record;
 extern unordered_map<uint8_t, Task_Manager *> task_map;
 // extern unordered_map<string, unordered_map<string, Task *> > task_map;
@@ -59,6 +60,15 @@ void Handler::handle_get(http_request _request)
             {
                 json::value j;
                 j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
+                _request.reply(status_codes::OK, j);
+                return ;
+            }
+
+            if(uri_tokens.size() == 1 && uri_tokens[0] == "upup")
+            {
+                json::value j;
+                j["Message"] = json::value::string("This is Original File");
+                
                 _request.reply(status_codes::OK, j);
                 return ;
             }
@@ -630,11 +640,14 @@ void Handler::handle_put(http_request _request)
     _request.reply(status_codes::NotImplemented, U("PUT Request Response"));
 }
 
+// #include <fstream>
+// #include <cpprest/filestream.h>
 /**
  * @brief POST request handler
  * 
  * @param _request Request object
  */
+//using namespace concurrency::streams;
 void Handler::handle_post(http_request _request)
 {
 
@@ -647,6 +660,172 @@ void Handler::handle_post(http_request _request)
 
     try
     {
+        // ftft
+        if(uri_tokens.size() == 1 && uri_tokens[0] == "ftft")
+        {
+            
+            // auto fileStream = std::make_shared<Concurrency::streams::ostream >();
+            // //저장할 파일 이름 생성
+            //pplx::task<void> fileStream=Concurrency::streams::fstream::open_ostream("filename", std::ios_base::in | std::ios_base::out |std::ios::binary).get();
+            string filepath="filesavetest.txt";
+            // string header = _request.headers()["Content-Type"];
+            // cout << "HEADER : " << header << endl;
+            // string boundary = header.substr(header.find("boundary=")+9, header.find("\r")-(header.find("boundary=")+9));
+            // cout << "BOUNDARY : " << boundary << endl;
+
+            auto bodyStream = _request.body();
+            auto fileStream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(filepath), std::ios::out | std::ios::binary).get();
+            fileStream.flush();
+            // cout << "ASDFASDF : " << endl << bodyStream.extract().get() << endl;
+            // auto my_stream = concurrency::streams::streambuf()
+            bodyStream.read_to_end(fileStream.streambuf()).wait();
+            fileStream.close().wait();
+            // //request 생성w
+            // .then([=](ostream outFile)){
+            //     *fileStream=outFile;
+
+            // }
+            // ofstream outfile;
+            // const auto data = _request.content_ready().get().extract_vector().get();
+            // utility::string_t body = {data.begin(), data.end()};
+            // std::istringstream iss(body);
+            // bool startCopying = false;
+            // std::string line;
+            // cout<<"start"<<endl;
+            // while (std::getline(iss, line))
+            // {
+            //     if (startCopying)
+            //     {
+            //         outfile << line;
+            //     }
+            //     else if (line == "\r")
+            //     {
+            //         startCopying = true;
+            //         outfile.open("test.img");
+            //     }
+            // }
+            // outfile.close();
+            // cout<<"end outfile"<<endl;
+            // pplx::task<void> requestTask = ostream
+
+            // }
+            // *fileStrema=&_request.body().streambuf();
+            
+
+
+
+
+            // cout << "##################  start" << endl;
+            // // cout << _request.body().streambuf() << endl;
+            // auto data = _request.body().streambuf();
+            
+            
+            // // auto data = _request.content_ready().get().extract_vector().get();
+            // string pp = {data.begin(), data.end()};
+            // cout << "!@#$" << endl;
+            // cout << pp << endl;
+            // cout << "!@#$" << endl;
+
+            // istringstream iss(pp);
+            // string header = _request.headers()["Content-Type"];
+            // cout << "HEADER : " << header << endl;
+            // // cout << header.find("boundary=")+9 << " / " << header.find("\r")<< endl;
+            // // cout << " !!@!$!@$!@$!$! " << endl;
+            // string boundary = header.substr(header.find("boundary=")+9);
+            // // cout << "leng : " << boundary.length();
+            // // string boundary = header.substr(header.find("boundary=")+9, header.find("\r")-(header.find("boundary=")+9));
+            // cout << "BOUNDARY : " << boundary << endl;
+
+            // string line;
+            // string pre_line = ""; // 이전라인
+            // int i=0;
+            // bool write_on = false;
+            // ofstream my_out("/root/test.png", ios::binary);
+            // // ofstream my_out("/root/mymy.txt");
+            // json::value jvjv;
+            // // while(getline(iss, line))
+            // // {
+            // //     cout << "<< " << i << " >> ";
+            // //     // cout << line << endl;
+            // //     cout << line.find("\r") << endl;
+            // //     cout << line << " / " << line.length() << endl;
+            // //     string new_line;
+
+            // //     cout << i << " line start" << endl;
+            // //     for(int n=0; n<line.size(); n++)
+            // //     {
+            // //         if(line[n] == '\r')
+            // //             cout << " ";
+            // //         else
+            // //             cout << line[n];
+            // //     }
+            // //     cout << i << " line end" << endl;
+
+            // //     // jvjv[to_string(i)] = json::value::string(line);
+            // //     if(line.length() == 1 && line == "\r")
+            // //         new_line = "\n";
+            // //     else
+            // //     {
+            // //         if(line[line.length()-1] == '\r')
+            // //         {
+            // //             new_line = line.substr(0, line.rfind("\r"));
+            // //             new_line = new_line + "\n";
+            // //         }
+                        
+            // //     }
+            // //     cout << new_line << " / " << new_line.length()<< endl;
+            // //     // new_line = new_line + "\n";
+
+            // //     if(line.find(boundary) != string::npos)
+            // //     {
+            // //         cout << "Line " << i << " boundary exist" << endl;
+            // //     }
+
+            // //     if(write_on)
+            // //     {
+            // //         if(pre_line == ""){
+            // //             pre_line = new_line;
+            // //             i++;
+            // //             continue;
+            // //         }
+
+            // //         if(line.find(boundary) != string::npos)
+            // //         {
+            // //             write_on = false;
+            // //             pre_line = pre_line.substr(0, pre_line.length()-1);
+            // //             my_out << pre_line;
+            // //             pre_line = "";
+            // //             continue;
+            // //         }
+                        
+            // //         // my_out << new_line;
+            // //         my_out << pre_line;
+            // //         cout << "PRE : " << pre_line << endl;
+            // //         pre_line = new_line;
+                    
+            // //     }
+
+            // //     if(line == "\r")
+            // //     {
+            // //         cout << "Enter!" << endl;
+            // //         write_on = true;
+            // //     }
+            // //     i++;
+                
+            // // }
+            // my_out.close();
+            // // cout << _request.request_body() << endl;
+            // // cout << "JV ON!" << endl;
+            // // cout << jvjv << endl;
+            
+            // cout << "####################### end" << endl;
+            // // 헤더에서 바운더리값 추출하고 라인돌면서 name값으로 무엇인지 파악후 2줄뒤부터 내용컨텐츠읽어서 
+            // // 추출하거나 처리 어디까지 읽냐 바운더리또나올때까지 그렇게 해서 사용해보자 파일저장을 해보자 ㅇㅇ
+
+            _request.reply(status_codes::OK);
+            return ;
+        }
+
         // /Heartbeat 
         if(uri_tokens.size() == 1 && uri_tokens[0] == "Heartbeat")
         {
@@ -806,6 +985,9 @@ void Handler::handle_post(http_request _request)
             // Cmd가 FileSync 일 때 자기랑 반대되는 cmm에다가 json파일 보낸거 읽어서 백업하기
 
         }
+
+
+        
 
 //         if(uri_tokens.size() == 1 && uri_tokens[0] == "Mytest")
 //         {

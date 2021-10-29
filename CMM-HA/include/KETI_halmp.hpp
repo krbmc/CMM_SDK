@@ -47,8 +47,8 @@ public:
     KETI_halmp();
 	~KETI_halmp();
     KETIhaError Initialize(
-        const string& PeerPrimaryAddress,
-        const string& PeerSecondaryAddress,
+        string& PeerPrimaryAddress,
+        string& PeerSecondaryAddress,
         int PeerPort,
         int Port,
         std::chrono::milliseconds NetworkTimeout,

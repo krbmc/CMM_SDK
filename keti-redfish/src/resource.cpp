@@ -138,7 +138,7 @@ bool Resource::load_json_from_file(json::value &j)
     try
     {
         ifstream target_file(this->odata.id + ".json");
-        stringstream string_stream;
+        std::stringstream string_stream;
 
         string_stream << target_file.rdbuf();
         target_file.close();
@@ -1106,6 +1106,8 @@ json::value SoftwareInventory::get_json(void)
     j[U("UefiDevicePaths")] = json::value::array();
     for(int i=0; i<this->uefi_device_paths.size(); i++)
         j[U("UefiDevicePaths")][i] = json::value::string(U(this->uefi_device_paths[i]));
+
+    j["Actions"] = get_action_info(this->actions);
 
     return j;
 }
@@ -2090,6 +2092,7 @@ json::value EthernetInterfaces::get_json(void)
     j[U("DHCPv6")] = dh_v6;
 
     v_ip4 = json::value::array();
+    
     for(int i=0; i<this->v_ipv4.size(); i++)
     {
         o_ip4 = json::value::object();
@@ -3553,7 +3556,7 @@ json::value CertificateService::GenerateCSR(json::value body)
     get_value_from_json_key(body, "CommonName", common_name);
     get_value_from_json_key(body, "State", state);
     get_value_from_json_key(body, "Organization", organization);
-    get_value_from_json_key(body, "Organization", organization_unit);
+    get_value_from_json_key(body, "OrganizationalUnit", organization_unit);
     
     // #1 key, conf(inform), csr path declare 
     fs::path key("/conf/ssl/cert.key");

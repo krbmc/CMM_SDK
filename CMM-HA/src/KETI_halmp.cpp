@@ -100,8 +100,8 @@ chrono::system_clock::time_point KETI_halmp::PeerLiveTime()
  * @return KETIhaError 
  */
 KETIhaError KETI_halmp::Initialize(
-        const string& PeerPrimaryAddress,
-        const string& PeerSecondaryAddress,
+        string& PeerPrimaryAddress,
+        string& PeerSecondaryAddress,
         int PeerPort,
         int SecondPort,
         std::chrono::milliseconds NetworkTimeout,

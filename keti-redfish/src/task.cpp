@@ -285,11 +285,36 @@ void do_task_bmc_get(http_request _request)
     }
     catch(const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
-        cout << "BMC 서버 닫혀있을거임~~" << endl;
+        // uri.json에 해당하는 파일로 내용 바로 리턴때린다   @@@@ 제출용임시추가
+        log(info) << "BMC not connected PART";
+        if(!fs::exists(uri+".json"))
+        {
+            json::value tmp_jv;
+            log(warning) << "not found json file named : " << uri;
+            tmp_jv[U("Error")] = json::value::string(U("No Json File named : " + uri));
+            _request.reply(status_codes::BadRequest, tmp_jv);
+            return ;
+        }
 
-        error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
-        // reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+        ifstream json_file(uri+".json");
+        stringstream string_stream;
+
+        string_stream << json_file.rdbuf();
+        json_file.close();
+
+        json::value j = json::value::parse(string_stream);
+        http_response temporary_res;
+
+        temporary_res.set_status_code(status_codes::OK);
+        temporary_res.set_body(j);
+        _request.reply(temporary_res);
+        return ;
+
+        // _---------------------------------------------------- @@@@
+        // std::cerr << e.what() << '\n';
+        // cout << "BMC 서버 닫혀있을거임~~" << endl;
+
+        // error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
     }
     
 
@@ -379,7 +404,10 @@ void do_task_bmc_get(http_request _request)
 void do_task_cmm_post(http_request _request)
 {
     string uri = _request.request_uri().to_string();
-    json::value jv = _request.extract_json().get();
+    string content_type = _request.headers()["Content-Type"];
+    json::value jv = json::value::null();
+    if(content_type == "application/json")
+        jv = _request.extract_json().get();
     vector<string> uri_tokens = string_split(uri, '/');
 
     Task_Manager *t_manager; // 작업 매니저
@@ -542,7 +570,7 @@ void do_task_bmc_post(http_request _request)
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
-        cout << "BMC 서버 닫혀있을거임~~" << endl;
+        // cout << "BMC 서버 닫혀있을거임~~" << endl;
 
         error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
         // reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
@@ -675,7 +703,7 @@ void do_task_bmc_patch(http_request _request)
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
-        cout << "BMC 서버 닫혀있을거임~~" << endl;
+        // cout << "BMC 서버 닫혀있을거임~~" << endl;
 
         error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
         // reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
@@ -806,7 +834,7 @@ void do_task_bmc_delete(http_request _request)
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
-        cout << "BMC 서버 닫혀있을거임~~" << endl;
+        // cout << "BMC 서버 닫혀있을거임~~" << endl;
 
         error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
         // response = reply_error(_request, msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
@@ -1637,7 +1665,10 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
         return ;
     }
     else if(action_by == "UpdateService")
-    {}
+    {
+        act_update_service(_request, _msg, _jv, resource_uri, action_what, _response);
+        return ;
+    }
     else if(action_by == "VirtualMedia")
     {
         act_virtualmedia(_msg, _jv, resource_uri, action_what, _response);
@@ -1864,6 +1895,115 @@ void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _
 
     success_reply(_msg, json::value::null(), status_codes::OK, _response);
     return ;
+}
+
+int daemon_init(void)
+{
+    pid_t pid;
+    int fd;
+    if((pid=fork())<0)
+        return -1;
+    else if(pid!=0)
+        exit(0);
+
+    setsid();
+    chdir("/");
+    fd = open("dev/null", O_RDWR);
+    dup2(fd, 1);
+    dup2(fd, 2);
+    dup2(fd, 0);
+    close(fd);
+    umask(0);
+    return 0;
+}
+
+void act_update_service(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
+{
+    // UpdateService *up_service = (UpdateService *)g_record[_resource];
+    SoftwareInventory *inventory = (SoftwareInventory *)g_record[_resource];
+    if(inventory->actions.find(_what) == inventory->actions.end())
+    {
+        // action_what에 해당하는 액션정보가 없음 error
+        error_reply(_msg, get_error_json("No Action in UpdateService-SoftwareInventory"), status_codes::BadRequest, _response);
+        return ;
+    }
+
+    if(_what == "FirmwareUpdate")
+    {
+        string file_path = inventory->odata.id;
+        string firm_id = get_current_object_name(file_path, "/");
+        mkdir(file_path.c_str(), 0755);
+
+        file_path = file_path + "/KETI-UPDATEFILE";
+        auto body_stream = _request.body();
+        auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(file_path), std::ios::out | std::ios::binary).get();
+        file_stream.flush();
+
+        body_stream.read_to_end(file_stream.streambuf()).wait();
+        file_stream.close().wait();
+
+        string cmd = "chmod +x " + file_path;
+        system(cmd.c_str());
+        // 파일 전송완료
+        
+        if(firm_id == "CMM"){
+            // 이제 쉘스크립트로 실행시켜서 해당하는거 하게끔
+            string sh_path = "/root/updateimg.sh";
+            string cmd_test = sh_path + " -t /root/keti-redfish -b " + file_path + " -n keti-redfish";
+            system(cmd_test.c_str());
+        } // cmm update일 경우
+
+        success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        return ;
+    }
+
+    
+
+    // if(_what == "SimpleUpdate")
+    // {
+    //     string image_uri;
+    //     if(!get_value_from_json_key(_jv, "ImageURI", image_uri))
+    //     {
+    //         error_reply(_msg, get_error_json("ImageURI is required"), status_codes::BadRequest, _response);
+    //         return ;
+    //     }
+
+    //     vector<string> targets;
+    //     json::value target_info;
+    //     if(get_value_from_json_key(_jv, "Targets", target_info))
+    //     {
+    //         for(int i=0; i<target_info.size(); i++)
+    //         {
+    //             targets.push_back(target_info[i].as_string());
+    //         }
+    //     }
+
+    //     string transfer_protocol;
+    //     get_value_from_json_key(_jv, "TransferProtocol", transfer_protocol);
+
+    //     // #1 ImageURI에 대한 파일 받기 구현필요 [HERE]
+    //     // #2 파일이 어떤식으로 어디에 들어올지 모르겠지만 받아진 파일은 target에 해당하는 경로에 하나씩 넣어준다.
+    //     // #3-1 받은 파일로 바로 업데이트 한다고 하면 바로 updateimg.sh 실행하게끔하면되고
+    //     // #3-2 혹은 액션을 또만들어서 /redfish/v1/UpdateService/Soft(Firm)wareInventory/[id]/Actions 으로 적용을
+    //     // 시킨다면 그 시점에 업데이트 시킴 (무엇을 업데이트 시키는녀석인지의 정보가 없음 id로 판단하나?)
+    //     // #4 updateimg.sh이 
+    //     //([path]/updateimg.sh -t "기존수행중이미지파일위치" -b "업데이트할이미지파일위치" -n "수행중이미지파일 이름")
+    //     // 이런식으로 수행될건데 n으로 pid찾아서 t종료하고 원래 위치에서 t지우고 b로 바꿔버림 
+    //     // 이 로직에 안맞는 업데이트파일은 오류날수있음.. (실행파일인지확인?)
+    //     // #5 일단 테스트로 파일이 잘 들어가는 지만 보겠음
+
+    //     // updateimg.sh 테스트
+    //     system("/conf/test/updateimg.sh -t /conf/test/tt1.sh -b /conf/test2/tt2.sh -n tt1.sh");
+    //     // 현재 tt1.sh 파일 tt2.sh파일로 덮어지고 실행중이던 tt1.sh파일 kill됨
+    //     // 근데 다시 바뀐 tt1.sh파일 실행안되고 프로세스 kill을 기존tt1.sh 꺼만 해야되는데 다른pid가
+    //     // 순간적으로 2개생겨서 그걸 kill못한다는 로그출력됨
+
+    //     success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    //     return ;
+        
+
+
+    // }
 }
 
 
@@ -2406,9 +2546,9 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
         return ;
     }
 
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     if(!_request.headers().has("X-Auth-Token"))
     {
@@ -2488,6 +2628,7 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
             unsigned int max = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->max_password_length;
             if(input_password.length() < min || input_password.length() > max)
             {
+                log(warning) << "password length : " << input_password.length();
                 error_reply(_msg, get_error_json("Password Range is " + to_string(min) + " ~ " + to_string(max)), status_codes::BadRequest, _response);
                 return ;
             } // password 길이 검사
@@ -2518,10 +2659,10 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
     resource_save_json(g_record[_uri]);
     
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_uri) << endl;
-    cout << "세션에 연결된 계정정보" << endl;
-    cout << record_get_json(session->account->odata.id) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_uri) << endl;
+    // cout << "세션에 연결된 계정정보" << endl;
+    // cout << record_get_json(session->account->odata.id) << endl;
 
     success_reply(_msg, record_get_json(_uri), status_codes::OK, _response);
     return ;
@@ -2585,9 +2726,9 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
             return ;
         }
 
-        cout << "바뀌기전~~ " << endl;
-        cout << record_get_json(_uri) << endl;
-        cout << " $$$$$$$ " << endl;
+        // cout << "바뀌기전~~ " << endl;
+        // cout << record_get_json(_uri) << endl;
+        // cout << " $$$$$$$ " << endl;
 
         vector<string> store;
         for(int i=0; i<arr.size(); i++)
@@ -2625,8 +2766,8 @@ void modify_role(http_request _request, m_Request& _msg, json::value _jv, string
             target_role->assigned_privileges.push_back(store[i]);
         }
 
-        cout << "바꾼후~~ " << endl;
-        cout << record_get_json(_uri) << endl;
+        // cout << "바꾼후~~ " << endl;
+        // cout << record_get_json(_uri) << endl;
     }
     else
     {
@@ -2704,9 +2845,9 @@ void remove_account(m_Request& _msg, json::value _jv, string _uri, string _servi
     //     // return _msg;
     // } // ## 방식변경후 주석
 
-    cout << "지우기전~~ " << endl;
-    cout << record_get_json(acc_service->account_collection->odata.id) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "지우기전~~ " << endl;
+    // cout << record_get_json(acc_service->account_collection->odata.id) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     unsigned int id_num;
     id_num = stoi(((Account *)g_record[odata_id])->id);
@@ -2721,9 +2862,9 @@ void remove_account(m_Request& _msg, json::value _jv, string _uri, string _servi
     resource_save_json(acc_service->account_collection);
     // collection 반영
 
-    cout << "지운후~~ " << endl;
-    cout << "지워진놈 : " << odata_id << endl;
-    cout << record_get_json(acc_service->account_collection->odata.id) << endl;
+    // cout << "지운후~~ " << endl;
+    // cout << "지워진놈 : " << odata_id << endl;
+    // cout << record_get_json(acc_service->account_collection->odata.id) << endl;
 
     success_reply(_msg, record_get_json(acc_service->account_collection->odata.id), status_codes::OK, _response);
     return ;
@@ -2882,9 +3023,9 @@ void remove_subscription(m_Request& _msg, string _uri, string _service_uri, http
         }
     }
 
-    cout << "지우기전!! " << endl;
-    cout << record_get_json(col->odata.id) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "지우기전!! " << endl;
+    // cout << record_get_json(col->odata.id) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     unsigned int id_num;
     id_num = stoi(get_current_object_name(uri, "/"));
@@ -2895,9 +3036,9 @@ void remove_subscription(m_Request& _msg, string _uri, string _service_uri, http
     delete_resource(uri);
     resource_save_json(col);
 
-    cout << "지운후~~ " << endl;
-    cout << "지워진놈 : " << uri << endl;
-    cout << record_get_json(col->odata.id) << endl;
+    // cout << "지운후~~ " << endl;
+    // cout << "지워진놈 : " << uri << endl;
+    // cout << record_get_json(col->odata.id) << endl;
 
     success_reply(_msg, json::value::null(), status_codes::OK, _response);
     return ;
@@ -2905,9 +3046,9 @@ void remove_subscription(m_Request& _msg, string _uri, string _service_uri, http
 
 bool patch_account_service(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
 
@@ -3032,17 +3173,17 @@ bool patch_account_service(json::value _jv, string _record_uri)
         result = true;
     }
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 }
 
 bool patch_session_service(json::value _jv)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
 
@@ -3070,17 +3211,17 @@ bool patch_session_service(json::value _jv)
         result = true;
     }
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(ODATA_SESSION_SERVICE_ID) << endl;
 
     return result;
 }
 
 bool patch_manager(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
 
@@ -3112,17 +3253,17 @@ bool patch_manager(json::value _jv, string _record_uri)
     // if(_jv.as_object().find("DateTimeLocalOffset") != _jv.as_object().end())
     //     ((Manager *)g_record[_record_uri])->datetime_offset = _jv.at("DateTimeLocalOffset").as_string();
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 }
 
 bool patch_network_protocol(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
     NetworkProtocol *network = (NetworkProtocol *)g_record[_record_uri];
@@ -3291,8 +3432,8 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
     // a에서 받은 ntpservers가 존재하면 b검사하고 b에도 입력한게 있으면 그걸로 수정
     // a에서 받은 ntpservers가 존재하지않으면 걍 추가 이런식으로??
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 }
@@ -3319,10 +3460,10 @@ void patch_fan_mode(string _mode, string _record_uri)
 
     for(fan_iter=v.begin(); fan_iter!=v.end(); fan_iter++)
     {
-        cout << "바뀌기전~~ " << endl;
-        cout << "fan info" << endl;
-        cout << record_get_json((*fan_iter)->odata.id) << endl;
-        cout << " $$$$$$$ " << endl;
+        // cout << "바뀌기전~~ " << endl;
+        // cout << "fan info" << endl;
+        // cout << record_get_json((*fan_iter)->odata.id) << endl;
+        // cout << " $$$$$$$ " << endl;
 
         if(_mode == "Standard")
         {
@@ -3358,9 +3499,9 @@ void patch_fan_mode(string _mode, string _record_uri)
             }
         }
 
-        cout << "바꾼후~~ " << endl;
-        cout << "fan info" << endl;
-        cout << record_get_json((*fan_iter)->odata.id) << endl;
+        // cout << "바꾼후~~ " << endl;
+        // cout << "fan info" << endl;
+        // cout << record_get_json((*fan_iter)->odata.id) << endl;
         resource_save_json(*fan_iter);
 
 
@@ -3372,9 +3513,9 @@ void patch_fan_mode(string _mode, string _record_uri)
 bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
 {
     // _flag=0 -- 값만 바꿈, _flag=1 -- 변경처리까지
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     EthernetInterfaces *eth = (EthernetInterfaces *)g_record[_record_uri];
     bool result = false;
@@ -3405,7 +3546,7 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
             string buf = "hostname ";
             buf = buf + hostname;
             cout << "hostname buf : " << buf << endl;
-            system(buf.c_str());
+            // system(buf.c_str());
         }
         eth->hostname = hostname;
         result = true;
@@ -3434,7 +3575,7 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
             buf = buf + "eth" + eth->id;
             buf = buf + " mtu " + to_string(mtu);
             cout << "mtusize buf : " << buf << endl;
-            system(buf.c_str());
+            // system(buf.c_str());
         }
         eth->mtu_size = mtu;
         result = true;
@@ -3519,7 +3660,7 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
                 string buf = "ifconfig eth";
                 buf = buf + eth->id + " inet6 add " + address + "/" + to_string(new_ipv6.prefix_length);
                 cout << "ipv6 address buf : " << buf << endl;
-                system(buf.c_str());
+                // system(buf.c_str());
             }
             eth->v_ipv6.push_back(new_ipv6);
             result = true;
@@ -3528,8 +3669,8 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
     }
 
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 
@@ -3583,12 +3724,9 @@ bool patch_syslog(json::value _jv, string _record_uri)
 
 bool patch_system(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
-    // log(trace) << "바뀌기전~~ ";
-    // log(debug) << record_get_json(uri);
-    // log(info) << " $$$$$$$ ";
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
 
@@ -3697,16 +3835,16 @@ bool patch_system(json::value _jv, string _record_uri)
     // }
 
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
     return result;
 }
 
 bool patch_chassis(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
 
@@ -3861,17 +3999,17 @@ bool patch_chassis(json::value _jv, string _record_uri)
     //     }
     // }
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 }
 
 bool patch_power_control(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
 
@@ -3911,17 +4049,17 @@ bool patch_power_control(json::value _jv, string _record_uri)
     //         ((PowerControl *)g_record[_record_uri])->power_limit.limit_in_watts = j.at("LimitInWatts").as_double();
     // }
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 }
 
 bool patch_event_service(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
     bool op_attempt=false, op_interval=false, op_enabled=false;
@@ -3969,17 +4107,17 @@ bool patch_event_service(json::value _jv, string _record_uri)
         resource_save_json(service);
     }
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 }
 
 bool patch_subscription(json::value _jv, string _record_uri)
 {
-    cout << "바뀌기전~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
-    cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
     bool result = false;
     bool op_context=false, op_policy=false;
@@ -4014,8 +4152,8 @@ bool patch_subscription(json::value _jv, string _record_uri)
         resource_save_json(dest);
     }
 
-    cout << "바꾼후~~ " << endl;
-    cout << record_get_json(_record_uri) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_record_uri) << endl;
 
     return result;
 }

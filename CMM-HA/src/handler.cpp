@@ -223,6 +223,7 @@ void Handler::handle_post(http_request _request)
  * @param _path sending path
  * @param _jv sending json format data
  * @param mth http protocal method GET PUT DELETE POST only GET method don't have _jv
+ * @author Kicheol Park
  * 
  */
 http_response All_request(string _uri, string _path,const web::http::method &mth,json::value _jv)

@@ -6,7 +6,7 @@
 #include<list>
 #define ENTRY_PORT 808
 using namespace std;
-#define HTTPPORT 8000
+#define HTTPPORT 6000
 // unique_ptr<int> a = unique_ptr<int>(new int(3));
 namespace KETIHA_NSP
 {
@@ -47,8 +47,8 @@ namespace KETIHA_NSP
 	{  
         public:
         virtual KETIhaError Initialize(
-            const string& PeerPrimaryAddress,
-            const string& PeerSecondaryAddress,
+            string& PeerPrimaryAddress,
+            string& PeerSecondaryAddress,
             int PeerPort,
             int Port,
             std::chrono::milliseconds NetworkTimeout,

@@ -95,6 +95,7 @@ void act_certificate_service(m_Request& _msg, json::value _jv, string _resource,
 void act_system(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+void act_update_service(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void make_account(m_Request& _msg, json::value _jv, http_response& _response);
 void make_session(m_Request& _msg, json::value _jv, http_response& _response);
@@ -141,5 +142,8 @@ json::value get_json_task_map(void);
 json::value get_json_task_manager(Task_Manager *_tm);
 void create_task_map_from_json(json::value _jv);
 void create_task_manager_from_json(Task_Manager *_tm, json::value _jv);
+
+// daemon
+int daemon_init(void);
 
 #endif

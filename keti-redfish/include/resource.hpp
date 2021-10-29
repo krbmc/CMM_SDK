@@ -161,8 +161,10 @@ const std::string currentDateTime();
  * @brief CMM_ID / CMM_ADDRESS
  * 
  */
-#define CMM_ID "1"
-#define CMM_ADDRESS "10.0.6.107"
+#define CMM_ID "CMM"
+// #define CMM_ID "1"
+// #define CMM_ADDRESS "10.0.6.107"
+#define CMM_ADDRESS "http://10.0.6.107:8000"
 // #define CMM_ADDRESS "https://10.0.6.107:443"
 
 /**
@@ -252,6 +254,7 @@ enum ACTION_NAME
     REPLACE_CERTIFICATE,
     SUBMIT_TEST_EVENT,
     SIMPLE_UPDATE,
+    FIRMWARE_UPDATE,
     INSERT_MEDIA,
     EJECT_MEDIA
 };
@@ -1202,9 +1205,18 @@ class SoftwareInventory : public Resource
     vector<string> uefi_device_paths;
 
     Status status;
+    unordered_map<string, Actions> actions;
 
     SoftwareInventory(const string _odata_id) : Resource(SOFTWARE_INVENTORY_TYPE, _odata_id, ODATA_SOFTWARE_INVENTORY_TYPE)
     {
+
+        Actions firmware_update;
+        firmware_update.type = FIRMWARE_UPDATE;
+        firmware_update.name = "#UpdateService.FirmwareUpdate";
+        firmware_update.target = this->odata.id + "/Actions/UpdateService.FirmwareUpdate";
+
+        this->actions["FirmwareUpdate"] = firmware_update;
+
         g_record[_odata_id] = this;
     }
     SoftwareInventory(const string _odata_id, const string _soft_id) : SoftwareInventory(_odata_id)

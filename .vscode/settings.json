@@ -71,5 +71,6 @@
         "valarray": "cpp",
         "filesystem": "cpp",
         "regex": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }
