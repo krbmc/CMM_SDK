@@ -645,6 +645,18 @@ typedef struct _SyslogFilter
     vector<string> logFacilities;
     string lowestSeverity;
 } SyslogFilter;
+
+typedef struct _NTP
+{
+    bool protocol_enabled;
+    int port;
+    string primary_ntp_server;
+    string secondary_ntp_server;
+    vector<string> ntp_servers;
+    string date_str;
+    string time_str;
+    string timezone;
+} NTP;
 /**
  * @brief Resource of redfish schema
  */
@@ -1451,23 +1463,20 @@ class NetworkProtocol : public Resource
     string fqdn;
     string name;
     bool ipmi_enabled;
-    bool ntp_enabled;
     bool kvmip_enabled;
     bool https_enabled;
     bool http_enabled;
     bool virtual_media_enabled;
     bool ssh_enabled;
     int ipmi_port;
-    int ntp_port;
     int kvmip_port;
     int https_port;
     int http_port;
     int virtual_media_port;
     int ssh_port;
     Snmp snmp;
+    NTP ntp;
     //telnet, ssdp
-
-    vector<string> v_netservers;
 
     Status status;
 
@@ -2676,6 +2685,7 @@ void init_fan(List *fans_list, string _id);
 void init_power_control(List *power_control_list, string _id);
 void init_voltage(List *voltages_list, string _id);
 void init_power_supply(List *power_supplies_list, string _id);
+void snmp_config_init(Snmp *snmp);
 void init_manager(Collection *manager_collection, string _id);
 void init_update_service(UpdateService *update_service);
 SoftwareInventory* init_software_inventory(Collection *software_inventory_collection, string _id);
