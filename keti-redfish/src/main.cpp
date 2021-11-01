@@ -62,9 +62,12 @@ int main(int _argc, char *_argv[])
     // add_chassis("/redfish/v1/Chassis/CM1", "http://10.0.6.104:443");
     // add test
 
-    cout << " DB TEST ss" << endl;
-    make_test_db();
-    cout << " DB TEST ee" << endl;
+    // cout << " DB TEST ss" << endl;
+    // make_test_db();
+    // cout << " DB TEST ee" << endl;
+    time_t my_time = time(NULL);
+    struct tm my_tm = *localtime(&my_time);
+    insert_reading_table("id", "type", 0.5, my_tm, "location");
 
     // ssdp discover (not working yet)
     // std::thread t_ssdp(ssdp_handler);

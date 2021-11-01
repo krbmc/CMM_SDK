@@ -557,8 +557,18 @@ string generate_uuid(void)
 /**
  * @brief time format generate using tm struct
  */
-void time_function(uint8_t t_year, uint8_t t_mon, uint8_t t_days, uint8_t t_hour, uint8_t t_min, uint8_t t_sec,char *output){
+void make_time_with_tm(tm _tm, char *_output)
+// void time_function(uint8_t t_year, uint8_t t_mon, uint8_t t_days, uint8_t t_hour, uint8_t t_min, uint8_t t_sec,char *output)
+{
 	char month[3], days[3], hour[3], min[3], sec[3] = {0};
+    uint8_t t_year, t_mon, t_days, t_hour, t_min, t_sec;
+    t_year = _tm.tm_year;
+    t_mon = _tm.tm_mon;
+    t_days = _tm.tm_mday;
+    t_hour = _tm.tm_hour;
+    t_min = _tm.tm_min;
+    t_sec = _tm.tm_sec;
+    
 	if((t_mon+1) < 10)
 		sprintf(month, "0%d", t_mon+1);
 	else
@@ -584,6 +594,5 @@ void time_function(uint8_t t_year, uint8_t t_mon, uint8_t t_days, uint8_t t_hour
 	else
 		sprintf(sec, "%d", t_sec);
 
-	sprintf(output, "%d-%s-%s %s:%s:%s", t_year+1900, month, days, hour, min, sec);
-	
+	sprintf(_output, "%d-%s-%s %s:%s:%s", t_year+1900, month, days, hour, min, sec);
 }

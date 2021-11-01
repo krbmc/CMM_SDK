@@ -30,11 +30,25 @@ void make_test_db()
 
 int check_db_callback(void *NotUsed, int argc, char **argv, char **azColName) {
   if(argv[0] != NULL)
-    table_check = atoi(argv[0]);
+    return 1;
+    // table_check = atoi(argv[0]);
   else
-    table_check = 0;
+    return 0;
+    // table_check = 0;
   
   return 0;
+}
+
+int result_callback(void *NotUsed, int argc, char **argv, char **azColName) {
+    NotUsed = 0;
+
+    for(int i=0; i<argc; i++)
+    {
+        // cout << "현재 i : " << i << endl;
+        cout << azColName[i] << " = " << argv[i] << endl;
+    }
+
+    return 0;
 }
 
 void insert_reading_table(string _sensor_id, string _type, double _value, tm _tm, string _location)
@@ -50,6 +64,15 @@ void insert_reading_table(string _sensor_id, string _type, double _value, tm _tm
     // #4 insert에서는 우선 table 존재여부 검사하고 없으면 테이블 생성
     // #5 인자로 받은 정보가지고 하나 넣어주면됨
 
+    sprintf(query, "SELECT * FROM Reading");
+    rc = sqlite3_exec(db, query, result_callback, 0, &err_msg);
 
+    cout << " TIME TIME " << endl;
+    char outout[100] = {0};
+    make_time_with_tm(_tm, outout);
+    printf("%s\n", outout);
+
+    sqlite3_free(err_msg);
+    sqlite3_close(db);
 }
 
