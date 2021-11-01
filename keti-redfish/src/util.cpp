@@ -552,3 +552,38 @@ string generate_uuid(void)
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
     return boost::uuids::to_string(uuid);
 }
+
+
+/**
+ * @brief time format generate using tm struct
+ */
+void time_function(uint8_t t_year, uint8_t t_mon, uint8_t t_days, uint8_t t_hour, uint8_t t_min, uint8_t t_sec,char *output){
+	char month[3], days[3], hour[3], min[3], sec[3] = {0};
+	if((t_mon+1) < 10)
+		sprintf(month, "0%d", t_mon+1);
+	else
+		sprintf(month, "%d", t_mon+1);
+
+	if(t_days < 10)
+		sprintf(days, "0%d", t_days);
+	else
+		sprintf(days, "%d", t_days);
+
+	if(t_hour < 10)
+		sprintf(hour, "0%d", t_hour);
+	else
+		sprintf(hour, "%d", t_hour);
+	
+	if(t_min < 10)
+		sprintf(min, "0%d", t_min);
+	else
+		sprintf(min, "%d", t_min);
+
+	if(t_sec < 10)
+		sprintf(sec, "0%d", t_sec);
+	else
+		sprintf(sec, "%d", t_sec);
+
+	sprintf(output, "%d-%s-%s %s:%s:%s", t_year+1900, month, days, hour, min, sec);
+	
+}

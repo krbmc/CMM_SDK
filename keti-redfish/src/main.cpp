@@ -3,6 +3,7 @@
 #include "hwcontrol.hpp"
 #include "task.hpp"
 #include "chassis_controller.hpp"
+#include "logservice.hpp"
 // #include <glib-2.0/glib.h>
 // #include <gssdp-1.2/libgssdp/gssdp.h>
 
@@ -60,6 +61,10 @@ int main(int _argc, char *_argv[])
     // add_manager("/redfish/v1/Managers/CM1", "http://10.0.6.104:443");
     // add_chassis("/redfish/v1/Chassis/CM1", "http://10.0.6.104:443");
     // add test
+
+    cout << " DB TEST ss" << endl;
+    make_test_db();
+    cout << " DB TEST ee" << endl;
 
     // ssdp discover (not working yet)
     // std::thread t_ssdp(ssdp_handler);

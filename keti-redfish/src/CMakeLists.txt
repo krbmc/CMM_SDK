@@ -22,6 +22,7 @@ set(
     init.cpp
     lssdp.cpp
     multipart_parser.cpp
+    logservice.cpp
 )
 
 # Directory setting
@@ -52,9 +53,10 @@ target_link_libraries(
     pthread 
     boost_system 
     boost_log 
-    boost_log_setup 
+    boost_log_setup
     boost_thread
     stdc++fs
     cpprest
+    sqlite3
     # PkgConfig::deps
 )

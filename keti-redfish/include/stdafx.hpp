@@ -157,6 +157,7 @@ void generate_logservice(string _res_odata, string _service_id);
 void generate_logentry(string _res_odata, string _entry_id);
 
 string generate_uuid(void);
+void time_function(uint8_t t_year, uint8_t t_mon, uint8_t t_days, uint8_t t_hour, uint8_t t_min, uint8_t t_sec, char *output);
 
 /**
  * @brief Function of record
