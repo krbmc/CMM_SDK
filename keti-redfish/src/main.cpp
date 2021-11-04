@@ -65,9 +65,35 @@ int main(int _argc, char *_argv[])
     // cout << " DB TEST ss" << endl;
     // make_test_db();
     // cout << " DB TEST ee" << endl;
-    time_t my_time = time(NULL);
-    struct tm my_tm = *localtime(&my_time);
-    insert_reading_table("id", "type", 0.5, my_tm, "location");
+    //
+    // time_t my_time = time(NULL);
+    // struct tm my_tm = *localtime(&my_time);
+    // insert_reading_table("Sensor number 002", "Temperature", 20.3, my_tm, "cpu");
+    // my_tm = *localtime(&my_time);
+    // insert_reading_table("Sensor number 004", "Fan", 5000, my_tm, "chassis");
+    // select_all_reading("Temperature");
+    // select_hour_reading("Temperature");
+
+    uint16_t f1 = 0, f2 = 0;
+    f1 |= 0x1;
+    f1 |= 0x2;
+    f1 |= 0x4000;
+    SensorMake s1, s2;
+    s1.id = "CabinetTemp";
+    s1.reading_type = "Rotational";
+    s1.reading_time = "2021-11-05 10:00:00";
+    s1.reading = 5000;
+    s1.reading_units = "UNIT";
+    s1.reading_range_max = 10000;
+    s1.status.health = STATUS_HEALTH_WARNING;
+
+    s2.id = "NewTemp";
+    s2.reading_type = "Temperature";
+    s2.reading_time = "2021-11-05 20:00:00";
+    s2.reading = 50.5;
+    
+    make_sensor(s1, f1);
+    make_sensor(s2, f2);
 
     // ssdp discover (not working yet)
     // std::thread t_ssdp(ssdp_handler);

@@ -4419,3 +4419,125 @@ void patch_iptable(NetworkProtocol* _net)
 
     system("iptables-save > /etc/iptables.rules");
 }
+
+void make_sensor(SensorMake _sm, uint16_t _flag)
+{
+    string odata = ODATA_CHASSIS_ID;
+    odata = odata + "/";
+    odata = odata + CMM_ID;
+    odata = odata + "/Sensors/";
+    odata = odata + _sm.id;
+
+    Sensor *sensor;
+
+    if(record_is_exist(odata))
+    {
+        sensor = (Sensor *)g_record[odata];
+    }
+    else
+    {
+        sensor = new Sensor(odata, _sm.id);
+        string col_odata = get_parent_object_uri(odata, "/");
+        Collection *col = (Collection *)g_record[col_odata];
+        col->add_member(sensor);
+
+        resource_save_json(col);
+    }
+
+    sensor->reading_type = _sm.reading_type;
+    sensor->reading_time = _sm.reading_time;
+    sensor->reading = _sm.reading;
+
+    if(_flag & 0x1)
+    {
+        cout << "0000 0000 0000 0001" << endl;
+        sensor->reading_units = _sm.reading_units;
+    }
+
+    if(_flag & 0x2)
+    {
+        cout << "0000 0000 0000 0010" << endl;
+        sensor->reading_range_max = _sm.reading_range_max;
+    }
+
+    if(_flag & 0x4)
+    {
+        cout << "0000 0000 0000 0100" << endl;
+        sensor->reading_range_min = _sm.reading_range_min;
+    }
+
+    if(_flag & 0x8)
+    {
+        cout << "0000 0000 0000 1000" << endl;
+        sensor->accuracy = _sm.accuracy;
+    }
+
+    if(_flag & 0x10)
+    {
+        cout << "0000 0000 0001 0000" << endl;
+        sensor->precision = _sm.precision;
+    }
+
+    if(_flag & 0x20)
+    {
+        cout << "0000 0000 0010 0000" << endl;
+        sensor->physical_context = _sm.physical_context;
+    }
+
+    if(_flag & 0x40)
+    {
+        cout << "0000 0000 0100 0000" << endl;
+        sensor->sensing_interval = _sm.sensing_interval;
+    }
+
+    if(_flag & 0x80)
+    {
+        cout << "0000 0000 1000 0000" << endl;
+        sensor->thresh.lower_caution = _sm.thresh.lower_caution;
+    }
+
+    if(_flag & 0x100)
+    {
+        cout << "0000 0001 0000 0000" << endl;
+        sensor->thresh.lower_critical = _sm.thresh.lower_critical;
+    }
+
+    if(_flag & 0x200)
+    {
+        cout << "0000 0010 0000 0000" << endl;
+        sensor->thresh.lower_fatal = _sm.thresh.lower_fatal;
+    }
+
+    if(_flag & 0x400)
+    {
+        cout << "0000 0100 0000 0000" << endl;
+        sensor->thresh.upper_caution = _sm.thresh.upper_caution;
+    }
+
+    if(_flag & 0x800)
+    {
+        cout << "0000 1000 0000 0000" << endl;
+        sensor->thresh.upper_critical = _sm.thresh.upper_critical;
+    }
+
+    if(_flag & 0x1000)
+    {
+        cout << "0001 0000 0000 0000" << endl;
+        sensor->thresh.upper_fatal = _sm.thresh.upper_fatal;
+    }
+
+    if(_flag & 0x2000)
+    {
+        cout << "0010 0000 0000 0000" << endl;
+        sensor->status.state = _sm.status.state;
+    }
+
+    if(_flag & 0x4000)
+    {
+        cout << "0100 0000 0000 0000" << endl;
+        sensor->status.health = _sm.status.health;
+    }
+
+    resource_save_json(sensor);
+    
+}

@@ -657,6 +657,26 @@ typedef struct _NTP
     string time_str;
     string timezone;
 } NTP;
+
+typedef struct _SensorMake
+{
+    string id;
+    string reading_type;
+    string reading_time;
+    double reading;
+    // 필수값
+
+    string reading_units;
+    double reading_range_max;
+    double reading_range_min;
+    double accuracy;
+    double precision;
+    string physical_context;
+    string sensing_interval;
+
+    Thresholds thresh;
+    Status status;
+} SensorMake;
 /**
  * @brief Resource of redfish schema
  */
@@ -2848,6 +2868,8 @@ void execute_iptables(NetworkProtocol* _net, int _index, string _op);
 void init_iptable(NetworkProtocol* _net);
 void patch_iptable(NetworkProtocol* _net);
 
+// Sensor Make
+void make_sensor(SensorMake _sm, uint16_t _flag);
 
 void generate_test(void);
 

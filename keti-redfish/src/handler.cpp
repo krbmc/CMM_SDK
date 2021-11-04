@@ -3,6 +3,7 @@
 #include "task.hpp"
 #include "lssdp.hpp"
 #include "chassis_controller.hpp"
+#include "logservice.hpp"
 
 
 extern unordered_map<string, Resource *> g_record;
@@ -61,6 +62,21 @@ void Handler::handle_get(http_request _request)
                 json::value j;
                 j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
                 _request.reply(status_codes::OK, j);
+                return ;
+            }
+
+            if(uri == "/reading/temp")
+            {
+                json::value rep;
+                rep = select_all_reading("Temperature");
+                _request.reply(status_codes::OK, rep);
+                return ;
+            }
+            if(uri == "/reading/fan")
+            {
+                json::value rep;
+                rep = select_all_reading("Fan");
+                _request.reply(status_codes::OK, rep);
                 return ;
             }
 
@@ -984,6 +1000,121 @@ void Handler::handle_post(http_request _request)
             return ;
             // Cmd가 FileSync 일 때 자기랑 반대되는 cmm에다가 json파일 보낸거 읽어서 백업하기
 
+        }
+
+        // 내부 api /command/~~로 정리할까 생각중
+        if(uri == "/command/inner/sensorupdate")
+        {
+            // #1 extract_json 해서 리퀘스트 바디받아오면 array형식으로 센서 좌라락 들어옴
+            // #2 거기서 먼저 모듈id읽고 모듈id 테이블에서 추가된 모듈인가 체크
+            // #3 있으면 이제 array member 1개에서 센서id읽고 /~~/Chassis/모듈id/Sensors/센서id가 리소스로 존재하
+            // 는지를 검사함 >>>>  존재한다->#4, 존재않는다->#5
+            // #4 존재하면 리소스의 reading time과 json body의 reading time을 비교해서 최신시간으로 변경되었으면
+            // 리소스의 reading time과 reading 값 업데이트
+            // #5 존재하지 않는다면 리소스를 생성하고 넘겨받은 정보들로 값 넣어줌
+            // #6 4,5 두 경우 모두 수행하고나서 DataBase Reading Table에 로그기록 insert해줘야함
+
+            // ㄱㄱ
+
+            json::value jv = _request.extract_json().get();
+            json::value jv_error;
+            
+            string module_id;
+            if(get_value_from_json_key(jv, "Module", module_id) == false)
+            {
+                jv_error = get_error_json("Need Module ID");
+                _request.reply(status_codes::BadRequest, jv_error);
+                return ;
+            }
+
+            if(module_id_table.find(module_id) == module_id_table.end())
+            {
+                jv_error = get_error_json("Not Registered Module ID");
+                _request.reply(status_codes::BadRequest, jv_error);
+                return ;
+            }
+
+            json::value sensors_info = json::value::array();
+            if(get_value_from_json_key(jv, "Sensors", sensors_info) == false)
+            {
+                jv_error = get_error_json("Need Sensors INFO");
+                _request.reply(status_codes::BadRequest, jv_error);
+                return ;
+            }
+
+            for(int i=0; i<sensors_info.size(); i++)
+            {
+                string odata = ODATA_CHASSIS_ID;
+                odata = odata + "/" + module_id;
+                odata = odata + "/Sensors/";
+
+                string s_id;
+                get_value_from_json_key(sensors_info[i], "Id", s_id);
+                odata = odata + s_id;
+                // cout << " ODATA : " << odata << endl;
+
+                if(record_is_exist(odata))
+                {
+                    // 있으면 타임비교하고 업데이트
+                    // cout << " Exist ! " << endl;
+                    Sensor *sensor;
+                    sensor = (Sensor *)g_record[odata];
+
+                    string time;
+                    get_value_from_json_key(sensors_info[i], "ReadingTime", time);
+
+                    double value;
+                    get_value_from_json_key(sensors_info[i], "Reading", value);
+
+                    string type;
+                    get_value_from_json_key(sensors_info[i], "ReadingType", type);
+
+                    if(sensor->reading_time < time)
+                    {
+                        sensor->reading_time = time;
+                        sensor->reading = value;
+                        resource_save_json(sensor);
+                        log(info) << "[Sensor Update] : " << odata;
+
+                        if(type == "Rotational")
+                            type = "Fan";
+                        insert_reading_table(s_id, type, value, time, module_id);
+                        log(info) << "[DB INSERT] : Reading TABLE";
+                    }
+                    else
+                        ;// cout << " IGNORE ! " << endl;
+
+                    
+                }
+                else
+                {
+                    // 없으면 생성
+                    // cout << " Nope ! " << endl;
+                    // 생성하고 그 받은 json으로 load때리고 odata만 수정해주면될듯 ㅇㅇ
+                    Sensor *sensor = new Sensor(odata, s_id);
+                    sensor->load_json(sensors_info[i]);
+                    sensor->odata.id = odata;
+
+                    string col_odata = get_parent_object_uri(odata, "/");
+                    Collection *col = (Collection *)g_record[col_odata];
+                    // ((Collection *)g_record[col_odata])->add_member(sensor);
+                    col->add_member(sensor);
+
+                    resource_save_json(sensor);
+                    resource_save_json(col);
+                    log(info) << "[Sensor Create] : " << odata;
+
+                    string type = sensor->reading_type;
+                    if(type == "Rotational")
+                        type = "Fan";
+                    insert_reading_table(s_id, type, sensor->reading, sensor->reading_time, module_id);
+                    log(info) << "[DB INSERT] : Reading TABLE";
+                    // cout << " DB INSERT !" << endl;
+                }
+            }
+
+            _request.reply(status_codes::OK);
+            return ;
         }
 
 
