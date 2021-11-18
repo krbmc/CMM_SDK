@@ -449,16 +449,15 @@ json::value Session::get_json(void)
         return j;
     
     j[U("Id")] = json::value::string(U(this->id));
+    j[U("SessionType")] = json::value::string(U(this->session_type));
+    j[U("AccountId")] = json::value::string(this->account_id);
+    j[U("AuthToken")] = json::value::string(this->x_token);
     
     // 연결된 account가 없는 Session이 있을수 있나?
     if (this->account == nullptr)
         j[U("UserName")] = json::value::string("");
     else
         j[U("UserName")] = json::value::string(U(this->account->user_name));
-    
-    j[U("AccountId")] = json::value::string(this->account_id);
-    j[U("AuthToken")] = json::value::string(this->x_token);
-    
     
     return j;
 }
@@ -467,9 +466,11 @@ bool Session::load_json(json::value &j)
 {
     try{
         Resource::load_json(j);
-        this->id = j.at("Id").as_string();
-        this->account_id = j.at("AccountId").as_string();
-        this->x_token = j.at("AuthToken").as_string();
+        
+        get_value_from_json_key(j, "Id", this->id);
+        get_value_from_json_key(j, "AccountId", this->account_id);
+        get_value_from_json_key(j, "AuthToken", this->x_token);
+        get_value_from_json_key(j, "SessionType", this->session_type);
     }
     catch (json::json_exception &e)
     {
@@ -571,13 +572,13 @@ json::value LogService::get_json(void)
     
     j[U("Id")] = json::value::string(U(this->id));
     j[U("Description")] = json::value::string(U(this->description));
-    j[U("MaxNumberOfRecords")] = json::value::number(U(this->max_number_of_records));
-    j[U("OverWritePolicy")] = json::value::string(U(this->overwrite_policy));
     j[U("DateTime")] = json::value::string(U(this->datetime));
     j[U("DateTimeLocalOffset")] = json::value::string(U(this->datetime_local_offset));
-    j[U("ServiceEnabled")] = json::value::boolean(U(this->service_enabled));
+    j[U("MaxNumberOfRecords")] = json::value::number(U(this->max_number_of_records));
     j[U("LogEntryType")] = json::value::string(U(this->log_entry_type));
-
+    j[U("OverWritePolicy")] = json::value::string(U(this->overwrite_policy));
+    j[U("ServiceEnabled")] = json::value::boolean(U(this->service_enabled));
+    
     j[U("SyslogFilters")] = json::value::array();
     for(int i=0; i<this->syslogFilters.size(); i++)
     {
@@ -672,6 +673,7 @@ bool LogService::ClearLog()
         for(auto item : temp)
             delete(item);
         temp.clear();
+        this->record_count = 0;
         
         resource_save_json(this->entry);
     }
@@ -692,7 +694,7 @@ void LogService::new_log_entry(string _entry_id)
         this->entry->name = "Log Entry Collection";
     }
 
-    init_log_entry(this->entry, _entry_id);
+    // init_log_entry(this->entry, _entry_id);
 }
 
 void LogService::set_description(string _val){
@@ -727,13 +729,16 @@ json::value LogEntry::get_json(void)
     j[U("EntryType")] = json::value::string(U(this->entry_type));
     j[U("Severity")] = json::value::string(U(this->severity));
     j[U("Created")] = json::value::string(U(this->created));
-    j[U("SensorNumber")] = json::value::number(U(this->sensor_number));
-    j[U("Message")] = json::value::string(U(this->message));
-    j[U("MessageId")] = json::value::string(U(this->message_id));
+    
+    this->message.get_specific_json(j);
 
-    j[U("MessageArgs")] = json::value::array();
-    for(int i=0; i<this->message_args.size(); i++)
-        j[U("MessageArgs")][i] = json::value::string(U(this->message_args[i]));
+    j[U("SensorNumber")] = json::value::number(U(this->sensor_number));
+    j[U("SensorType")] = json::value::string(U(this->sensor_type));
+    j[U("EntryCode")] = json::value::string(U(this->entry_code));
+
+    j[U("EventId")] = json::value::string(U(this->event_id));
+    j[U("EventTimeStamp")] = json::value::string(U(this->event_timestamp));
+    j[U("EventType")] = json::value::string(U(this->event_type));
 
     return j;
 }
@@ -744,17 +749,20 @@ bool LogEntry::load_json(json::value &j)
 
     try{
         Resource::load_json(j);
-        this->id = j.at("Id").as_string();
-        this->entry_type = j.at("EntryType").as_string();
-        this->severity = j.at("Severity").as_string();
-        this->created = j.at("Created").as_string();
-        this->sensor_number = j.at("SensorNumber").as_integer();
-        this->message = j.at("Message").as_string();
-        this->message_id = j.at("MessageId").as_string();
+        get_value_from_json_key(j, "Id", this->id);
+        get_value_from_json_key(j, "EntryType", this->entry_type);
+        get_value_from_json_key(j, "Severity", this->severity);
+        get_value_from_json_key(j, "Created", this->created);
 
-        message_args = j.at("MessageArgs");
-        for(auto str : message_args.as_array())
-            this->message_args.push_back(str.as_string());
+        this->message.load_specific_json(j);
+
+        get_value_from_json_key(j, "SensorNumber", this->sensor_number);
+        get_value_from_json_key(j, "SensorType", this->sensor_type);
+        get_value_from_json_key(j, "EntryCode", this->entry_code);
+
+        get_value_from_json_key(j, "EventId", this->event_id);
+        get_value_from_json_key(j, "EventTimeStamp", this->event_timestamp);
+        get_value_from_json_key(j, "EventType", this->event_type);
     }
     catch (json::json_exception &e)
     {
@@ -771,13 +779,13 @@ void LogEntry::set_severity(string _val){
     this->severity = _val;
 }
 void LogEntry::set_message(string _val){
-    this->message = _val;
+    this->message.message = _val;
 }
 void LogEntry::set_message_id(string _val){
-    this->message_id = _val;
+    this->message.id = _val;
 }
 void LogEntry::add_message_args(string _val){
-    this->message_args.push_back(_val);
+    this->message.message_args.push_back(_val);
 }
 void LogEntry::set_sensor_num(unsigned int _val){
     this->sensor_number = _val;
@@ -785,34 +793,44 @@ void LogEntry::set_sensor_num(unsigned int _val){
 // Log Service & Log Entry end
 
 // Event Service & Event Destination start
-json::value Event::get_json()
+json::value Event::get_json(void)
 {
     json::value j;
 
-    j["Id"] = json::value::string(this->id);
-    j["@odata.type"] = json::value::string(this->type);
-    j["Name"] = json::value::string(this->name);
     j["Context"] = json::value::string(this->context);
-    j["description"] = json::value::string(this->description);
-    j["Events"] = json::value::array();
-    for(int i = 0; i < this->events.size(); i++){
-        json::value events;
-        events["EventGroupId"] = json::value::number(this->events[i].event_group_id);
-        events["EventId"] = json::value::string(this->events[i].event_id);
-        events["EventTimestamp"] = json::value::string(this->events[i].event_timestamp);
-        events["MessageSeverity"] = json::value::string(this->events[i].message_severity);
-        events["Message"] = json::value::string(this->events[i].message);
-        events["MessageId"] = json::value::string(this->events[i].message_id);
-        
-        json::value ooc;
-        ooc["@odata.id"] = json::value::string(this->events[i].origin_of_condition);
-        events["OriginOfCondition"] = ooc;
-        
-        events["MessageArgs"] = json::value::array();        
-        for(int j = 0; j < this->events[i].message_args.size(); j++)
-            events["MessageArgs"][j] = json::value::string(this->events[i].message_args[j]);
-        j["Events"][i] = events;
+
+    for (int i = 0; i < this->events.size(); i++){
+        json::value ev = this->events[i].message.get_json();
+        ev["EventId"] = json::value::string(this->events[i].event_id);
+        ev["EventTimeStamp"] = json::value::string(this->events[i].event_timestamp);
+        ev["EventType"] = json::value::string(this->events[i].event_type);
+        ev["MemberId"] = json::value::string(this->events[i].member_id);
+
+        j["Events"][i] = ev;
     }
+    // j["Id"] = json::value::string(this->id);
+    // j["@odata.type"] = json::value::string(this->type);
+    // j["Name"] = json::value::string(this->name);
+    // j["description"] = json::value::string(this->description);
+    // j["Events"] = json::value::array();
+    // for(int i = 0; i < this->events.size(); i++){
+    //     json::value events;
+    //     events["EventGroupId"] = json::value::number(this->events[i].event_group_id);
+    //     events["EventId"] = json::value::string(this->events[i].event_id);
+    //     events["EventTimestamp"] = json::value::string(this->events[i].event_timestamp);
+    //     events["MessageSeverity"] = json::value::string(this->events[i].message_severity);
+    //     events["Message"] = json::value::string(this->events[i].message);
+    //     events["MessageId"] = json::value::string(this->events[i].message_id);
+        
+    //     json::value ooc;
+    //     ooc["@odata.id"] = json::value::string(this->events[i].origin_of_condition);
+    //     events["OriginOfCondition"] = ooc;
+        
+    //     events["MessageArgs"] = json::value::array();        
+    //     for(int j = 0; j < this->events[i].message_args.size(); j++)
+    //         events["MessageArgs"][j] = json::value::string(this->events[i].message_args[j]);
+    //     j["Events"][i] = events;
+    // }
 
     return j;
 }
@@ -963,16 +981,16 @@ json::value EventService::SubmitTestEvent(json::value body)
 {
     Event_Info e;
     json::value args;
-    string egi;
+    // string egi;
 
     // #1 get json value
-    if(!get_value_from_json_key(body, "MessageId", e.message_id))
+    if(!get_value_from_json_key(body, "MessageId", e.message.id))
         return json::value::null();
     
-    if(!get_value_from_json_key(body, "EventGroupId", e.event_group_id))
-        e.event_group_id = 0;
+    // if(!get_value_from_json_key(body, "EventGroupId", e.event_group_id))
+    //     e.event_group_id = 0;
+    // egi = to_string(e.event_group_id);
 
-    egi = to_string(e.event_group_id);
     if(!get_value_from_json_key(body, "EventId", e.event_id))
         e.event_id = "Test Event";
 
@@ -982,26 +1000,26 @@ json::value EventService::SubmitTestEvent(json::value body)
     if(!get_value_from_json_key(body, "EventType", e.event_type))
         e.event_type = "Alert";
 
-    if(!get_value_from_json_key(body, "Message", e.message))
-        e.message = "This is Test Message";
+    if(!get_value_from_json_key(body, "Message", e.message.message))
+        e.message.message = "This is Test Message";
     
     if(get_value_from_json_key(body, "MessageArgs", args))
     {
         for(auto arg : args.as_array())
-            e.message_args.push_back(arg.as_string());
+            e.message.message_args.push_back(arg.as_string());
         // for(int i=0; i<args.size(); i++)
         // {
         //     e.message_args.push_back(args[i].as_string());
         // }
     }
 
-    if(!get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition))
-        e.origin_of_condition = "SubmitTestEvent";
+    // if(!get_value_from_json_key(body, "OriginOfCondition", e.origin_of_condition))
+    //     e.origin_of_condition = "SubmitTestEvent";
 
-    if(!get_value_from_json_key(body, "Severity", e.message_severity))
-        e.message_severity = "OK";
+    if(!get_value_from_json_key(body, "MessageSeverity", e.message.severity))
+        e.message.severity = "OK";
 
-    Event *event = new Event(e.event_id);
+    Event *event = new Event();
     event->events.push_back(e);
 
     test_send_event(*event);
@@ -3994,7 +4012,89 @@ static int umount()
 }
 // dy : virtual media end
 
-// message registry start
+// message & message registry start
+json::value Message::get_json(void)
+{
+    json::value j;
+
+    j["Message"] = json::value::string(this->message);
+
+    j["MessageArgs"] = json::value::array();
+    for (int i = 0; i < this->message_args.size(); i++){
+        j["MessageArgs"][i] = json::value::string(this->message_args[i]);
+    }
+    
+    j["MessageId"] = json::value::string(this->id);
+    j["MessageSeverity"] = json::value::string(this->severity);
+    j["Resolution"] = json::value::string(this->resolution);
+
+    return j;
+}
+
+// Message구조체에서 Message, MessageArgs, MessageId만 취급하는 get_json
+// logentry에서 사용
+void Message::get_specific_json(json::value &j)
+{
+    j["Message"] = json::value::string(this->message);
+
+    j["MessageArgs"] = json::value::array();
+    for (int i = 0; i < this->message_args.size(); i++){
+        j["MessageArgs"][i] = json::value::string(this->message_args[i]);
+    }
+    
+    j["MessageId"] = json::value::string(this->id);
+
+    return;
+}
+
+void Message::load_json(json::value &j)
+{
+    get_value_from_json_key(j, "Message", this->message);
+    get_value_from_json_key(j, "MessageId", this->id);
+    get_value_from_json_key(j, "MessageSeverity", this->severity);
+    get_value_from_json_key(j, "Resolution", this->resolution);
+    
+    json::value args;
+    get_value_from_json_key(j, "MessageArgs", args);
+    this->message_args.clear();
+    for (auto val : args.as_array())
+        this->message_args.push_back(val.as_string());
+    return;
+}
+
+void Message::load_specific_json(json::value &j)
+{
+    get_value_from_json_key(j, "Message", this->message);
+    get_value_from_json_key(j, "MessageId", this->id);
+
+    json::value args;
+    get_value_from_json_key(j, "MessageArgs", args);
+    this->message_args.clear();
+    for (auto val : args.as_array())
+        this->message_args.push_back(val.as_string());
+    return;
+}
+
+json::value Message_For_Registry::get_json(void)
+{
+    // json::value k;
+
+    json::value k;
+    k[("Description")] = json::value::string(this->description);
+    k[("Message")] = json::value::string(this->message);
+    k[("Severity")] = json::value::string(this->severity);
+    k[("Resolution")] = json::value::string(this->resolution);
+    k[("NumberOfArgs")] = json::value::number(this->number_of_args);
+    k[("ParamTypes")] = json::value::array();
+    for(int i=0; i<this->param_types.size(); i++)
+    {
+        k[("ParamTypes")][i] = json::value::string(this->param_types[i]);
+    }
+    
+    // j[this->pattern] = k;
+    return k;
+}
+
 json::value MessageRegistry::get_json(void)
 {
     auto j = this->Resource::get_json();
@@ -4009,31 +4109,14 @@ json::value MessageRegistry::get_json(void)
     json::value messages;
     for(int i=0; i<this->messages.v_msg.size(); i++)
     {
-        Message msg = this->messages.v_msg[i];
-        json::value tmp;
-        tmp[U("Description")] = json::value::string(U(msg.description));
-        tmp[U("Message")] = json::value::string(U(msg.message));
-        tmp[U("Severity")] = json::value::string(U(msg.severity));
-        tmp[U("Resolution")] = json::value::string(U(msg.resolution));
-        tmp[U("NumberOfArgs")] = json::value::number(U(msg.number_of_args));
-
-        if(!msg.param_types.empty())
-        {
-            tmp[U("ParamTypes")] = json::value::array();
-            for(int j=0; j<msg.param_types.size(); j++)
-            {
-                tmp[U("ParamTypes")][j] = json::value::string(U(msg.param_types[j]));
-            }
-        }
-
-        messages[U(msg.pattern)] = tmp;
+        Message_For_Registry msg = this->messages.v_msg[i];
+        messages[U(msg.pattern)] = msg.get_json();
+        // messages[U(msg.id)] = msg.get_json();
     }
-
 
     j[U("Messages")] = messages;
 
     return j;
-
 }
 
 bool MessageRegistry::load_json(json::value &j)
@@ -4049,7 +4132,9 @@ bool MessageRegistry::load_json(json::value &j)
         // 이 외에 this->messages에 들어갈 Message vector요소들은 키워드(pattern)을 일일이
         // hasfield같은걸로 찾아서 읽은다음 거기서 Message 구조체에 담고 그걸 messages.v_msg에 push_back해주는식
         // 으로 구현해야함 아직 들어갈 키워드(패턴)들이 지정되지 않아서 자리만 만들어둠
-        
+        // for(int i = 0; i < this->messages.v_msg.size(); i++){
+        //     this->messages.v_msg[i].load_json(j);
+        // }
     }
     catch(json::json_exception &e)
     {
@@ -4419,6 +4504,21 @@ void patch_iptable(NetworkProtocol* _net)
 
     system("iptables-save > /etc/iptables.rules");
 }
+
+/**
+ * @brief 센서 생성&업데이트 (CMM용)
+ * @param _sm --> 센서에 들어갈 값을 가지는 구조체
+ * @param _flag --> _sm 구조체에서 값을 반영할 멤버변수를 가리키는 플래그정보
+ * 
+ * @details _flag는 16bit에서 15비트 사용한다. SensorMake 구조체에서 필수값(id, reading_type, reading_time, reading)을 제외한
+ * 나머지 멤버변수들을 순차적으로 우측에서부터 비트값을 준다.
+ * reading_units -> bit 0x1 (0000 0000 0000 0001)
+ * reading_range_max -> bit 0x2 (0000 0000 0000 0010)
+ * ...
+ * thresh.lower_caution -> bit 0x80 (0000 0000 1000 0000)
+ * ...
+ * status.health -> bit 0x4000 (0100 0000 0000 0000)
+*/
 
 void make_sensor(SensorMake _sm, uint16_t _flag)
 {

@@ -74,26 +74,50 @@ int main(int _argc, char *_argv[])
     // select_all_reading("Temperature");
     // select_hour_reading("Temperature");
 
-    uint16_t f1 = 0, f2 = 0;
-    f1 |= 0x1;
-    f1 |= 0x2;
-    f1 |= 0x4000;
-    SensorMake s1, s2;
-    s1.id = "CabinetTemp";
-    s1.reading_type = "Rotational";
-    s1.reading_time = "2021-11-05 10:00:00";
-    s1.reading = 5000;
-    s1.reading_units = "UNIT";
-    s1.reading_range_max = 10000;
-    s1.status.health = STATUS_HEALTH_WARNING;
+    // uint16_t f1 = 0, f2 = 0;
+    // f1 |= 0x1;
+    // f1 |= 0x2;
+    // f1 |= 0x4000;
+    // SensorMake s1, s2;
+    // s1.id = "CabinetTemp";
+    // s1.reading_type = "Rotational";
+    // s1.reading_time = "2021-11-05 10:00:00";
+    // s1.reading = 5000;
+    // s1.reading_units = "UNIT";
+    // s1.reading_range_max = 10000;
+    // s1.status.health = STATUS_HEALTH_WARNING;
 
-    s2.id = "NewTemp";
-    s2.reading_type = "Temperature";
-    s2.reading_time = "2021-11-05 20:00:00";
-    s2.reading = 50.5;
+    // s2.id = "NewTemp";
+    // s2.reading_type = "Temperature";
+    // s2.reading_time = "2021-11-05 20:00:00";
+    // s2.reading = 50.5;
     
-    make_sensor(s1, f1);
-    make_sensor(s2, f2);
+    // make_sensor(s1, f1);
+    // make_sensor(s2, f2);
+
+    // generate_log test
+    // Event_Info ev;
+    // SEL sel;
+    // vector<string> arg;
+    // ev = generate_event_info("event id", "Info", "CHANGE MESSAGE", arg);
+    // // ev = generate_event_info("event id", "Error", "Do It");
+    // sel = generate_sel(7, "Limit Exceeded", "Temperature", "Temperature is over the threshold", "Critical");
+    // // sel = generate_sel(150, "Limit Exceeded", "Temperature", "Temp is Temp Temp", "Why So Serious?");
+    // // string console_tt = "/redfish/v1/Chassis/CMM/LogServices/Console";
+    // // LogService *lll = (LogService *)g_record[console_tt];
+    // // lll->record_count = 1000;
+    // generate_log("Chassis", "Console", ev);
+    // generate_log("Chassis", "Console", sel);
+
+    // mkdir("/conf/database", 0755);
+    // insert_reading_table("SID 1", "CMM1", "thermal", "fan", 5000, "2021-11-10 17:20:00");
+    // insert_reading_table("SID 2", "CMM1", "thermal", "temperature", 36.5, "2021-11-10 17:20:00");
+
+    // 문서작업 결과 넣기용
+   
+    // generate_test();
+    
+    
 
     // ssdp discover (not working yet)
     // std::thread t_ssdp(ssdp_handler);
@@ -171,7 +195,7 @@ int main(int _argc, char *_argv[])
     HA_listener->open().wait();
     log(info) << "HA Heartbeat server start";
 
-    cout << "This is Original File!!!" << endl;
+    // cout << "This is Original File!!!" << endl;
 
     // std::thread t_ssdp(ssdp_handler);
     // log(info) << "ssdp discover start";

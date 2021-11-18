@@ -152,7 +152,7 @@ static int ReadConfigurationFile(char *file)
 				}
 			}
             
-            /*SECONDPORT */
+            /*Network TimeOut */
 			else if (strncmp(Configurationline + i, NETWORKTIMEOUT, strlen(NETWORKTIMEOUT)) == 0)
 			{
 				if (spool(Configurationline, &i, strlen(NETWORKTIMEOUT)))
@@ -165,7 +165,7 @@ static int ReadConfigurationFile(char *file)
 					printf(" networktimeout = %d \n", networktimeout);
 				}
 			}
-            /*SECONDPORT */
+            /*Heartbeat */
 			else if (strncmp(Configurationline + i, HEARTBEAT, strlen(HEARTBEAT)) == 0)
 			{
 				if (spool(Configurationline, &i, strlen(HEARTBEAT)))
@@ -199,8 +199,8 @@ int main(void)
     ReadConfigurationFile(ConfigurationFileDir);
 	string pa(primeaddr);
 	string sa(secondaddr);
-	cout <<"prime"<<pa<<endl;
-	cout <<"second"<<sa<<endl;
+	cout <<"Primary Server IP Addr : "<<pa<<endl;
+	cout <<"Secondary Server IP Addr : "<<sa<<endl;
     auto rc = ha->Initialize(pa, sa,primeport , secondport,
     chrono::milliseconds(networktimeout), chrono::seconds(heartbeat), chrono::seconds(networktimeout), false);
     // for (int i = 0; i < 3; i++)

@@ -143,7 +143,7 @@ KETIhaError KETIHA_Sync::SyncData(const KETIhaStatus sw)
     }
     catch (...)
     {
-        log(info) << "orgin not working " << endl;
+        log(info) << "origin not working " << endl;
     }
     return KETIhaError::HA_ERROR_OK;
 }
@@ -192,7 +192,8 @@ void KETIHA_Sync::Thread_Origin_Heart()
         catch (...)
         {
             count += 1;
-            //log(info) << "orgin not working " << endl;
+            log(warning) << "[Heartbeat Response] Active : " << uri << " is not working" << endl;
+            log(info) << "Trying Active-Standby Switching" << endl;
         }
         //log(info) <<"count = "<<count<<" max_count="<<max_count;
         if (count > this->max_count)
@@ -241,7 +242,7 @@ void KETIHA_Sync::Thread_Sub_Heart()
         catch (...)
         {
             count += 1;
-            log(info) << "sub not working " << endl;
+            log(info) << "[Heartbeat Response] Standby : " << uri << " is not working" << endl;
         }
         if (count > this->max_count)
         {

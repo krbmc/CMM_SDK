@@ -15,6 +15,8 @@ bool KETI_Switch::TryActiveStandbyMode(bool origin, bool IsActived)
         {
             try
             {
+                log(info) << primuri;
+                log(info) << secmuri;
                 primreturnobj = heart_request("/HAswitch", primuri, obj);
                 log(info) << "Result=" << primreturnobj.serialize() << endl;
                 if (primreturnobj["Result"].as_bool())

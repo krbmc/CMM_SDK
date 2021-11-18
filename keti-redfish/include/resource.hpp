@@ -33,6 +33,7 @@
 #define ODATA_EVENT_DESTINATION_ID ODATA_EVENT_SERVICE_ID "/Subscriptions"
 #define ODATA_UPDATE_SERVICE_ID ODATA_SERVICE_ROOT_ID "/UpdateService"
 
+#define ODATA_MESSAGE_REGISTRY_ID "/redfish/" REDFISH_VERSION "/MessageRegistry"
 #define ODATA_HEARTBEAT ODATA_SYSTEM_ID "/Heartbeat" 
 
 // Open data protocol resource type
@@ -161,7 +162,7 @@ const std::string currentDateTime();
  * @brief CMM_ID / CMM_ADDRESS
  * 
  */
-#define CMM_ID "CMM"
+#define CMM_ID "CMM1"
 // #define CMM_ID "1"
 // #define CMM_ADDRESS "10.0.6.107"
 #define CMM_ADDRESS "http://10.0.6.107:8000"
@@ -278,6 +279,14 @@ enum SENSOR_CONTEXT
 {
     INTAKE_CONTEXT,
     CPU_CONTEXT
+};
+
+/**
+ * 
+ */
+enum LOG_FACILITIES
+{
+    CONSOLE
 };
 
 /**
@@ -544,7 +553,7 @@ typedef struct _InputRange
 
 typedef struct _Info_Threshold
 {
-    string activation;
+    string activation; // Decreasing , Either, Increasing
     double reading;
     // string dwelltime;
 
@@ -571,19 +580,30 @@ typedef struct _Value_About_HA
     bool enabled;
 } Value_About_HA;
 
+typedef struct _Message
+{
+    string id;
+    string message;
+    string severity;
+    vector<string> message_args;
+    string resolution; // Used to provide suggestions on how to resolve the situation that caused the error.
+
+    json::value get_json(void); // message 전체 정보를 json으로 리턴
+    void load_json(json::value &j);
+
+    void get_specific_json(json::value &j); // 자주 사용되는 message args를 기존 json에 추가
+    void load_specific_json(json::value &j);
+} Message;
+
 typedef struct _Event_Info{
-    int event_group_id;
     string event_id;
     string event_timestamp;
     string event_type;
-    string message_severity;
-    string message;
-    string message_id;
-    string origin_of_condition;
-    vector<string> message_args;
+    string member_id;
+    Message message;
 } Event_Info;
 
-typedef struct _Message
+typedef struct _Message_For_Registry
 {
     string pattern; // id
     string description;
@@ -592,12 +612,15 @@ typedef struct _Message
     int number_of_args;
     vector<string> param_types;
     string resolution;
-} Message;
 
-typedef struct _Messages
+    json::value get_json(void);
+} Message_For_Registry;
+
+typedef struct _Messages_For_Registry
 {
-    vector<Message> v_msg;
-} Messages;
+    vector<Message_For_Registry> v_msg;
+} Messages_For_Registry;
+
 
 typedef struct _Part_Location{
     int location_ordinal_value;
@@ -797,17 +820,23 @@ public:
  * @brief Resource of MessageRegistry
  * 
  */
-
 class MessageRegistry : public Resource
 {
     public:
-        string id; // MessageId는 여기 이 id + message pattern
+        string id; // MessageId는 여기 이 id + message pattern ...x 걍 message pattern으로 함
         string language; // required
-
-        Messages messages; // 라는 object안에 Message구조체가 여러개들은 구조니깐 안에서 vector화
         string registry_prefix; // required
         string registry_version; // required
 
+        Messages_For_Registry messages; // 라는 object안에 Message구조체가 여러개들은 구조니깐 안에서 vector화
+        // 지금 원래 여기서 사용하려고 만든 구조체 Message가 로그엔트리랑 event_info같은데에서 쓰려고
+        // 그쪽에 맞게 변경시킨듯하다
+        // 여기 메세지는 쪼금 형태가 다른데 여기용 메세지를 하나 만드는게 좋을거같음
+        // 여기 메세지에는 args가 다이렉트로 들어가는게 아니라 args개수랑 개수 있을때 그
+        // args 타입이 들어가는건데
+        // ㅇㅇ 그래야 그거 개수 잇고 타입잇어야 온도범위 초과 막 이런 이벤트일때
+        // 초과했다는 그 온도가 얼마인지 정보를 줄수있음
+        
         MessageRegistry(const string _odata_id) : Resource(MESSAGE_REGISTRY_TYPE, _odata_id, ODATA_MESSAGE_REGISTRY_TYPE)
         {
             g_record[_odata_id] = this;
@@ -1037,14 +1066,23 @@ class LogEntry : public Resource
     string entry_type;
     string severity;
     string created;
+
+    Message message; // if EVENT, it contains Event.Message. if SEL, it contains SEL-Specific Message
+
+    // IPMI SEL Variable
     unsigned int sensor_number;
-    string message;
-    string message_id;
-    vector<string> message_args;
+    string sensor_type;
+    string entry_code;
+
+    // Redfish EVENT Variable
+    string event_id;
+    string event_timestamp;    
+    string event_type;
 
     LogEntry(const string _odata_id) : Resource(LOG_ENTRY_TYPE, _odata_id, ODATA_LOG_ENRTY_TYPE)
     {
         this->created = currentDateTime();
+        this->sensor_number = 0;
     
         g_record[_odata_id] = this;
     }
@@ -1084,10 +1122,12 @@ class LogService : public Resource
     Collection *entry;
     
     unordered_map<string, Actions> actions;
+    unsigned int record_count;
     
     LogService(const string _odata_id) : Resource(LOG_SERVICE_TYPE, _odata_id, ODATA_LOG_SERVICE_TYPE)
     {
         this->entry = nullptr;
+        this->record_count = 0;
 
         Actions clearlog;
         clearlog.type = CLEAR_LOG;
@@ -1128,21 +1168,27 @@ class LogService : public Resource
 class Event
 {
     public:
-    string id;
-    string name;
-    string type;
-    string context;
-    string description;
-    
+    string context; // A context can be supplied at subscription time. This property is the context value supplied by the subscriber
     vector<Event_Info> events;
 
-    Event(string id)
+    Event()
     {
-        this->id = id;
-        this->type = ODATA_EVENT_TYPE;
+        context = "";
+        events.clear();
     };
     ~Event(){};
+
     json::value get_json(void);
+};
+
+class SEL
+{
+    public:
+    unsigned int sensor_number;
+    string entry_code;
+    string sensor_type;
+
+    Message message;
 };
 
 class EventDestination : public Resource
@@ -1772,6 +1818,7 @@ class Session : public Resource
 public:
     string id;
     string account_id;
+    string session_type;
     Account *account;
     unsigned int _remain_expires_time;
     // @@@@@@@@ authors 강
@@ -1786,6 +1833,7 @@ public:
         this->name = "User Session";
         this->id = "";
         this->account = nullptr;
+        this->session_type = "Redfish"; // 임시
 
         g_record[_odata_id] = this;
     }
@@ -1872,6 +1920,19 @@ class Sensor : public Resource
 
     Sensor(const string _odata_id) : Resource(SENSOR_TYPE, _odata_id, ODATA_SENSOR_TYPE)
     {
+        this->reading = 0.0;
+        this->reading_range_max = 0.0;
+        this->reading_range_min = 0.0;
+        this->accuracy = 0.0;
+        this->precision = 0.0;
+
+        this->thresh.lower_caution.reading = 0.0;
+        this->thresh.lower_critical.reading = 0.0;
+        this->thresh.lower_fatal.reading = 0.0;
+        this->thresh.upper_caution.reading = 0.0;
+        this->thresh.upper_critical.reading = 0.0;
+        this->thresh.upper_fatal.reading = 0.0;
+
         g_record[_odata_id] = this;
     }
     Sensor(const string _odata_id, const string _sensor_id) : Sensor(_odata_id)

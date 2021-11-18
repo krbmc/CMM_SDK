@@ -560,6 +560,7 @@ void init_log_service(Collection *log_service_collection, string _id)
         log_service->entry = new Collection(odata_id + "/Entries", ODATA_LOG_ENTRY_COLLECTION_TYPE);
         log_service->entry->name = "Computer System Log Entry Collection";
 
+        // #오픈시스넷 샘플 로그엔트리 데이터 생성..
         init_log_entry(log_service->entry, "0");
     }
     
@@ -583,9 +584,9 @@ void init_log_entry(Collection *log_entry_collection, string _id)
     log_entry->name = "Log Entry 1";
     log_entry->created = "2021-07-25.13:07:10";
     log_entry->severity = "OK";
-    log_entry->message = "Current temperature";
-    log_entry->message_id = "Keti.1.0.TempReport";
-    log_entry->message_args.push_back("30");
+    log_entry->message.message = "Current temperature";
+    log_entry->message.id = "Keti.1.0.TempReport";
+    log_entry->message.message_args.push_back("30");
     log_entry->sensor_number = 4;
 
     log_entry_collection->add_member(log_entry);
@@ -1040,10 +1041,11 @@ void init_manager(Collection *manager_collection, string _id)
         manager->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
         manager->virtual_media->name = "VirtualMediaCollection";
 
+        // #오픈시스넷 vm 샘플 데이터 생성..
         // insert_virtual_media(manager->virtual_media, "EXT1_test", "CD");    // temp
-        // insert_virtual_media(manager->virtual_media, "CD1", "CD");
+        insert_virtual_media(manager->virtual_media, "CD1", "CD");
         // insert_virtual_media(manager->virtual_media, "CD2", "CD");
-        // insert_virtual_media(manager->virtual_media, "USB1", "USB");
+        insert_virtual_media(manager->virtual_media, "USB1", "USB");
     }
     if (!record_is_exist(odata_id + "/Syslog")){
         manager->syslog = new SyslogService(odata_id + "/Syslog");
@@ -1207,6 +1209,12 @@ void init_update_service(UpdateService *update_service)
         ha->manufacturer = "KETI";
         ha->release_date = currentDateTime();
         ha->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* bmc = init_software_inventory(update_service->firmware_inventory, "BMC");
+        bmc->version = "v1.0";
+        bmc->manufacturer = "KETI";
+        bmc->release_date = currentDateTime();
+        bmc->lowest_supported_version = "v1.0";
     }
 
     if (!record_is_exist(odata_id + "/SoftwareInventory")){
@@ -1445,19 +1453,21 @@ void init_numset(void)
 
 void init_message_registry(void)
 {
-    MessageRegistry *mr = new MessageRegistry("/redfish/v1/MessageRegistry", "Basic.1.0.0");
+    MessageRegistry *mr = new MessageRegistry(ODATA_MESSAGE_REGISTRY_ID, "Basic.1.0.0");
     mr->name = "Message Registry";
     mr->language = "en";
     mr->registry_prefix = "Basic";
     mr->registry_version = "1.0.0";
 
-    Message Test;
-    Test.pattern = "Test"; // msg id
-    Test.description = "For Test";
+    Message_For_Registry Test;
+    // Message Test;
+    Test.pattern = "Test";
+    // Test.id = "Test"; // msg id
     Test.message = "This is test Message!";
     Test.severity = "OK";
-    Test.number_of_args = 0;
     Test.resolution = "None";
+    Test.description = "Test Description";
+    Test.number_of_args = 0;
     mr->messages.v_msg.push_back(Test);
 
     // mr->messages.v_msg.push_back();
@@ -1465,92 +1475,123 @@ void init_message_registry(void)
 
 void generate_test(void)
 {
-    string od_service = "/redfish/v1/Systems/1/LogServices/Log1";
+    string od_service = "/redfish/v1/Chassis/CM1/LogServices/Log1";
     LogService *service = (LogService *)g_record[od_service];
     // Collection *col = (Collection *)g_record[col_service];
     // LogService *ls_1 = new LogService(col_service + "/StatusChange");
     // col->add_member(ls_1);
 
+    // LogEntry *en1 = new LogEntry(service->entry->odata.id + "/1", "1");
+    // en1->entry_type = "Event";
+    // en1->name = "Log Entry 1";
+    // en1->created = "2021-11-10 15:00:57";
+    // en1->severity = "OK";
+    // en1->message = "Request Completed";
+    // en1->message_id = "SuccessRequest";
+    // // en1->sensor_number = 0;
+
     LogEntry *en1 = new LogEntry(service->entry->odata.id + "/1", "1");
-    en1->entry_type = "Event";
+    en1->entry_type = "SEL";
     en1->name = "Log Entry 1";
-    en1->created = "2021-08-30.15:00:57";
-    en1->severity = "OK";
-    en1->message = "Request Completed";
-    en1->message_id = "Keti.1.0.SuccessRequest";
-    en1->sensor_number = 0;
+    en1->created = "2021-11-10 15:00:57";
+    en1->severity = "Critical";
 
-    LogEntry *en2 = new LogEntry(service->entry->odata.id + "/2", "2");
-    en2->entry_type = "Event";
-    en2->name = "Log Entry 2";
-    en2->created = "2021-08-30.15:30:40";
-    en2->severity = "Critical";
-    en2->message = "Temperature exceed threshold";
-    en2->message_id = "Keti.1.0.TempUpperExceed";
-    en2->message_args.push_back("42");
-    en2->sensor_number = 2;
+    en1->entry_code = "Limit Exceeded";
+    en1->sensor_type = "Temperature";
+    en1->sensor_number = 4;
+    en1->message.message = "A limit has been exceeded.";
+    en1->message.message_args.push_back("42");
+    // en1->
+    // en1->message = "Request Completed";
+    // en1->message_id = "SuccessRequest";
+    // en1->sensor_number = 0;
 
-    LogEntry *en3 = new LogEntry(service->entry->odata.id + "/3", "3");
-    en3->entry_type = "Event";
-    en3->name = "Log Entry 3";
-    en3->created = "2021-08-30.15:32:05";
-    en3->severity = "Warning";
-    en3->message = "Unauthorization occur in this resource";
-    en3->message_id = "Keti.1.0.UnauthorizedRequestResource";
-    en3->sensor_number = 0;
+
+    // LogEntry *en2 = new LogEntry(service->entry->odata.id + "/2", "2");
+    // en2->entry_type = "Event";
+    // en2->name = "Log Entry 2";
+    // en2->created = "2021-11-10 15:30:40";
+    // en2->severity = "Critical";
+    // en2->message = "Temperature exceed threshold";
+    // en2->message_id = "TempUpperExceed";
+    // en2->message_args.push_back("42");
+    // en2->sensor_number = 2;
+
+    // LogEntry *en3 = new LogEntry(service->entry->odata.id + "/3", "3");
+    // en3->entry_type = "Event";
+    // en3->name = "Log Entry 3";
+    // en3->created = "2021-11-10 15:32:05";
+    // en3->severity = "Warning";
+    // en3->message = "Unauthorization occur in this resource";
+    // en3->message_id = "UnauthorizedRequestResource";
+    // // en3->sensor_number = 0;
 
     service->entry->add_member(en1);
-    service->entry->add_member(en2);
-    service->entry->add_member(en3);
+    // service->entry->add_member(en2);
+    // service->entry->add_member(en3);
 
 
-    string cha = "/redfish/v1/Managers/1/LogServices/Log1";
+    string cha = "/redfish/v1/Managers/CM1/LogServices/Log1";
     LogService *service_2 = (LogService *)g_record[cha];
 
-    LogEntry *ent1 = new LogEntry(service_2->entry->odata.id + "/1", "1");
-    ent1->entry_type = "Event";
-    ent1->name = "Log Entry 1";
-    ent1->created = "2021-07-25.13:07:10";
-    ent1->severity = "OK";
-    ent1->message = "Current temperature";
-    ent1->message_id = "Keti.1.0.TempReport";
-    ent1->message_args.push_back("27");
-    ent1->sensor_number = 5;
+    LogEntry *en2 = new LogEntry(service_2->entry->odata.id + "/3", "3");
+    en2->entry_type = "Event";
+    en2->name = "Log Entry 3";
+    en2->created = "2021-11-10 15:30:40";
+    en2->severity = "OK";
+    en2->message.message = "Resource is successfully Added.";
+    en2->message.id = "ResourceAddSuccess";
+    // en2->message_args.push_back("42");
+    en2->event_timestamp = "2021-11-10 15:30:40";
+    en2->event_type = "ResourceAdded";
+    en2->sensor_number = 0;
 
-    LogEntry *ent3 = new LogEntry(service_2->entry->odata.id + "/2", "2");
-    ent3->entry_type = "Event";
-    ent3->name = "Log Entry 2";
-    ent3->created = "2021-07-25.13:07:11";
-    ent3->severity = "OK";
-    ent3->message = "Current temperature";
-    ent3->message_id = "Keti.1.0.TempReport";
-    ent3->message_args.push_back("29");
-    ent3->sensor_number = 6;
+    service_2->entry->add_member(en2);
 
-    LogEntry *ent2 = new LogEntry(service_2->entry->odata.id + "/3", "3");
-    ent2->entry_type = "Event";
-    ent2->name = "Log Entry 3";
-    ent2->created = "2021-07-25.13:07:12";
-    ent2->severity = "OK";
-    ent2->message = "Current temperature";
-    ent2->message_id = "Keti.1.0.TempReport";
-    ent2->message_args.push_back("27");
-    ent2->sensor_number = 5;
+    // LogEntry *ent1 = new LogEntry(service_2->entry->odata.id + "/1", "1");
+    // ent1->entry_type = "Event";
+    // ent1->name = "Log Entry 1";
+    // ent1->created = "2021-07-25.13:07:10";
+    // ent1->severity = "OK";
+    // ent1->message = "Current temperature";
+    // ent1->message_id = "Keti.1.0.TempReport";
+    // ent1->message_args.push_back("27");
+    // ent1->sensor_number = 5;
 
-    LogEntry *ent4 = new LogEntry(service_2->entry->odata.id + "/4", "4");
-    ent4->entry_type = "Event";
-    ent4->name = "Log Entry 4";
-    ent4->created = "2021-07-25.13:07:13";
-    ent4->severity = "OK";
-    ent4->message = "Current temperature";
-    ent4->message_id = "Keti.1.0.TempReport";
-    ent4->message_args.push_back("28");
-    ent4->sensor_number = 6;
+    // LogEntry *ent3 = new LogEntry(service_2->entry->odata.id + "/2", "2");
+    // ent3->entry_type = "Event";
+    // ent3->name = "Log Entry 2";
+    // ent3->created = "2021-07-25.13:07:11";
+    // ent3->severity = "OK";
+    // ent3->message = "Current temperature";
+    // ent3->message_id = "Keti.1.0.TempReport";
+    // ent3->message_args.push_back("29");
+    // ent3->sensor_number = 6;
 
-    service_2->entry->add_member(ent1);
-    service_2->entry->add_member(ent3);
-    service_2->entry->add_member(ent2);
-    service_2->entry->add_member(ent4);
+    // LogEntry *ent2 = new LogEntry(service_2->entry->odata.id + "/3", "3");
+    // ent2->entry_type = "Event";
+    // ent2->name = "Log Entry 3";
+    // ent2->created = "2021-07-25.13:07:12";
+    // ent2->severity = "OK";
+    // ent2->message = "Current temperature";
+    // ent2->message_id = "Keti.1.0.TempReport";
+    // ent2->message_args.push_back("27");
+    // ent2->sensor_number = 5;
+
+    // LogEntry *ent4 = new LogEntry(service_2->entry->odata.id + "/4", "4");
+    // ent4->entry_type = "Event";
+    // ent4->name = "Log Entry 4";
+    // ent4->created = "2021-07-25.13:07:13";
+    // ent4->severity = "OK";
+    // ent4->message = "Current temperature";
+    // ent4->message_id = "Keti.1.0.TempReport";
+    // ent4->message_args.push_back("28");
+    // ent4->sensor_number = 6;
+
+    // service_2->entry->add_member(ent1);
+    // service_2->entry->add_member(ent3);
+    // service_2->entry->add_member(ent2);
+    // service_2->entry->add_member(ent4);
 
     record_save_json();
 }

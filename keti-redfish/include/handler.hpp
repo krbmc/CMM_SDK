@@ -47,4 +47,14 @@ void redfish_request_delete(string _path, string _url);
 // ssdp
 void *ssdp_handler(void);
 
+// Log
+void log_operation(http_request _request);
+// reading 관련처리함수랑 event 관련처리함수 2가지로 분기
+void reading_operation(http_request _request, http_response &_response);
+void event_operation(http_request _request, http_response &_response);
+
+bool check_reading_type(string _types);
+bool check_reading_detail(string _type, string _detail);
+bool check_reading_time_option(string _option);
+
 #endif

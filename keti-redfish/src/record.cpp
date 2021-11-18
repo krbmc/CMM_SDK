@@ -1028,8 +1028,12 @@ void dependency_injection(Resource *res)
             ((Collection *)g_record[parent_object_id])->add_member((Sensor *)res);
             break;
         case LOG_ENTRY_TYPE:
+        {
             ((Collection *)g_record[parent_object_id])->add_member((LogEntry *)res);
+            string tmp = get_parent_object_uri(parent_object_id, "/");
+            (((LogService *)g_record[tmp])->record_count)++;
             break;
+        }
         case TASK_TYPE:
             ((Collection *)g_record[parent_object_id])->add_member((Task *)res);
             insert_numset_num(ALLOCATE_TASK_NUM, stoi(current_object_name));

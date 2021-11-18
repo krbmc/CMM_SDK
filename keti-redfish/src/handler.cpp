@@ -55,30 +55,223 @@ void Handler::handle_get(http_request _request)
     .then([&_request, uri_tokens, uri](pplx::task<json::value> json_value){
         try
         {
+            // #오픈시스넷 CORS 처리용
+            http_response response;
+
+            response.headers().add("Access-Control-Allow-Origin", "*");
+            response.headers().add("Access-Control-Allow-Credentials", "true");
+            response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+            response.headers().add("Access-Control-Max-Age", "3600");
+            response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+            response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
             log(info) << "json_value : " << json_value.get().to_string();
             // Response Redfish Version
             if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
             {
                 json::value j;
                 j[U(REDFISH_VERSION)] = json::value::string(U(ODATA_SERVICE_ROOT_ID));
-                _request.reply(status_codes::OK, j);
+                response.set_status_code(status_codes::OK);
+                response.set_body(j);
+                _request.reply(response);
+                // _request.reply(status_codes::OK, j);
                 return ;
+            }
+
+            if(uri_tokens[0] == "ppp")
+            {
+                cout << " RECORD PRINT !!! " << endl;
+                record_print();
+                _request.reply(status_codes::Found);
+                return ;
+            }
+
+            // #오픈시스넷 로그 디비 샘플 처리함수
+            // /log/reading/CMM/type/detail/time
+            // if(uri_tokens[0] == "log")
+            // {
+            //     if(uri_tokens.size() < 6)
+            //     {
+            //         response.set_status_code(status_codes::BadRequest);
+            //         _request.reply(response);
+            //         // _request.reply(status_codes::BadRequest);
+            //         return ;
+            //     }
+
+            //     json::value open_result;
+
+            //     if(uri_tokens[1] == "reading" && uri_tokens[2] == "CMM1")
+            //     {
+            //         if(uri_tokens[3] == "power")
+            //         {
+            //             if(uri_tokens[4] == "powercontrol")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_powercontrol_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_powercontrol_min();
+            //             }
+            //             else if(uri_tokens[4] == "powervoltage")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_powervoltage_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_powervoltage_min();
+            //             }
+            //             else if(uri_tokens[4] == "powersupply")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_powersupply_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_powersupply_min();
+            //             }
+
+            //         }
+            //         else if(uri_tokens[3] == "thermal")
+            //         {
+            //             if(uri_tokens[4] == "temperature")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_thermal_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_thermal_min();
+            //             }
+            //             else if(uri_tokens[4] == "fan")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_fan_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_fan_min();
+            //             }
+
+            //         }
+
+            //         response.set_status_code(status_codes::OK);
+            //         response.set_body(open_result);
+            //         _request.reply(response);
+            //         // _request.reply(status_codes::OK, open_result);
+            //         return ;
+            //     }
+            //     else
+            //     {
+            //         response.set_status_code(status_codes::BadRequest);
+            //         _request.reply(response);
+            //         // _request.reply(status_codes::BadRequest);
+            //         return ;
+            //     }
+
+            // }
+
+            if(uri_tokens[0] == "log")
+            {
+                // /log/~ uri를 처리하는 함수
+                log_operation(_request);
+                return ;
+            }
+
+            // #오픈시스넷 /CMMHA 임시 처리부
+            if(uri_tokens[0] == "CMMHA")
+            {
+                json::value j;
+                j["ActiveIP"] = json::value::string("192.168.0.68");
+                j["ActivePort"] = json::value::string("8000");
+                j["StandbyIP"] = json::value::string("10.0.6.106");
+                j["StandbyPort"] = json::value::string("8000");
+                j["NetworkTimeOut"] = json::value::number(50);
+                j["HeartbeatInterval"] = json::value::number(5);
+                j["SwitchTimeOut"] = json::value::number(10);
+                j["IPList"] = json::value::array();
+                j["IPList"][0] = json::value::string("192.168.0.68");
+                j["IPList"][1] = json::value::string("10.0.6.106");
+
+                response.set_status_code(status_codes::OK);
+                response.set_body(j);
+                _request.reply(response);
+                // _request.reply(status_codes::OK, j);
+                return ;
+                
+            }
+            // #오픈시스넷 /HAlastcommand 임시 처리부
+            if(uri_tokens[0] == "HAlastcommand")
+            {
+                json::value j;
+                j["CMS"] = json::value::array();
+                j["SMS"] = json::value::array();
+                json::value obj;
+                obj["CMID"]= json::value::string("CM1");
+                obj["Value"]=json::value::string("/redfish/v1/Chassis");
+                obj["Time"]=json::value::string("2021-11-15 11:00");
+                j["CMS"][0]=obj;
+                json::value obj2;
+                obj2["CMID"]= json::value::string("CM2");
+                obj2["Value"]=json::value::string("/redfish/v1/Chassis");
+                obj2["Time"]=json::value::string("2021-11-15 11:00");
+                j["CMS"][1]=obj2;
+                json::value smobj1;
+                smobj1["CMID"]= json::value::string("SM1");
+                smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
+                smobj1["Time"]=json::value::string("2021-11-15 11:00");
+                j["SMS"][0]=smobj1;
+                json::value smobj2;
+                smobj1["CMID"]= json::value::string("SM2");
+                smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
+                smobj1["Time"]=json::value::string("2021-11-15 11:00");
+                j["SMS"][1]=smobj1;
+
+
+                response.set_status_code(status_codes::OK);
+                response.set_body(j);
+                _request.reply(response);
+                // _request.reply(status_codes::OK, j);
+                return ;
+                
+            }
+
+
+            if(uri_tokens[0] == "myuri")
+            {
+                string host, path, query, fragment;
+                int port;
+                host = _request.request_uri().host();
+                port = _request.request_uri().port();
+                path = _request.request_uri().path();
+                query = _request.request_uri().query();
+                fragment = _request.request_uri().fragment();
+                cout << "PRINT >> " << endl;
+                cout << "Host : " << host << endl;
+                cout << "Port : " << port << endl;
+                cout << "Path : " << path << endl;
+                cout << "Query : " << query << endl;
+                cout << "Fragment : " << fragment << endl;
+                map<string, string> mm;
+                mm = uri::split_query(query);
+                map<string, string>::iterator iter;
+                cout << "Split -------------" << endl;
+                for(iter = mm.begin(); iter != mm.end(); iter++)
+                {
+                    cout << iter->first << " / " << iter->second << endl;
+                }
+
+                _request.reply(status_codes::Locked);
+                return ;
+
             }
 
             if(uri == "/reading/temp")
             {
                 json::value rep;
-                rep = select_all_reading("Temperature");
+                // rep = select_all_reading("Temperature");
                 _request.reply(status_codes::OK, rep);
                 return ;
             }
             if(uri == "/reading/fan")
             {
                 json::value rep;
-                rep = select_all_reading("Fan");
+                // rep = select_all_reading("Fan");
                 _request.reply(status_codes::OK, rep);
                 return ;
             }
+            
 
             if(uri_tokens.size() == 1 && uri_tokens[0] == "upup")
             {
@@ -180,7 +373,10 @@ void Handler::handle_get(http_request _request)
                         {
                             json::value j;
                             j[U("Error")] = json::value::string(U("Unvalid Module ID"));
-                            _request.reply(status_codes::BadRequest, j);
+                            response.set_status_code(status_codes::BadRequest);
+                            response.set_body(j);
+                            _request.reply(response);
+                            // _request.reply(status_codes::BadRequest, j);
                             cout << "Unvalid BMC_id" << endl;
                             return ;
                         }
@@ -190,14 +386,28 @@ void Handler::handle_get(http_request _request)
             else
             {
                 // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
-                _request.reply(status_codes::BadRequest);
+                response.set_status_code(status_codes::BadRequest);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest);
                 return ;
             }
 
         }
         catch(json::json_exception& e)
         {
-            _request.reply(status_codes::BadRequest);
+            http_response response;
+
+            response.headers().add("Access-Control-Allow-Origin", "*");
+            response.headers().add("Access-Control-Allow-Credentials", "true");
+            response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+            response.headers().add("Access-Control-Max-Age", "3600");
+            response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+            response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
+            response.set_status_code(status_codes::BadRequest);
+            _request.reply(response);
+            // _request.reply(status_codes::BadRequest);
+            return ;
         }
     })
     .wait();
@@ -423,6 +633,15 @@ void Handler::handle_delete(http_request _request)
     log(info) << "Request method: DELETE";
     log(info) << "Reqeust uri : " << filtered_uri;
 
+    http_response response;
+
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
 
     try
     {
@@ -456,7 +675,10 @@ void Handler::handle_delete(http_request _request)
                     {
                         json::value j;
                         j[U("Error")] = json::value::string(U("Unvalid Module ID"));
-                        _request.reply(status_codes::BadRequest, j);
+                        response.set_status_code(status_codes::BadRequest);
+                        response.set_body(j);
+                        _request.reply(response);
+                        // _request.reply(status_codes::BadRequest, j);
                         cout << "Unvalid BMC_id" << endl;
                         return ;
                     }
@@ -466,7 +688,9 @@ void Handler::handle_delete(http_request _request)
         else
         {
             // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
-            _request.reply(status_codes::BadRequest);
+            response.set_status_code(status_codes::BadRequest);
+            _request.reply(response);
+            // _request.reply(status_codes::BadRequest);
             return ;
         }
 
@@ -607,7 +831,9 @@ void Handler::handle_delete(http_request _request)
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
-        _request.reply(status_codes::BadRequest);
+        response.set_status_code(status_codes::BadRequest);
+        _request.reply(response);
+        // _request.reply(status_codes::BadRequest);
     }
     // catch(json::json_exception &e)
     // {
@@ -673,6 +899,15 @@ void Handler::handle_post(http_request _request)
     string filtered_uri = make_path(uri_tokens);
     log(info) << "Reqeust URL : " << filtered_uri;
     log(info) << "Request Body : " << _request.to_string();
+
+    http_response response;
+
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
     try
     {
@@ -850,7 +1085,9 @@ void Handler::handle_post(http_request _request)
             j_cycle = _request.extract_json().get();
             if(j_cycle.as_object().find("Cycle") == j_cycle.as_object().end())
             {
-                _request.reply(status_codes::BadRequest);
+                response.set_status_code(status_codes::BadRequest);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest);
                 return ;
             }
 
@@ -865,14 +1102,20 @@ void Handler::handle_post(http_request _request)
                 json::value rep;
                 rep[U("Error")] = json::value::string(U("Not a number"));
                 std::cerr << e.what() << '\n';
-                _request.reply(status_codes::BadRequest, rep);
+                response.set_status_code(status_codes::BadRequest);
+                response.set_body(rep);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest, rep);
                 return ;
             }
             
             
 
             j[U("Status")] = json::value::string("OK");
-            _request.reply(status_codes::OK, j);
+            response.set_status_code(status_codes::OK);
+            response.set_body(j);
+            _request.reply(response);
+            // _request.reply(status_codes::OK, j);
             return ;
         }
 
@@ -885,7 +1128,9 @@ void Handler::handle_post(http_request _request)
             || ha_info.as_object().find("PeerSecondaryAddress") == ha_info.as_object().end() || ha_info.as_object().find("SecondPort") == ha_info.as_object().end()
             || ha_info.as_object().find("Origin") == ha_info.as_object().end() || ha_info.as_object().find("Enabled") == ha_info.as_object().end())
             {
-                _request.reply(status_codes::BadRequest);
+                response.set_status_code(status_codes::BadRequest);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest);
                 return ;
             }
             // Request Body에 구성 6가지 중 하나라도 누락되었을 경우 무시
@@ -905,7 +1150,10 @@ void Handler::handle_post(http_request _request)
                 json::value rep;
                 rep[U("Error")] = json::value::string(U("Type Error"));
                 std::cerr << e.what() << '\n';
-                _request.reply(status_codes::BadRequest, rep);
+                response.set_status_code(status_codes::BadRequest);
+                response.set_body(rep);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest, rep);
                 return ;
                 // std::cerr << e.what() << '\n';
             }
@@ -924,7 +1172,9 @@ void Handler::handle_post(http_request _request)
             system(op1.c_str());
             system(op2.c_str());
 
-            _request.reply(status_codes::OK);
+            response.set_status_code(status_codes::OK);
+            _request.reply(response);
+            // _request.reply(status_codes::OK);
             return ;
 
         }
@@ -937,7 +1187,9 @@ void Handler::handle_post(http_request _request)
             switch_info = _request.extract_json().get();
             if(switch_info.as_object().find("IsSwitch") == switch_info.as_object().end())
             {
-                _request.reply(status_codes::BadRequest);
+                response.set_status_code(status_codes::BadRequest);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest);
                 return ;
             }
 
@@ -956,13 +1208,18 @@ void Handler::handle_post(http_request _request)
                     ha_value.enabled = false;
             }
             else{
-                _request.reply(status_codes::BadRequest);
+                response.set_status_code(status_codes::BadRequest);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest);
                 return ;
             }
 
             json::value rep;
             rep[U("Result")] = json::value::boolean(U(true));
-            _request.reply(status_codes::OK, rep);
+            response.set_status_code(status_codes::OK);
+            response.set_body(rep);
+            _request.reply(response);
+            // _request.reply(status_codes::OK, rep);
             return ;
         }
 
@@ -975,7 +1232,9 @@ void Handler::handle_post(http_request _request)
             if(command_info.as_object().find("Cmd") == command_info.as_object().end()
             || command_info.as_object().find("Path") == command_info.as_object().end())
             {
-                _request.reply(status_codes::BadRequest);
+                response.set_status_code(status_codes::BadRequest);
+                _request.reply(response);
+                // _request.reply(status_codes::BadRequest);
                 return ;
             }
 
@@ -996,7 +1255,11 @@ void Handler::handle_post(http_request _request)
             j[U("Status")] = json::value::string("OK");
             cout << "dd : " << result << endl;
             // j[U("Result")] = json::value::string(result);
-            _request.reply(status_codes::OK, j);
+
+            response.set_status_code(status_codes::OK);
+            response.set_body(j);
+            _request.reply(response);
+            // _request.reply(status_codes::OK, j);
             return ;
             // Cmd가 FileSync 일 때 자기랑 반대되는 cmm에다가 json파일 보낸거 읽어서 백업하기
 
@@ -1078,7 +1341,7 @@ void Handler::handle_post(http_request _request)
 
                         if(type == "Rotational")
                             type = "Fan";
-                        insert_reading_table(s_id, type, value, time, module_id);
+                        // insert_reading_table(s_id, type, value, time, module_id);
                         log(info) << "[DB INSERT] : Reading TABLE";
                     }
                     else
@@ -1107,7 +1370,7 @@ void Handler::handle_post(http_request _request)
                     string type = sensor->reading_type;
                     if(type == "Rotational")
                         type = "Fan";
-                    insert_reading_table(s_id, type, sensor->reading, sensor->reading_time, module_id);
+                    // insert_reading_table(s_id, type, sensor->reading, sensor->reading_time, module_id);
                     log(info) << "[DB INSERT] : Reading TABLE";
                     // cout << " DB INSERT !" << endl;
                 }
@@ -1167,7 +1430,10 @@ void Handler::handle_post(http_request _request)
                     {
                         json::value j;
                         j[U("Error")] = json::value::string(U("Unvalid Module ID"));
-                        _request.reply(status_codes::BadRequest, j);
+                        response.set_status_code(status_codes::BadRequest);
+                        response.set_body(j);
+                        _request.reply(response);
+                        // _request.reply(status_codes::BadRequest, j);
                         cout << "Unvalid BMC_id" << endl;
                         return ;
                     }
@@ -1177,13 +1443,17 @@ void Handler::handle_post(http_request _request)
         }
         else
         {
-            _request.reply(status_codes::BadRequest);
+            response.set_status_code(status_codes::BadRequest);
+            _request.reply(response);
+            // _request.reply(status_codes::BadRequest);
             return ;
         }
     }
     catch(json::json_exception& e)
     {
-        _request.reply(status_codes::BadRequest);
+        response.set_status_code(status_codes::BadRequest);
+        _request.reply(response);
+        // _request.reply(status_codes::BadRequest);
         return ;
     }
     
@@ -1372,8 +1642,43 @@ void Handler::handle_patch(http_request _request)
     // cout << _request.get_remote_address() << endl;
     // cout << _request.remote_address() << endl;
 
+    http_response response;
+
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+    
+
     try
     {
+
+        // #오픈시스넷 /CMMHA 임시 처리부(patch)
+        if(uri_tokens[0] == "CMMHA")
+        {
+            json::value j;
+            j["ActiveIP"] = json::value::string("192.168.0.68");
+            j["ActivePort"] = json::value::string("8000");
+            j["StandbyIP"] = json::value::string("10.0.6.106");
+            j["StandbyPort"] = json::value::string("8000");
+            j["NetworkTimeOut"] = json::value::number(50);
+            j["HeartbeatInterval"] = json::value::number(5);
+            j["SwitchTimeOut"] = json::value::number(10);
+            j["IPList"] = json::value::array();
+            j["IPList"][0] = json::value::string("192.168.0.68");
+            j["IPList"][1] = json::value::string("10.0.6.106");
+
+            response.set_status_code(status_codes::OK);
+            response.set_body(j);
+            _request.reply(response);
+            // _request.reply(status_codes::OK, j);
+            return ;
+        }
+
+
+
         /* code */
         if(uri_tokens.size() == 2 || uri_tokens.size() == 3)
         {
@@ -1405,7 +1710,10 @@ void Handler::handle_patch(http_request _request)
                     {
                         json::value j;
                         j[U("Error")] = json::value::string(U("Unvalid Module ID"));
-                        _request.reply(status_codes::BadRequest, j);
+                        response.set_status_code(status_codes::BadRequest);
+                        response.set_body(j);
+                        _request.reply(response);
+                        // _request.reply(status_codes::BadRequest, j);
                         cout << "Unvalid BMC_id" << endl;
                         return ;
                     }
@@ -1415,7 +1723,9 @@ void Handler::handle_patch(http_request _request)
         else
         {
             // uri_token size가 1/2,3/4이상에도 해당안되는거면 에러
-            _request.reply(status_codes::BadRequest);
+            response.set_status_code(status_codes::BadRequest);
+            _request.reply(response);
+            // _request.reply(status_codes::BadRequest);
             return ;
         }
        
@@ -1423,7 +1733,10 @@ void Handler::handle_patch(http_request _request)
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
-        _request.reply(status_codes::BadRequest);
+        response.set_status_code(status_codes::BadRequest);
+        _request.reply(response);
+        // _request.reply(status_codes::BadRequest);
+        return ;
     }
     
 }
@@ -1617,6 +1930,8 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
         // log(info) << "확인하자 패킷 : " << str;
         // cout << " 확인하자 패킷 : " << str;
 
+        // checkmyblade = true;
+
         if((str.find("SMM")!=string::npos||str.find("BMC")!=string::npos) && (str.find("NT:")!=string::npos)) // ST도 추가해야할수있음
         {           
             // checkmyblade=true;
@@ -1656,7 +1971,7 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
         // for(int i =0; i<7; i++)
         for(int i =0; i<packet_info.size(); i++)
         log(info)<<packet_info[i];
-        // log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
+        log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
         findlast_time = get_current_time();
         
     }
@@ -1763,4 +2078,184 @@ void *ssdp_handler(void)
     }
 
     return 0;
+}
+
+
+
+// Log Data for Web Service
+void log_operation(http_request _request)
+{
+    // cors 해줘야함
+    // reading 부분 , Event 부분 나눠야함
+    string uri = _request.request_uri().to_string();
+    vector<string> uri_tokens = string_split(uri, '/');
+
+    http_response response;
+    json::value response_json;
+
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
+    if(uri_tokens[1] == "reading")
+    {
+        reading_operation(_request, response);
+    }
+    else if(uri_tokens[1] == "event")
+    {
+        event_operation(_request, response);
+    }
+    else
+    {
+        json::value j = get_error_json("Not Supported URI");
+        response.set_status_code(status_codes::BadRequest);
+        response.set_body(j);
+    }
+
+    _request.reply(response);
+    return ;
+}
+
+void reading_operation(http_request _request, http_response &_response)
+{
+    // DB Reading Table관련 기능 수행하는 핸들러처리
+    // #1 uri 설계..
+    // /log/reading까지 들어오고 /log/reading/[module]/[type]/[detail]/[time_option]
+    // [module] : 모듈id,, 어느 모듈의 센서측정값들인지
+    // [type] : 센서의 위치타입,, thermal / power 등등...
+    // [detail] : 해당 센서타입에서의 상세구분정보 ex> 타입power일때 powercontrol, powersupply 같은 정보
+    // [time_option] : 시간조건,, 시간조건없이 최신 x개 긁어오기 / 최근1시간이내 / 최근30분이내 등등...
+    // time_option 변경점 : 센서가 1분단위씩으로 주기적으로 측정됨.. 그래서 min으로 주면 분단위로 30분(즉 30개)
+    // hour가 시간단위로 30시간(30개) 
+    // all을 없애야겠다 그러면 좀 간단해짐 쿼리도 그렇고 구분도 그렇고 all을 빼 어차피 부르는쪽에서 구분해서
+    // 불러서 갖다쓰면됨 어차피 array형식이라 all로 해서 다 준다고 해도 정보가지고 필터링작업거쳐야함 ㅇㅇ
+    web::uri uri = _request.request_uri();
+    string uri_string = uri.to_string();
+    vector<string> uri_tokens = uri::split_path(uri_string);
+
+    cout << "READING OPERATION" << endl;
+    cout << "Request URI : " << uri_string << endl;
+    cout << "URI Tokens ---" << endl;
+    for(int i=0; i<uri_tokens.size(); i++)
+    {
+        cout << uri_tokens[i] << endl;
+    }
+
+    if(uri_tokens.size() < 6)
+    {
+        _response.set_status_code(status_codes::BadRequest);
+        _response.set_body(get_error_json("URI Format >> /log/reading/[module]/[type]/[detail]/[time_option]"));
+        return ;
+    }
+
+    string param_module, param_type, param_detail, param_time_option;
+
+    
+    // [module] 처리
+    if(module_id_table.find(uri_tokens[2]) == module_id_table.end())
+    {
+        _response.set_status_code(status_codes::BadRequest);
+        _response.set_body(get_error_json("Module ID [" + uri_tokens[2] + "] does not Exist"));
+        return ;
+    }
+    param_module = uri_tokens[2];
+    
+
+    // [type] 처리
+    if(!check_reading_type(uri_tokens[3]))
+    {
+        _response.set_status_code(status_codes::BadRequest);
+        _response.set_body(get_error_json("Reading Type [" + uri_tokens[3] + "] is Incorrect"));
+        return ;
+    }
+    param_type = uri_tokens[3];
+    
+    // [detail] 처리
+    if(!check_reading_detail(param_type, uri_tokens[4]))
+    {
+        _response.set_status_code(status_codes::BadRequest);
+        _response.set_body(get_error_json("Reading Detail [" + uri_tokens[4] + "] is Incorrect"));
+        return ;
+    }
+    param_detail = uri_tokens[4];
+
+    // [time_option] 처리
+    if(!check_reading_time_option(uri_tokens[5]))
+    {
+        _response.set_status_code(status_codes::BadRequest);
+        _response.set_body(get_error_json("Time Option [" + uri_tokens[5] + "] is Incorrect"));
+        return ;
+    }
+    param_time_option = uri_tokens[5];
+    
+
+    cout << param_module << " / " << param_type << " / " << param_detail << " / " << param_time_option << endl;
+
+    // 만들어진 param가지고 함수 호출
+    json::value result_jv;
+    if(param_time_option == "min")
+        result_jv = select_min_reading(param_module, param_type, param_detail, 30);
+    else if(param_time_option == "hour")
+        ;
+    // result_jv = select_all_reading()
+
+    // module 값의 uri토큰이 all 인지 특정 모듈인지에 따라서
+    // DB에서 읽을때 모듈 칼럼의 where절 값에 들어가는 조건이 달라지는거지 그거에 해당하는 파라미터가 필요하고 
+    // select_reading거기에서 ㅇㅇ 그리고 그 함수 인자값만 지정하는거야 여기서는
+    // 그다음엔 type검사해서 type값 지정하고
+    // time_option 검사해서 값 지정하고 다 모인 파라미터값들을 인자로해서
+    // select_reading함수를 호출해 
+
+    // 그러면 select_reading함수에서 인자들 가지고 쿼리문 만들어서 해당하는 DB데이터 긁어올것이고 그걸 json형태로
+    // 만들어서 반환하면 그걸가지고 여기서 reply해주면됨 
+    // 그래서 select_reading함수를 수정해야한다~~~~ 
+
+    
+    _response.set_status_code(status_codes::Found);
+    _response.set_body(result_jv);
+    return ;
+    
+}
+
+void event_operation(http_request _request, http_response &_response)
+{
+
+}
+
+bool check_reading_type(string _types)
+{
+    if(_types == "thermal" || _types == "power")
+        return true;
+    else
+        return false;
+}
+// type하고 detail이 생기면서 type검사에 power, thermal과 같은걸로 넣어주어야하고
+// 그 type에 따라서 detail값이 temp,fan // powercontrol powervoltage powersupply 로 나뉨
+bool check_reading_detail(string _type, string _detail)
+{
+    if(_type == "thermal")
+    {
+        if(_detail == "temperature" || _detail == "fan")
+            return true;
+        
+    }
+    else if(_type == "power")
+    {
+        if(_detail == "powercontrol" || _detail == "powervoltage" || _detail == "powersupply")
+            return true;
+    }
+
+    return false;
+}
+
+bool check_reading_time_option(string _option)
+{
+    // hour: 1시간 간격 30개로그 , min: 1분 간격 30개로그...
+    if(_option == "hour" || _option == "min")
+        return true;
+    else
+        return false;
 }

@@ -23,7 +23,7 @@ KETIhaNetService::~KETIhaNetService()
     }
     m_Quit.store(false);
     try
-    {   cout<<("Rest service is start.")<<endl;
+    {   
         m_thread=new std::thread([&](){RESTService(NULL);});
         cout<<("Rest service is start.")<<endl;
     }
