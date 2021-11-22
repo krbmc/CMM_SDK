@@ -860,9 +860,9 @@ json::value EventDestination::get_json(void)
     k[U("Health")] = json::value::string(U(this->status.health));
     j[U("Status")] = k;
 
-    // j[U("EventTypes")] = json::value::array();
-    // for(int i=0; i<this->event_types.size(); i++)
-    //     j[U("EventTypes")][i] = json::value::string(U(this->event_types[i]));
+    j[U("EventTypes")] = json::value::array();
+    for(int i=0; i<this->event_types.size(); i++)
+        j[U("EventTypes")][i] = json::value::string(U(this->event_types[i]));
 
 
     return j;
@@ -882,9 +882,9 @@ bool EventDestination::load_json(json::value &j)
         this->context = j.at("Context").as_string();
         this->protocol = j.at("Protocol").as_string();
         
-        // event_types = j.at("EventTypes");
-        // for(auto str : event_types.as_array())
-        //     this->event_types.push_back(str.as_string());
+        event_types = j.at("EventTypes");
+        for(auto str : event_types.as_array())
+            this->event_types.push_back(str.as_string());
         
         status = j.at("Status");
         this->status.state = status.at("State").as_string();

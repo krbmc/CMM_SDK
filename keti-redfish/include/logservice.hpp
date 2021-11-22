@@ -3,16 +3,18 @@
 
 #include "stdafx.hpp"
 #include "resource.hpp"
+#include "eventservice.hpp"
 #include <sqlite3.h>
 
 #define LOG_DB "/conf/database/log.db"
 
 typedef struct _Hour_Reading_Info
 {
-    int cur_count;
-    string cur_time;
+    int max_count; // items에 들어갈 로그데이터 개수(max) 그리고 그거의 cur_count는 items.size()로 파악해
+    string cur_time; // item에 들어간 최신 reading 데이터의 Time정보
+    string compare_time; // cur_time 으로 부터 1시간 이전 시간으로 비교기준이 되는 시간
     vector<json::value> items;
-} Time_Info;
+} Hour_Reading_Info;
 
 
 // Database
@@ -33,16 +35,16 @@ void insert_reading_table(string _sensor_id, string _module, string _type, strin
 
 int extract_column_callback(void *_vector, int argc, char **argv, char **azColName);
 int make_json_min_reading_callback(void *_vector, int argc, char **argv, char **azColName);
-int make_json_hour_reading_callback(void *_vector, int argc, char **argv, char **azColName);
+int make_json_hour_reading_callback(void *_struct, int argc, char **argv, char **azColName);
 
 
 json::value select_min_reading(string _module, string _type, string _detail, int _count);
 json::value select_hour_reading(string _module, string _type, string _detail, int _count);
 
 
-json::value select_all_time_reading(string _module, string _type);
-json::value select_one_hour_reading(string _module, string _type);
-json::value select_half_hour_reading(string _module, string _type);
+// json::value select_all_time_reading(string _module, string _type);
+// json::value select_one_hour_reading(string _module, string _type);
+// json::value select_half_hour_reading(string _module, string _type);
 
 // json::value select_all_reading(string _type); // type은 uri에 따라서 조절됨
 // json::value select_hour_reading(string _type);

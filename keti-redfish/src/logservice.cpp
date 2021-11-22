@@ -178,6 +178,83 @@ int make_json_min_reading_callback(void *_vector, int argc, char **argv, char **
     return 0;
 }
 
+int make_json_hour_reading_callback(void *_struct, int argc, char **argv, char **azColName)
+{
+    // ((Hour_Reading_Info *)_struct)  복사용
+    if(((Hour_Reading_Info *)_struct)->items.size() >= ((Hour_Reading_Info *)_struct)->max_count)
+      return 0;
+
+    json::value jv;
+    string time_val;
+    
+    for(int i=0; i<argc; i++)
+    {
+        if(argv[i] == NULL)
+          continue;
+        
+        string col = azColName[i];
+        string val = argv[i];
+        if(col == "Value")
+        {
+            jv[col] = json::value::number(stof(val));
+        }
+        else if(col == "Time")
+        {
+            if(((Hour_Reading_Info *)_struct)->cur_time == "")
+            {
+              time_val = val;
+            }
+            else
+            {
+              // 조건안맞으면 바로 리턴 , 조건 맞으면 아래 추가하고 시간 다시 구하고 ㅇㅇ
+              if(val > ((Hour_Reading_Info *)_struct)->compare_time)
+              {
+                return 0;
+              }
+              else
+                time_val = val;
+            }
+            jv[col] = json::value::string(val);
+        }
+
+    }
+
+    ((Hour_Reading_Info *)_struct)->items.push_back(jv);
+    ((Hour_Reading_Info *)_struct)->cur_time = time_val; // item에 푸시된 녀석의 Time
+    // cur_time(time_val) 가지고 1시간 이전의 시간을 구할거임
+    
+    time_t init_time;
+    struct tm *tm_cur;
+    time(&init_time);
+    tm_cur = localtime(&init_time);
+
+    // 현재시간 string -> tm
+    strptime(time_val.c_str(), "%F %T", tm_cur);
+
+    // 현재시간 tm -> time_t + 1시간 이전시간 계산
+    time_t t1 = mktime(tm_cur);
+    // cout << "t1 : " << t1 << endl;
+    t1 -= 3600;
+    // cout << "t1 re : " << t1 << endl;
+
+    // 1시간 이전시간 time_t -> tm
+    struct tm *tm_pre;
+    tm_pre = localtime(&t1);
+
+    // 1시간 이전시간 tm -> string
+    char outout[30];
+    make_time_with_tm(*tm_pre, outout);
+    string str_out(outout);
+
+    // cout << "CUR : " << time_val << endl;
+    // cout << "Hour Before : " << str_out << endl;
+
+    ((Hour_Reading_Info *)_struct)->compare_time = str_out;
+
+
+    return 0;
+}
+
 // 바뀐구조로 새로 만든 select 함수
 json::value select_min_reading(string _module, string _type, string _detail, int _count)
 {
@@ -260,13 +337,17 @@ json::value select_hour_reading(string _module, string _type, string _detail, in
         jv_reading["Type"] = json::value::string(_type);
         jv_reading["Detail"] = json::value::string(_detail);
         
-        vector<json::value> v_item;
-        sprintf(query, "SELECT * FROM Reading WHERE SensorID=\"%s\" and Module=\"%s\" order by Time DESC limit %d;"
-        , v_sensor[i].c_str(), _module.c_str(), _count);
-        sqlite3_exec(db, query, make_json_hour_reading_callback, &v_item, &err_msg);
+
+        Hour_Reading_Info reading_info;
+        reading_info.max_count = _count;
+        reading_info.cur_time = "";
+        // vector<json::value> v_item;
+        sprintf(query, "SELECT * FROM Reading WHERE SensorID=\"%s\" and Module=\"%s\" order by Time DESC;"
+        , v_sensor[i].c_str(), _module.c_str());
+        sqlite3_exec(db, query, make_json_hour_reading_callback, &reading_info, &err_msg);
 
         // item 을 jv_result에 담아주기
-        jv_reading["Items"] = json::value::array(v_item);
+        jv_reading["Items"] = json::value::array(reading_info.items);
         jv_result["Readings"][i] = jv_reading;
     }
 
@@ -281,70 +362,70 @@ json::value select_hour_reading(string _module, string _type, string _detail, in
   
 }
 
-json::value select_all_time_reading(string _module, string _type)
-{
-    sqlite3 *db;
-    char *err_msg=0;
-    char query[500] = {0};
-    int rc = sqlite3_open(LOG_DB, &db);
+// json::value select_all_time_reading(string _module, string _type)
+// {
+//     sqlite3 *db;
+//     char *err_msg=0;
+//     char query[500] = {0};
+//     int rc = sqlite3_open(LOG_DB, &db);
 
-    // #1 Reading Table에서 SensorID부터 추출,파악
-    // #2 SensorID별로 최신 10개의 로그내용 추출 근데 일단 3개만 하는걸로 할게 테스트단계니까
-    // #3 Json Format으로 만들기
+//     // #1 Reading Table에서 SensorID부터 추출,파악
+//     // #2 SensorID별로 최신 10개의 로그내용 추출 근데 일단 3개만 하는걸로 할게 테스트단계니까
+//     // #3 Json Format으로 만들기
 
-    // NEW!!!!
-    // 파라미터로는 type하고 module만 받을게 그리고 시간은 쿼리로하는게 아니라 시간계산을 하고 쿼리를 해야돼서
-    // 함수자체를 여러개 만들거임
-    // INTERSECT로 SensorID뽑은거 교집합해서 구하고
-    // SELECT * 할때 센서id만 하면 다른모듈 같은 센서id나올수있으니까 조건에 module까지는 걸어줘야할듯
+//     // NEW!!!!
+//     // 파라미터로는 type하고 module만 받을게 그리고 시간은 쿼리로하는게 아니라 시간계산을 하고 쿼리를 해야돼서
+//     // 함수자체를 여러개 만들거임
+//     // INTERSECT로 SensorID뽑은거 교집합해서 구하고
+//     // SELECT * 할때 센서id만 하면 다른모듈 같은 센서id나올수있으니까 조건에 module까지는 걸어줘야할듯
 
-    // Module Query
-    char query_module[500] = {0}, query_type[500] = {0};
-    if(_module == "all")
-    {
-      sprintf(query_module, "SELECT SensorID FROM Reading Group by SensorID");
-    }
-    else
-    {
-      sprintf(query_module, "SELECT SensorID FROM Reading WHERE Module=\"%s\" Group by SensorID", _module.c_str());
-    }
+//     // Module Query
+//     char query_module[500] = {0}, query_type[500] = {0};
+//     if(_module == "all")
+//     {
+//       sprintf(query_module, "SELECT SensorID FROM Reading Group by SensorID");
+//     }
+//     else
+//     {
+//       sprintf(query_module, "SELECT SensorID FROM Reading WHERE Module=\"%s\" Group by SensorID", _module.c_str());
+//     }
 
-    if(_type == "all")
-    {
-      sprintf(query_type, "SELECT SensorID FROM Reading Group by SensorID");
-    }
-    else
-    {
-      sprintf(query_type, "SELECT SensorID FROM Reading WHERE Type=\"%s\" Group by SensorID", _type.c_str());
-    }
+//     if(_type == "all")
+//     {
+//       sprintf(query_type, "SELECT SensorID FROM Reading Group by SensorID");
+//     }
+//     else
+//     {
+//       sprintf(query_type, "SELECT SensorID FROM Reading WHERE Type=\"%s\" Group by SensorID", _type.c_str());
+//     }
 
-    vector<string> v_sensor;
-    sprintf(query, "%s INTERSECT %s;", query_module, query_type);
-    // sprintf(query, "SELECT SensorID from Reading where Type=\"%s\" Group by SensorID;", _type.c_str());
-    sqlite3_exec(db, query, extract_column_callback, &v_sensor, &err_msg);
+//     vector<string> v_sensor;
+//     sprintf(query, "%s INTERSECT %s;", query_module, query_type);
+//     // sprintf(query, "SELECT SensorID from Reading where Type=\"%s\" Group by SensorID;", _type.c_str());
+//     sqlite3_exec(db, query, extract_column_callback, &v_sensor, &err_msg);
 
-    json::value jv_result;
-    // cout << "EXTRACT ~~~~~~~" << endl;
-    for(int i=0; i<v_sensor.size(); i++)
-    {
-        // cout << v_sensor[i] << endl;
-        vector<json::value> v_item;
-        sprintf(query, "SELECT * from Reading where SensorID=\"%s\" order by Time DESC limit 3;", v_sensor[i].c_str());
-        sqlite3_exec(db, query, make_json_reading_callback, &v_item, &err_msg);
+//     json::value jv_result;
+//     // cout << "EXTRACT ~~~~~~~" << endl;
+//     for(int i=0; i<v_sensor.size(); i++)
+//     {
+//         // cout << v_sensor[i] << endl;
+//         vector<json::value> v_item;
+//         sprintf(query, "SELECT * from Reading where SensorID=\"%s\" order by Time DESC limit 3;", v_sensor[i].c_str());
+//         sqlite3_exec(db, query, make_json_reading_callback, &v_item, &err_msg);
 
-        // item 을 jv_result에 담아주기
-        jv_result[v_sensor[i]] = json::value::array(v_item);
-    }
+//         // item 을 jv_result에 담아주기
+//         jv_result[v_sensor[i]] = json::value::array(v_item);
+//     }
 
-    // cout << " RESULT !! " << endl;
-    // cout << jv_result << endl;
-    // cout << " RESULT !! " << endl;
+//     // cout << " RESULT !! " << endl;
+//     // cout << jv_result << endl;
+//     // cout << " RESULT !! " << endl;
 
-    sqlite3_free(err_msg);
-    sqlite3_close(db);
+//     sqlite3_free(err_msg);
+//     sqlite3_close(db);
 
-    return jv_result;
-}
+//     return jv_result;
+// }
 
 
 // #오픈시스넷 임시 리딩 반환함수
@@ -714,59 +795,59 @@ json::value opensys_fan_hour()
 }
 
 
-json::value select_one_hour_reading(string _module, string _type)
-{
-    sqlite3 *db;
-    char *err_msg=0;
-    char query[500] = {0};
-    int rc = sqlite3_open(LOG_DB, &db);
+// json::value select_one_hour_reading(string _module, string _type)
+// {
+//     sqlite3 *db;
+//     char *err_msg=0;
+//     char query[500] = {0};
+//     int rc = sqlite3_open(LOG_DB, &db);
 
 
-    vector<string> v_sensor;
-    sprintf(query, "SELECT SensorID from Reading where Type=\"%s\" Group by SensorID;", _type.c_str());
-    sqlite3_exec(db, query, extract_column_callback, &v_sensor, &err_msg);
+//     vector<string> v_sensor;
+//     sprintf(query, "SELECT SensorID from Reading where Type=\"%s\" Group by SensorID;", _type.c_str());
+//     sqlite3_exec(db, query, extract_column_callback, &v_sensor, &err_msg);
 
-    time_t cur_time = time(NULL);
-    struct tm cur_tm;
-    char filter_time[30] = {0};
-    char origin_time[30] = {0};
+//     time_t cur_time = time(NULL);
+//     struct tm cur_tm;
+//     char filter_time[30] = {0};
+//     char origin_time[30] = {0};
 
-    // cur_tm = *localtime(&cur_time);
-    // make_time_with_tm(cur_tm, origin_time);
-    // cout << " CUR TIME !!!" << endl;
-    // cout << origin_time << endl;
+//     // cur_tm = *localtime(&cur_time);
+//     // make_time_with_tm(cur_tm, origin_time);
+//     // cout << " CUR TIME !!!" << endl;
+//     // cout << origin_time << endl;
 
-    cur_time -= 3600;
-    cur_tm = *localtime(&cur_time);
-    make_time_with_tm(cur_tm, filter_time);
-    // cout << " FILTER TIME !!!" << endl;
-    // cout << filter_time << endl;
+//     cur_time -= 3600;
+//     cur_tm = *localtime(&cur_time);
+//     make_time_with_tm(cur_tm, filter_time);
+//     // cout << " FILTER TIME !!!" << endl;
+//     // cout << filter_time << endl;
     
 
 
-    json::value jv_result;
-    // cout << "EXTRACT ~~~~~~~" << endl;
-    for(int i=0; i<v_sensor.size(); i++)
-    {
-        // cout << v_sensor[i] << endl;
-        vector<json::value> v_item;
-        sprintf(query, "SELECT * from Reading where SensorID=\"%s\" and Time > \"%s\" order by Time DESC;"
-        , v_sensor[i].c_str(), filter_time);
-        sqlite3_exec(db, query, make_json_reading_callback, &v_item, &err_msg);
+//     json::value jv_result;
+//     // cout << "EXTRACT ~~~~~~~" << endl;
+//     for(int i=0; i<v_sensor.size(); i++)
+//     {
+//         // cout << v_sensor[i] << endl;
+//         vector<json::value> v_item;
+//         sprintf(query, "SELECT * from Reading where SensorID=\"%s\" and Time > \"%s\" order by Time DESC;"
+//         , v_sensor[i].c_str(), filter_time);
+//         sqlite3_exec(db, query, make_json_reading_callback, &v_item, &err_msg);
 
-        // item 을 jv_result에 담아주기
-        jv_result[v_sensor[i]] = json::value::array(v_item);
-    }
+//         // item 을 jv_result에 담아주기
+//         jv_result[v_sensor[i]] = json::value::array(v_item);
+//     }
 
-    // cout << " RESULT !! " << endl;
-    // cout << jv_result << endl;
-    // cout << " RESULT !! " << endl;
+//     // cout << " RESULT !! " << endl;
+//     // cout << jv_result << endl;
+//     // cout << " RESULT !! " << endl;
 
-    sqlite3_free(err_msg);
-    sqlite3_close(db);
+//     sqlite3_free(err_msg);
+//     sqlite3_close(db);
     
-    return jv_result;
-}
+//     return jv_result;
+// }
 
 
 // Redfish

@@ -2601,7 +2601,15 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
     }
 
     string protocol;
-    if(!(get_value_from_json_key(_jv, "Protocol", protocol)))
+    if((get_value_from_json_key(_jv, "Protocol", protocol)))
+    {
+        if(!check_protocol(protocol))
+        {
+            error_reply(_msg, get_error_json("Not Supported Protocol : " + protocol), status_codes::BadRequest, _response);
+            return ;
+        }
+    }
+    else
     {
         error_reply(_msg, get_error_json("Need Protocol in Request Body"), status_codes::BadRequest, _response);
         return ;
@@ -2616,7 +2624,11 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
     if(get_value_from_json_key(_jv, "DeliveryRetryPolicy", policy))
     {
         // enum 검사
-
+        if(!check_policy(policy))
+        {
+            error_reply(_msg, get_error_json("Not Supported DeliveryRetryPolicy : " + policy), status_codes::BadRequest, _response);
+            return ;
+        }
     }
     else
         policy = "SuspendRetries";
@@ -2624,9 +2636,34 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
     if(get_value_from_json_key(_jv, "SubscriptionType", subs_type))
     {
         // enum 검사
+        if(!check_subscription_type(subs_type))
+        {
+            error_reply(_msg, get_error_json("Not Supported SubscriptionType : " + subs_type), status_codes::BadRequest, _response);
+            return ;
+        }
     }
     else
-        subs_type = "RedfishEvent";
+    {
+        error_reply(_msg, get_error_json("Need SubscriptionType in Request Body"), status_codes::BadRequest, _response);
+        return ;
+    }
+
+    json::value event_types_info;
+    vector<string> event_types;
+    if(get_value_from_json_key(_jv, "EventTypes", event_types_info))
+    {
+        for(int i=0; i<event_types_info.size(); i++)
+        {
+            string et = event_types_info[i].as_string();
+            // enum검사 후
+            if(!check_event_type(et))
+            {
+                error_reply(_msg, get_error_json("Not Supported EventType : " + et), status_codes::BadRequest, _response);
+                return ;
+            }
+            event_types.push_back(et);
+        }
+    }
     
 
 
@@ -2648,6 +2685,7 @@ void make_subscription(m_Request& _msg, json::value _jv, http_response& _respons
     event_dest->status.state = STATUS_STATE_ENABLED;
     event_dest->status.health = STATUS_HEALTH_OK;
     event_dest->name = "Event Subscription";
+    event_dest->event_types = event_types;
 
     service->subscriptions->add_member(event_dest);
 
@@ -4461,7 +4499,7 @@ bool patch_subscription(json::value _jv, string _record_uri)
 
     if(get_value_from_json_key(_jv, "DeliveryRetryPolicy", policy))
     {
-        if(policy == "RetryForever" || policy == "SuspendRetries" || policy == "TerminateAfterRetries")
+        if(check_policy(policy))
         {
             result = true;
             op_policy = true;

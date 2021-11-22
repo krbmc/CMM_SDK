@@ -1,6 +1,8 @@
 #ifndef HANDLER_H
 #define HANDLER_H
 #include "stdafx.hpp"
+#include "eventservice.hpp"
+#include "logservice.hpp"
 
 #define SERVER_CERTIFICATE_CHAIN_PATH "/conf/ssl/rootca.crt"
 #define SERVER_PRIVATE_KEY_PATH "/conf/ssl/rootca.key"

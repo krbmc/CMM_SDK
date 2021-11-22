@@ -3,7 +3,6 @@
 #include "task.hpp"
 #include "lssdp.hpp"
 #include "chassis_controller.hpp"
-#include "logservice.hpp"
 
 
 extern unordered_map<string, Resource *> g_record;
@@ -2138,11 +2137,11 @@ void reading_operation(http_request _request, http_response &_response)
 
     cout << "READING OPERATION" << endl;
     cout << "Request URI : " << uri_string << endl;
-    cout << "URI Tokens ---" << endl;
-    for(int i=0; i<uri_tokens.size(); i++)
-    {
-        cout << uri_tokens[i] << endl;
-    }
+    // cout << "URI Tokens ---" << endl;
+    // for(int i=0; i<uri_tokens.size(); i++)
+    // {
+    //     cout << uri_tokens[i] << endl;
+    // }
 
     if(uri_tokens.size() < 6)
     {
@@ -2192,14 +2191,14 @@ void reading_operation(http_request _request, http_response &_response)
     param_time_option = uri_tokens[5];
     
 
-    cout << param_module << " / " << param_type << " / " << param_detail << " / " << param_time_option << endl;
+    // cout << param_module << " / " << param_type << " / " << param_detail << " / " << param_time_option << endl;
 
     // 만들어진 param가지고 함수 호출
     json::value result_jv;
     if(param_time_option == "min")
         result_jv = select_min_reading(param_module, param_type, param_detail, 30);
     else if(param_time_option == "hour")
-        ;
+        result_jv = select_hour_reading(param_module, param_type, param_detail, 30);
     // result_jv = select_all_reading()
 
     // module 값의 uri토큰이 all 인지 특정 모듈인지에 따라서

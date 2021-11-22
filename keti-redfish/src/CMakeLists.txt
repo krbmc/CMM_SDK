@@ -23,6 +23,7 @@ set(
     lssdp.cpp
     multipart_parser.cpp
     logservice.cpp
+    eventservice.cpp
 )
 
 # Directory setting

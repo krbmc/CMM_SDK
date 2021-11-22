@@ -11,5 +11,5 @@ make
 mv src/CMM-HA .
 
 sshpass -p $password scp $file $id@$ip:$path
-echo "ssh pass good warking"
+echo "ssh pass good working"
 

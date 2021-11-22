@@ -1204,7 +1204,7 @@ class EventDestination : public Resource
         SuspendRetries : 재전송 최대 횟수를 넘으면 구독이 중지된다.
         TerminateAfterRetries : 재전송 최대 횟수를 넘으면 구독이 종료된다.
     */
-    // vector<string> event_types;
+    vector<string> event_types;
     string protocol;
     string context;
 

@@ -244,8 +244,8 @@ json::value heart_request(string _uri, string _path, json::value _jv)
     pplx::task<http_response> responseTask = client.request(methods::POST, _uri, _jv.serialize(), U("application/json"));
     http_response response = responseTask.get();
     json::value response_json = response.extract_json().get();
-    cout << "status code : " << response.status_code() << endl;
-    cout << response_json << endl;
-    cout << "!@#$ Good POST" << endl;
+    // cout << "status code : " << response.status_code() << endl;
+    // cout << response_json << endl;
+    // cout << "!@#$ Good POST" << endl;
     return response_json;
 }
