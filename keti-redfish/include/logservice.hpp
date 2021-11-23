@@ -62,13 +62,16 @@ json::value opensys_powersupply_min();
 json::value opensys_powersupply_hour();
 json::value opensys_fan_min();
 json::value opensys_fan_hour();
+json::value opensys_smartheater_min();
+json::value opensys_smartheater_hour();
 
 // 디비넣어놓고 테스트
 
 // Redfish
 
-Event_Info generate_event_info(string _event_id, string _event_type, string _msg_id, vector<string> _args);
-SEL generate_sel(unsigned int _sensor_num, string _code, string _sensor_type, string _msg, string _severity);
+// Event_Info generate_event_info(string _event_id, string _event_type, string _msg_id, vector<string> _args);
+// SEL generate_sel(unsigned int _sensor_num, string _code, string _sensor_type, string _msg, string _severity);
+// EventService 쪽으로 이동
 
 void generate_log(string _position, string _facility, Event_Info _ev);
 void generate_log(string _position, string _facility, SEL _sel);

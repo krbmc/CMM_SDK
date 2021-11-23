@@ -1,8 +1,8 @@
 #include "task.hpp"
-#include "handler.hpp"
+// #include "handler.hpp"
 
 extern unordered_map<uint8_t, Task_Manager *> task_map;
-extern unique_ptr<Handler> g_listener, HA_listener;
+// extern unique_ptr<Handler> g_listener, HA_listener;
 extern unordered_map<string, Event*> event_map;
 
 

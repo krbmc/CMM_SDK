@@ -142,6 +142,13 @@ void Handler::handle_get(http_request _request)
             //                 else if(uri_tokens[5] == "min")
             //                     open_result = opensys_fan_min();
             //             }
+            //             else if(uri_tokens[4] == "smartheater")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_smartheater_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_smartheater_min();
+            //             }
 
             //         }
 

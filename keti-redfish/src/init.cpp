@@ -1470,6 +1470,16 @@ void init_message_registry(void)
     Test.number_of_args = 0;
     mr->messages.v_msg.push_back(Test);
 
+    Message_For_Registry Create;
+
+    Create.pattern = "ResourceCreated";
+    Create.message = "Resource is Created!";
+    Create.severity = "OK";
+    Create.resolution = "None";
+    Create.description = "Resource Create Notice";
+    Create.number_of_args = 0;
+    mr->messages.v_msg.push_back(Create);
+
     // mr->messages.v_msg.push_back();
 }
 

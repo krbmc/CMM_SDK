@@ -3,7 +3,7 @@
 
 #include "stdafx.hpp"
 #include "resource.hpp"
-
+#include "eventservice.hpp"
 
 enum TASK_TYPE
 {

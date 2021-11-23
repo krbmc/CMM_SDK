@@ -794,6 +794,79 @@ json::value opensys_fan_hour()
   return j;
 }
 
+json::value opensys_smartheater_min()
+{
+  json::value j;
+  j["ModuleID"]= json::value::string("CMM1");
+  j["Readings"] = json::value::array();
+  json::value sensor1;
+  sensor1["SensorID"] = json::value::string("Sensor 1");
+  sensor1["Type"] = json::value::string("thermal");
+  sensor1["Detail"] = json::value::string("smartheater");
+  sensor1["Items"] = json::value::array();
+  json::value item1;
+  item1["Value"] = json::value::number(5.5);
+  item1["Time"] = json::value::string("2021-11-15 11:00");
+  sensor1["Items"][0]=item1;
+  json::value item2;
+  item2["Value"] = json::value::number(22.5);
+  item2["Time"] = json::value::string("2021-11-15 11:01");
+  sensor1["Items"][1] = item2;
+  j["Readings"][0] = sensor1;
+
+  json::value sensor2;
+  sensor2["SensorID"] = json::value::string("Sensor 2");
+  sensor2["Type"] = json::value::string("thermal");
+  sensor2["Detail"] = json::value::string("smartheater");
+  sensor2["Items"] = json::value::array();
+  json::value item3;
+  item3["Value"] = json::value::number(21.5);
+  item3["Time"] = json::value::string("2021-11-15 11:00");
+  sensor2["Items"][0]=item3;
+  json::value item4;
+  item4["Value"] = json::value::number(22.5);
+  item4["Time"] = json::value::string("2021-11-15 11:01");
+  sensor2["Items"][1]=item4;
+  j["Readings"][1] = sensor2;
+  return j;
+}
+json::value opensys_smartheater_hour()
+{
+  json::value j;
+  j["ModuleID"]= json::value::string("CMM1");
+  j["Readings"] = json::value::array();
+  json::value sensor1;
+  sensor1["SensorID"] = json::value::string("Sensor 1");
+  sensor1["Type"] = json::value::string("thermal");
+  sensor1["Detail"] = json::value::string("smartheater");
+  sensor1["Items"] = json::value::array();
+  json::value item1;
+  item1["Value"] = json::value::number(23.5);
+  item1["Time"] = json::value::string("2021-11-15 11:00");
+  sensor1["Items"][0]=item1;
+  json::value item2;
+  item2["Value"] = json::value::number(22.5);
+  item2["Time"] = json::value::string("2021-11-15 12:01");
+  sensor1["Items"][1] = item2;
+  j["Readings"][0] = sensor1;
+
+  json::value sensor2;
+  sensor2["SensorID"] = json::value::string("Sensor 2");
+  sensor2["Type"] = json::value::string("thermal");
+  sensor2["Detail"] = json::value::string("smartheater");
+  sensor2["Items"] = json::value::array();
+  json::value item3;
+  item3["Value"] = json::value::number(25.5);
+  item3["Time"] = json::value::string("2021-11-15 11:00");
+  sensor2["Items"][0]=item3;
+  json::value item4;
+  item4["Value"] = json::value::number(22.5);
+  item4["Time"] = json::value::string("2021-11-15 12:01");
+  sensor2["Items"][1]=item4;
+  j["Readings"][1] = sensor2;
+  return j;
+}
+
 
 // json::value select_one_hour_reading(string _module, string _type)
 // {
@@ -852,68 +925,68 @@ json::value opensys_fan_hour()
 
 // Redfish
 
-Event_Info generate_event_info(string _event_id, string _event_type, string _msg_id, vector<string> _args)
-{
-  Event_Info ev;
-  ev.event_id = _event_id;
-  ev.event_timestamp = currentDateTime();
-  ev.event_type = _event_type;
-  ev.message.id = _msg_id;
+// Event_Info generate_event_info(string _event_id, string _event_type, string _msg_id, vector<string> _args)
+// {
+//   Event_Info ev;
+//   ev.event_id = _event_id;
+//   ev.event_timestamp = currentDateTime();
+//   ev.event_type = _event_type;
+//   ev.message.id = _msg_id;
 
-  string registry_odata = ODATA_MESSAGE_REGISTRY_ID;
-  MessageRegistry *registry = (MessageRegistry *)g_record[registry_odata];
-  int flag=0;
+//   string registry_odata = ODATA_MESSAGE_REGISTRY_ID;
+//   MessageRegistry *registry = (MessageRegistry *)g_record[registry_odata];
+//   int flag=0;
 
-  for(int i=0; i<registry->messages.v_msg.size(); i++)
-  {
-    if(registry->messages.v_msg[i].pattern == _msg_id)
-    {
-      ev.message.message = registry->messages.v_msg[i].message;
-      ev.message.severity = registry->messages.v_msg[i].severity;
-      // ev.message.message_args = registry->messages.v_msg[i].message_args;
-      ev.message.resolution = registry->messages.v_msg[i].resolution;
+//   for(int i=0; i<registry->messages.v_msg.size(); i++)
+//   {
+//     if(registry->messages.v_msg[i].pattern == _msg_id)
+//     {
+//       ev.message.message = registry->messages.v_msg[i].message;
+//       ev.message.severity = registry->messages.v_msg[i].severity;
+//       // ev.message.message_args = registry->messages.v_msg[i].message_args;
+//       ev.message.resolution = registry->messages.v_msg[i].resolution;
 
-      if(registry->messages.v_msg[i].number_of_args != _args.size())
-      {
-        flag = 1;
-        break;
-      }
-      else
-        ev.message.message_args = _args;
-      flag = 2;
-      break;
-    }
-  }
+//       if(registry->messages.v_msg[i].number_of_args != _args.size())
+//       {
+//         flag = 1;
+//         break;
+//       }
+//       else
+//         ev.message.message_args = _args;
+//       flag = 2;
+//       break;
+//     }
+//   }
 
-  if(flag == 0)
-  {
-    log(warning) << "In MessageRegistry, No Information about Message ID : " << _msg_id;
-  }
-  else if(flag == 1)
-  {
-    log(warning) << "Message Args Count Incorrect";
-  }
-  // 이렇게 하고 message에서 message 내용 severity, message_args, resolution정도 있는데
-  // 이게 messageregistry에 지정된거 가지고 다 사용하는거면 id로 레지스트리 검색해서 message, severity, args
-  // resolution 가져오면 될듯?
+//   if(flag == 0)
+//   {
+//     log(warning) << "In MessageRegistry, No Information about Message ID : " << _msg_id;
+//   }
+//   else if(flag == 1)
+//   {
+//     log(warning) << "Message Args Count Incorrect";
+//   }
+//   // 이렇게 하고 message에서 message 내용 severity, message_args, resolution정도 있는데
+//   // 이게 messageregistry에 지정된거 가지고 다 사용하는거면 id로 레지스트리 검색해서 message, severity, args
+//   // resolution 가져오면 될듯?
 
-  return ev;
-}
+//   return ev;
+// }
 
-SEL generate_sel(unsigned int _sensor_num, string _code, string _sensor_type, string _msg, string _severity)
-{
-  SEL sel;
-  sel.sensor_number = _sensor_num;
-  sel.entry_code = _code;
-  sel.sensor_type = _sensor_type;
-  // sel.message.id = _msg_id;
-  sel.message.message = _msg;
-  sel.message.severity = _severity;
+// SEL generate_sel(unsigned int _sensor_num, string _code, string _sensor_type, string _msg, string _severity)
+// {
+//   SEL sel;
+//   sel.sensor_number = _sensor_num;
+//   sel.entry_code = _code;
+//   sel.sensor_type = _sensor_type;
+//   // sel.message.id = _msg_id;
+//   sel.message.message = _msg;
+//   sel.message.severity = _severity;
 
-  // sel event 정보를 따로받아야할거같은데? 메세지도 들어있고 severity라든가
+//   // sel event 정보를 따로받아야할거같은데? 메세지도 들어있고 severity라든가
 
-  return sel;
-}
+//   return sel;
+// }
 
 void generate_log(string _position, string _facility, Event_Info _ev)
 {
