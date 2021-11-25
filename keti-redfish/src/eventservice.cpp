@@ -107,11 +107,13 @@ void send_event_to_subscriber(Event_Info _ev)
 {
     string col_odata = ODATA_EVENT_DESTINATION_ID;
     Collection *col = (Collection *)g_record[col_odata];
+    cout << "Get In !" << endl;
 
     // 구독자 목록 순회
     for(int i=0; i<col->members.size(); i++)
     {
         EventDestination *ed = (EventDestination *)(col->members[i]);
+        cout << " Current Subscriber Context : " << ed->context << endl;
 
         // #1 구독 state 유효한지 검사
         if(ed->status.state != "Enabled")
@@ -121,20 +123,22 @@ void send_event_to_subscriber(Event_Info _ev)
         if(!event_type_exist(ed->event_types, _ev.event_type))
             continue;
 
+        Event event;
+        event.events.push_back(_ev);
         if(ed->protocol == "Redfish")
         {
             // HTTP로 전송
             // 폼을 만들고 전송할 json폼 그다음에 해당 uri에 보내보내
-            Event event;
-            event.events.push_back(_ev);
             shoot_redfish(ed->destination, event.get_json());
         }
         else if(ed->protocol == "SMTP")
         {
             // SMTP로 전송
+            shoot_smtp(ed->destination, event.get_json());
         }
 
     }
+    cout << "Get Out !" << endl;
 
 }
 
@@ -164,4 +168,22 @@ void shoot_redfish(string _destination, json::value _form)
     catch(const std::exception& e){
         std::cerr << e.what() << '\n';
     }
+}
+
+void shoot_smtp(string _destination, json::value _form)
+{
+    if(fs::exists("/redfish/v1/EventService/message.txt"))
+    {
+        fs::path msg_text("/redfish/v1/EventService/message.txt");
+        fs::remove(msg_text);
+    }
+
+    ofstream msg_text("/redfish/v1/EventService/message.txt");
+    msg_text << "To: " << _destination << endl;
+    msg_text << "Subject: Event Occur!" << endl;
+    msg_text << endl;
+    msg_text << _form.serialize() << endl;
+
+    system("msmtp -a default -t < /redfish/v1/EventService/message.txt");
+    log(info) << "[SMTP] Send Mail To " << _destination << " Successfully";
 }

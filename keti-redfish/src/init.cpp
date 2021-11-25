@@ -1480,6 +1480,17 @@ void init_message_registry(void)
     Create.number_of_args = 0;
     mr->messages.v_msg.push_back(Create);
 
+    Message_For_Registry StatusChange;
+
+    StatusChange.pattern = "StatusChangeCritical";
+    StatusChange.message = "Status has changed to Critical at Resource. See message_args for information about Resource location";
+    StatusChange.severity = "Critical";
+    StatusChange.resolution = "Resource Location is in the message_args";
+    StatusChange.description = "Indicate Status Change to Critical";
+    StatusChange.number_of_args = 1;
+    StatusChange.param_types.push_back("string");
+    mr->messages.v_msg.push_back(StatusChange);
+
     // mr->messages.v_msg.push_back();
 }
 

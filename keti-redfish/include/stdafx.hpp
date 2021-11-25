@@ -53,6 +53,8 @@
 #define DEFAULT_HTTP_PORT 80
 #define DEFAULT_VIRTUAL_MEDIA_PORT 3900
 #define DEFAULT_SSH_PORT 22
+#define DEFAULT_LDAP_PORT 636
+#define DEFAULT_AD_PORT 389
 
 // default conf file path define
 #define DHCPV4_CONF "/etc/dhcp/dhcpd.conf"

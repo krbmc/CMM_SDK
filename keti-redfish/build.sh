@@ -12,7 +12,7 @@ ssh-keygen -f "/root/.ssh/known_hosts" -R "$ip"
 ssh-keyscan -t rsa $ip >>~/.ssh/known_hosts
 
 cmake CMakeLists.txt
-make
+make -j 60
 # mv src/reboot .
 mv src/keti-redfish .
 # mv src/keti-redfish1024 .

@@ -21,5 +21,6 @@ void send_event_to_subscriber(SEL _sel);
 
 bool event_type_exist(vector<string> _vector, string _type);
 void shoot_redfish(string _destination, json::value _form);
+void shoot_smtp(string _destination, json::value _form);
 
 #endif

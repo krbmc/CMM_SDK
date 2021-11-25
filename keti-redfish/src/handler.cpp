@@ -87,93 +87,93 @@ void Handler::handle_get(http_request _request)
 
             // #오픈시스넷 로그 디비 샘플 처리함수
             // /log/reading/CMM/type/detail/time
-            // if(uri_tokens[0] == "log")
-            // {
-            //     if(uri_tokens.size() < 6)
-            //     {
-            //         response.set_status_code(status_codes::BadRequest);
-            //         _request.reply(response);
-            //         // _request.reply(status_codes::BadRequest);
-            //         return ;
-            //     }
-
-            //     json::value open_result;
-
-            //     if(uri_tokens[1] == "reading" && uri_tokens[2] == "CMM1")
-            //     {
-            //         if(uri_tokens[3] == "power")
-            //         {
-            //             if(uri_tokens[4] == "powercontrol")
-            //             {
-            //                 if(uri_tokens[5] == "hour")
-            //                     open_result = opensys_powercontrol_hour();
-            //                 else if(uri_tokens[5] == "min")
-            //                     open_result = opensys_powercontrol_min();
-            //             }
-            //             else if(uri_tokens[4] == "powervoltage")
-            //             {
-            //                 if(uri_tokens[5] == "hour")
-            //                     open_result = opensys_powervoltage_hour();
-            //                 else if(uri_tokens[5] == "min")
-            //                     open_result = opensys_powervoltage_min();
-            //             }
-            //             else if(uri_tokens[4] == "powersupply")
-            //             {
-            //                 if(uri_tokens[5] == "hour")
-            //                     open_result = opensys_powersupply_hour();
-            //                 else if(uri_tokens[5] == "min")
-            //                     open_result = opensys_powersupply_min();
-            //             }
-
-            //         }
-            //         else if(uri_tokens[3] == "thermal")
-            //         {
-            //             if(uri_tokens[4] == "temperature")
-            //             {
-            //                 if(uri_tokens[5] == "hour")
-            //                     open_result = opensys_thermal_hour();
-            //                 else if(uri_tokens[5] == "min")
-            //                     open_result = opensys_thermal_min();
-            //             }
-            //             else if(uri_tokens[4] == "fan")
-            //             {
-            //                 if(uri_tokens[5] == "hour")
-            //                     open_result = opensys_fan_hour();
-            //                 else if(uri_tokens[5] == "min")
-            //                     open_result = opensys_fan_min();
-            //             }
-            //             else if(uri_tokens[4] == "smartheater")
-            //             {
-            //                 if(uri_tokens[5] == "hour")
-            //                     open_result = opensys_smartheater_hour();
-            //                 else if(uri_tokens[5] == "min")
-            //                     open_result = opensys_smartheater_min();
-            //             }
-
-            //         }
-
-            //         response.set_status_code(status_codes::OK);
-            //         response.set_body(open_result);
-            //         _request.reply(response);
-            //         // _request.reply(status_codes::OK, open_result);
-            //         return ;
-            //     }
-            //     else
-            //     {
-            //         response.set_status_code(status_codes::BadRequest);
-            //         _request.reply(response);
-            //         // _request.reply(status_codes::BadRequest);
-            //         return ;
-            //     }
-
-            // }
-
             if(uri_tokens[0] == "log")
             {
-                // /log/~ uri를 처리하는 함수
-                log_operation(_request);
-                return ;
+                if(uri_tokens.size() < 6)
+                {
+                    response.set_status_code(status_codes::BadRequest);
+                    _request.reply(response);
+                    // _request.reply(status_codes::BadRequest);
+                    return ;
+                }
+
+                json::value open_result;
+
+                if(uri_tokens[1] == "reading" && uri_tokens[2] == "CMM1")
+                {
+                    if(uri_tokens[3] == "power")
+                    {
+                        if(uri_tokens[4] == "powercontrol")
+                        {
+                            if(uri_tokens[5] == "hour")
+                                open_result = opensys_powercontrol_hour();
+                            else if(uri_tokens[5] == "min")
+                                open_result = opensys_powercontrol_min();
+                        }
+                        else if(uri_tokens[4] == "powervoltage")
+                        {
+                            if(uri_tokens[5] == "hour")
+                                open_result = opensys_powervoltage_hour();
+                            else if(uri_tokens[5] == "min")
+                                open_result = opensys_powervoltage_min();
+                        }
+                        else if(uri_tokens[4] == "powersupply")
+                        {
+                            if(uri_tokens[5] == "hour")
+                                open_result = opensys_powersupply_hour();
+                            else if(uri_tokens[5] == "min")
+                                open_result = opensys_powersupply_min();
+                        }
+
+                    }
+                    else if(uri_tokens[3] == "thermal")
+                    {
+                        if(uri_tokens[4] == "temperature")
+                        {
+                            if(uri_tokens[5] == "hour")
+                                open_result = opensys_thermal_hour();
+                            else if(uri_tokens[5] == "min")
+                                open_result = opensys_thermal_min();
+                        }
+                        else if(uri_tokens[4] == "fan")
+                        {
+                            if(uri_tokens[5] == "hour")
+                                open_result = opensys_fan_hour();
+                            else if(uri_tokens[5] == "min")
+                                open_result = opensys_fan_min();
+                        }
+                        else if(uri_tokens[4] == "smartheater")
+                        {
+                            if(uri_tokens[5] == "hour")
+                                open_result = opensys_smartheater_hour();
+                            else if(uri_tokens[5] == "min")
+                                open_result = opensys_smartheater_min();
+                        }
+
+                    }
+
+                    response.set_status_code(status_codes::OK);
+                    response.set_body(open_result);
+                    _request.reply(response);
+                    // _request.reply(status_codes::OK, open_result);
+                    return ;
+                }
+                else
+                {
+                    response.set_status_code(status_codes::BadRequest);
+                    _request.reply(response);
+                    // _request.reply(status_codes::BadRequest);
+                    return ;
+                }
+
             }
+
+            // if(uri_tokens[0] == "log")
+            // {
+            //     // /log/~ uri를 처리하는 함수
+            //     log_operation(_request);
+            //     return ;
+            // }
 
             // #오픈시스넷 /CMMHA 임시 처리부
             if(uri_tokens[0] == "CMMHA")
@@ -917,6 +917,38 @@ void Handler::handle_post(http_request _request)
 
     try
     {
+        // 하이픈 동작 확인
+        if(uri_tokens.size() == 1 && uri_tokens[0] == "CM1-REST")
+        {
+            // json::value j;
+            // j["Content"] = json::value::string(uri_tokens[0]);
+            // response.set_status_code(status_codes::OK);
+            // response.set_body(j);
+            // _request.reply(response);
+            http_response rrr;
+            rrr.headers().add("Access-Control-Allow-Origin", "*");
+            rrr.headers().add("Access-Control-Allow-Credentials", "true");
+            rrr.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+            rrr.headers().add("Access-Control-Max-Age", "3600");
+            rrr.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+            rrr.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
+            // auto in_filestream = concurrency::streams::fstream::open_istream("/redfish/v1.json").get();
+            auto in_filestream = concurrency::streams::fstream::open_istream("/redfish_directory.tar").get();
+            // auto in_filestream = concurrency::streams::fstream::open_istream("/root/test.png").get();
+            // 얘는 basic_istream(istream)
+            // concurrency::streams::basic_istream<unsigned char> istream = in_filestream;
+            // auto out_filestream = concurrency::streams::fstream::open_ostream
+            // concurrency::streams::streambuf stream;
+            // in_filestream.read_to_end(stream)
+            rrr.set_body(in_filestream);//, _XPLATSTR("application/octet-stream"));
+            rrr.set_status_code(status_codes::OK);
+            // rrr.headers().set_content_type("image/png");
+            rrr.headers().set_content_type("application/x-tar");
+            // 파일전송 사용할때 나중에 파일 유형에따라서 content-type 다르게 해줘야함
+            _request.reply(rrr);
+            return ;
+        }
         // ftft
         if(uri_tokens.size() == 1 && uri_tokens[0] == "ftft")
         {
@@ -924,19 +956,19 @@ void Handler::handle_post(http_request _request)
             // auto fileStream = std::make_shared<Concurrency::streams::ostream >();
             // //저장할 파일 이름 생성
             //pplx::task<void> fileStream=Concurrency::streams::fstream::open_ostream("filename", std::ios_base::in | std::ios_base::out |std::ios::binary).get();
-            string filepath="filesavetest.txt";
-            // string header = _request.headers()["Content-Type"];
-            // cout << "HEADER : " << header << endl;
-            // string boundary = header.substr(header.find("boundary=")+9, header.find("\r")-(header.find("boundary=")+9));
-            // cout << "BOUNDARY : " << boundary << endl;
+            string filepath="filesavetest.txt"; // @@@
+            string header = _request.headers()["Content-Type"];
+            cout << "HEADER : " << header << endl;
+            string boundary = header.substr(header.find("boundary=")+9, header.find("\r")-(header.find("boundary=")+9));
+            cout << "BOUNDARY : " << boundary << endl;
 
-            auto bodyStream = _request.body();
-            auto fileStream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(filepath), std::ios::out | std::ios::binary).get();
-            fileStream.flush();
+            auto bodyStream = _request.body(); // @@@
+            // auto fileStream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(filepath), std::ios::out | std::ios::binary).get(); // @@@
+            // fileStream.flush(); // @@@
             // cout << "ASDFASDF : " << endl << bodyStream.extract().get() << endl;
             // auto my_stream = concurrency::streams::streambuf()
-            bodyStream.read_to_end(fileStream.streambuf()).wait();
-            fileStream.close().wait();
+            // bodyStream.read_to_end(fileStream.streambuf()).wait(); // @@@
+            // fileStream.close().wait(); // @@@
             // //request 생성w
             // .then([=](ostream outFile)){
             //     *fileStream=outFile;
@@ -977,11 +1009,11 @@ void Handler::handle_post(http_request _request)
             // auto data = _request.body().streambuf();
             
             
-            // // auto data = _request.content_ready().get().extract_vector().get();
-            // string pp = {data.begin(), data.end()};
-            // cout << "!@#$" << endl;
-            // cout << pp << endl;
-            // cout << "!@#$" << endl;
+            auto data = _request.content_ready().get().extract_vector().get(); // vector<unsigned char>
+            string pp = {data.begin(), data.end()};
+            cout << "!@#$" << endl;
+            cout << pp << endl;
+            cout << "!@#$" << endl;
 
             // istringstream iss(pp);
             // string header = _request.headers()["Content-Type"];

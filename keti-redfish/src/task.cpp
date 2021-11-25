@@ -126,9 +126,8 @@ void do_task_cmm_get(http_request _request)
             ldap["AccountProviderType"] = json::value::string("LDAPService");
             ldap["PasswordSet"] = json::value::boolean(true);
             ldap["ServiceEnabled"] = json::value::boolean(true);
-            ldap["ServiceAddresses"] = json::value::array();
-            ldap["ServiceAddresses"][0] = json::value::string("ldaps://ldap.example.org:636");
-            // ServiceAddress 빠짐
+            ldap["ServiceAddresses"] = json::value::string("ldaps://ldap.example.org:636");
+            ldap["Port"] = json::value::number(DEFAULT_LDAP_PORT);
             
             json::value auth;
             auth["AuthenticationType"] = json::value::string("UsernameAndPassword");
@@ -139,8 +138,9 @@ void do_task_cmm_get(http_request _request)
             json::value service, setting;
             setting["BaseDistinguishedNames"] = json::value::string("dc=example,dc=org");
             setting["GroupsAttribute"] = json::value::string("memberof");
+            setting["GroupNameAttribute"] = json::value::string("");
             setting["UsernameAttribute"] = json::value::string("uid");
-            // GroupNameAttribute 빠짐
+
             service["SearchSettings"] = setting;
             ldap["LDAPService"] = service;
 
@@ -149,20 +149,15 @@ void do_task_cmm_get(http_request _request)
             json::value ad;
             ad["AccountProviderType"] = json::value::string("ActiveDirectoryService");
             ad["ServiceEnabled"] = json::value::boolean(true);
-            ad["ServiceAddresses"] = json::value::array();
-            ad["ServiceAddresses"][0] = json::value::string("ad1.example.org");
-            ad["ServiceAddresses"][1] = json::value::string("ad2.example.org");
-            ad["ServiceAddresses"][2] = json::value::null();
-            ad["ServiceAddresses"][3] = json::value::null();
+            ad["ServiceAddresses"] = json::value::string("ad1.example.org");
+            ad["Port"] = json::value::number(DEFAULT_AD_PORT);
 
             json::value auth2;
-            auth2["AuthenticationType"] = json::value::string("Token");
-            // Token 빠짐
-            auth2["Token"] = json::value::string("");
+            auth2["AuthenticationType"] = json::value::string("UsernameAndPassword");
+            auth2["Username"] = json::value::string("KETI");
             ad["Authentication"] = auth2;
 
             jj["ActiveDirectory"] = ad;
-
         }
         
 
@@ -1820,17 +1815,37 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
     cout << "Resource : " << resource_uri << endl;
     cout << "Action : " << action_uri << endl;
 
-    if(!record_is_exist(resource_uri))
-    {
-        error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
-        return ;
-    }
-
     string action_by, action_what;
     action_by = get_parent_object_uri(action_uri, ".");
     action_what = get_current_object_name(action_uri, ".");
     cout << "By : " << action_by << endl;
     cout << "What : " << action_what << endl;
+
+
+    if(!record_is_exist(resource_uri))
+    {
+        // #오픈시스넷 Update액션들 리소스 없는거 예외처리
+        if(action_by == "UpdateService")
+        {
+            string obj = get_current_object_name(resource_uri, "/");
+            if(obj == "CMM1" || obj == "CM1" || obj == "CM1-REST" || obj == "CM1-IPMI" || obj == "CM1-READING")
+            {
+                ;
+            }
+            else
+            {
+                error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
+                return ;
+
+            }
+        }
+        else
+        {
+            error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
+            return ;
+            // 원래 이프문 안에 얘네 두 줄만 본체임
+        }
+    }
 
     if(action_by == "Bios")
     {
@@ -2209,11 +2224,33 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
     // }
     
     // #오픈시스넷 임시 status반환코드
-    if(_what == "ResourceBackUp" || _what == "ResourceRestore")
+    if(_what == "ResourceBackUp")
+    {
+        string path_redfish = "/redfish";
+        char tar_buf[100];
+        sprintf(tar_buf, "tar -cvf /redfish_backup.tar %s", path_redfish.c_str());
+        system(tar_buf);
+        auto filestream = concurrency::streams::fstream::open_istream("/redfish_backup.tar").get();
+        
+
+        _response.set_body(filestream);
+        _response.headers().set_content_type("application/x-tar");
+        success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        return ;
+    }
+
+    if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate" || _what == "ResourceRestore")
     {
         success_reply(_msg, json::value::null(), status_codes::OK, _response);
         return ;
     }
+    else
+    {
+        error_reply(_msg, get_error_json("Wrong Update Action"), status_codes::BadRequest, _response);
+        return ;
+    }
+
+
     
 }
 
@@ -4572,9 +4609,8 @@ void success_reply(m_Request& _msg, json::value _jv, status_code _status, http_r
         ldap["AccountProviderType"] = json::value::string("LDAPService");
         ldap["PasswordSet"] = json::value::boolean(true);
         ldap["ServiceEnabled"] = json::value::boolean(true);
-        ldap["ServiceAddresses"] = json::value::array();
-        ldap["ServiceAddresses"][0] = json::value::string("ldaps://ldap.example.org:636");
-        // ServiceAddress 빠짐
+        ldap["ServiceAddresses"] = json::value::string("ldaps://ldap.example.org:636");
+        ldap["Port"] = json::value::number(DEFAULT_LDAP_PORT);
         
         json::value auth;
         auth["AuthenticationType"] = json::value::string("UsernameAndPassword");
@@ -4585,8 +4621,9 @@ void success_reply(m_Request& _msg, json::value _jv, status_code _status, http_r
         json::value service, setting;
         setting["BaseDistinguishedNames"] = json::value::string("dc=example,dc=org");
         setting["GroupsAttribute"] = json::value::string("memberof");
+        setting["GroupNameAttribute"] = json::value::string("");
         setting["UsernameAttribute"] = json::value::string("uid");
-        // GroupNameAttribute 빠짐
+
         service["SearchSettings"] = setting;
         ldap["LDAPService"] = service;
 
@@ -4595,16 +4632,12 @@ void success_reply(m_Request& _msg, json::value _jv, status_code _status, http_r
         json::value ad;
         ad["AccountProviderType"] = json::value::string("ActiveDirectoryService");
         ad["ServiceEnabled"] = json::value::boolean(true);
-        ad["ServiceAddresses"] = json::value::array();
-        ad["ServiceAddresses"][0] = json::value::string("ad1.example.org");
-        ad["ServiceAddresses"][1] = json::value::string("ad2.example.org");
-        ad["ServiceAddresses"][2] = json::value::null();
-        ad["ServiceAddresses"][3] = json::value::null();
+        ad["ServiceAddresses"] = json::value::string("ad1.example.org");
+        ad["Port"] = json::value::number(DEFAULT_AD_PORT);
 
         json::value auth2;
-        auth2["AuthenticationType"] = json::value::string("Token");
-        // Token 빠짐
-        auth2["Token"] = json::value::string("");
+        auth2["AuthenticationType"] = json::value::string("UsernameAndPassword");
+        auth2["Username"] = json::value::string("KETI");
         ad["Authentication"] = auth2;
 
         _jv["ActiveDirectory"] = ad;

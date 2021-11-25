@@ -40,11 +40,11 @@ public:
             obj[U("Enabled")] = json::value::boolean(true);
             obj[U("Origin")]= json::value::boolean(true);
             returnobj = heart_request("/CMM_HA", uri, obj);
-            log(info)<<"Primary CMM_SDK 전송";
+            log(info) << "Primary REST INIT Complete";
         }
         catch (...)
         {
-            log(info) << "PeerPrimary rest Init error";
+            log(info) << "Primary REST INIT Fail";
         }
 
         uri = "http://";
@@ -59,11 +59,11 @@ public:
             obj[U("Enabled")] = json::value::boolean(false);
             obj[U("Origin")]= json::value::boolean(false);
             returnobj = heart_request("/CMM_HA", uri, obj);
-            log(info)<<"Second CMM_SDK 전송";
+            log(info) << "Secondary REST INIT Complete";
         }
         catch (...)
         {
-            log(info) << "PeerSecondary rest Init error";
+            log(info) << "Secondary REST INIT Fail";
         }
     }
 
