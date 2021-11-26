@@ -118,14 +118,14 @@ int main(int _argc, char *_argv[])
     // generate_test();
 
     // shoot ev test
-    vector<string> args;
-    Event_Info ev;
+    // vector<string> args;
+    // Event_Info ev;
     // ev = generate_event_info("Event ID", "ResourceAdded", "ResourceCreated", args);
     // send_event_to_subscriber(ev);
 
-    args.push_back("/redfish/v1/Chassis/CMM1");
-    ev = generate_event_info("Event ID 2", "StatusChange", "StatusChangeCritical", args);
-    send_event_to_subscriber(ev);
+    // args.push_back("/redfish/v1/Chassis/CMM1");
+    // ev = generate_event_info("Event ID 2", "StatusChange", "StatusChangeCritical", args);
+    // send_event_to_subscriber(ev);
     
     
 
