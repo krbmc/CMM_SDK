@@ -158,7 +158,6 @@ void do_task_cmm_get(http_request _request)
             ad["Authentication"] = auth2;
 
             jj["ActiveDirectory"] = ad;
-
         }
         
 

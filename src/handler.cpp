@@ -917,7 +917,6 @@ void Handler::handle_post(http_request _request)
 
     try
     {
-
         // 하이픈 동작 확인
         if(uri_tokens.size() == 1 && uri_tokens[0] == "CM1-REST")
         {
