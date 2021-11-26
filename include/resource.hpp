@@ -1187,6 +1187,9 @@ class SEL
     unsigned int sensor_number;
     string entry_code;
     string sensor_type;
+    // string event_timestamp; 추가될듯
+    // string event_type; 도 추가될듯
+
 
     Message message;
 };
