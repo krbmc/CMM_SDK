@@ -835,6 +835,21 @@ json::value Event::get_json(void)
     return j;
 }
 
+json::value SEL::get_json(void)
+{
+    json::value j;
+
+    j = this->message.get_json();
+    j["SensorNumber"] = json::value::number(this->sensor_number);
+    j["SensorType"] = json::value::string(this->sensor_type);
+    j["EntryCode"] = json::value::string(this->entry_code);
+    j["EventTimestamp"] = json::value::string(this->event_timestamp);
+    j["EventType"] = json::value::string(this->event_type);
+
+    return j;
+
+}
+
 bool event_is_exist(const string _uri)
 {
     if (event_map.find(_uri) != event_map.end())
@@ -4232,7 +4247,8 @@ const std::string currentDateTime(void)
     struct tm  tstruct;
     char       buf[80];
     tstruct = *localtime(&now);
-    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+    // strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+    strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
 
     return buf;
 }

@@ -6,7 +6,8 @@
 #include "eventservice.hpp"
 #include <sqlite3.h>
 
-#define LOG_DB "/conf/database/log.db"
+// #define LOG_DB "/conf/database/log.db"
+#define LOG_DB "/redfish/log.db"
 
 typedef struct _Hour_Reading_Info
 {

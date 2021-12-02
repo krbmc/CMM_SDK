@@ -117,15 +117,24 @@ int main(int _argc, char *_argv[])
    
     // generate_test();
 
-    // shoot ev test
+    // shoot event/log test ev, sel...
     // vector<string> args;
     // Event_Info ev;
     // ev = generate_event_info("Event ID", "ResourceAdded", "ResourceCreated", args);
     // send_event_to_subscriber(ev);
+    // generate_log("Chassis", "Facility 1", ev);
 
     // args.push_back("/redfish/v1/Chassis/CMM1");
     // ev = generate_event_info("Event ID 2", "StatusChange", "StatusChangeCritical", args);
     // send_event_to_subscriber(ev);
+    // generate_log("System", "Facility 5", ev);
+
+    // SEL sel;
+    // sel = generate_sel(10, "Lower Critical - going high", "temperature",
+    // "The reading crossed the Lower Critical threshold while going high", "Criticial",
+    // "2021-11-26 15:00:00", "Alert");
+    // send_event_to_subscriber(sel);
+    // generate_log("Chassis", "Facility 1", sel);
     
     
 

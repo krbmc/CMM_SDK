@@ -165,7 +165,7 @@ const std::string currentDateTime();
 #define CMM_ID "CMM1"
 // #define CMM_ID "1"
 // #define CMM_ADDRESS "10.0.6.107"
-#define CMM_ADDRESS "http://10.0.6.107:8000"
+#define CMM_ADDRESS "http://10.0.6.106:443"
 // #define CMM_ADDRESS "https://10.0.6.107:443"
 
 /**
@@ -1187,11 +1187,12 @@ class SEL
     unsigned int sensor_number;
     string entry_code;
     string sensor_type;
-    // string event_timestamp; 추가될듯
-    // string event_type; 도 추가될듯
-
-
+    string event_timestamp;
+    string event_type;
+  
     Message message;
+
+    json::value get_json(void);
 };
 
 class EventDestination : public Resource

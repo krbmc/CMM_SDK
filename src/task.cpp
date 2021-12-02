@@ -231,7 +231,6 @@ void do_task_cmm_get(http_request _request)
 
 
 
-
     // Response Json of Resource to Client
     cout << record_get_json(uri) << endl;
     cout << "*************************     Out CMM GET    *******************" << endl;

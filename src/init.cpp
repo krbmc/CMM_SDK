@@ -181,7 +181,10 @@ void init_system(Collection *system_collection, string _id)
         system->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         system->ethernet->name = "Computer System Ethernet Interface Collection";
     
-        int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        // int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        // int eth_num = stoi(get_popen_string("ifconfig -a | grep eth | wc -l"));
+        //#임시eth
+        int eth_num = 1;
         for (int i = 0; i < eth_num; i++){
             init_ethernet(system->ethernet, to_string(i));
         }
@@ -456,7 +459,9 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     /**
      * Ethernet Interface Configuration
      */
-    string eth_id = "eth" + _id;
+    // string eth_id = "eth" + _id;
+    //#임시eth
+    string eth_id = "eth1";
     ethernet->description = "Manager Ethernet Interface";
     ethernet->link_status = "LinkDown";
     if (get_popen_string("cat /sys/class/net/" + eth_id + "/operstate") == "up")
@@ -467,6 +472,7 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     ethernet->speed_Mbps = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/speed"));
     ethernet->autoneg = true; // it can be set false. but not recommended. it sets speed and duplex automatically
     ethernet->full_duplex = false;
+
     if (get_popen_string("cat /sys/class/net/" + eth_id + "/duplex") == "full")
         ethernet->full_duplex = true;
     ethernet->mtu_size = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/mtu"));
@@ -474,11 +480,44 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     ethernet->fqdn = get_popen_string("hostname -f");
     ethernet->ipv6_default_gateway = string_split(string_split(get_popen_string("ip -6 route | head -1"), ' ')[0], '/')[0];
     ethernet->interfaceEnabled = (ethernet->link_status == "LinkUp") ? true : false;
-    
-    vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
-    for (string servers : nameservers){
-        ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
+
+    //#임시eth
+    ifstream resolv_in("/etc/resolv.conf");
+    stringstream resolv_stream;
+    resolv_stream << resolv_in.rdbuf();
+
+    // cout << "CAT >>> " << endl;
+    char line[100];
+    while(resolv_stream.getline(line, sizeof(line)))
+    {
+        // cout << line << endl;
+        string str_line = line;
+        if(str_line[0] == '#')
+            continue;
+
+        string nameserver = string_split(str_line, ' ')[1];
+        ethernet->name_servers.push_back(nameserver);
     }
+        
+    resolv_in.close();
+
+    if(ethernet->name_servers.size() < 4)
+    {
+        if(ethernet->name_servers.size() == 1)
+        {
+            ethernet->name_servers.push_back("0.0.0.0");
+            ethernet->name_servers.push_back("::");
+            ethernet->name_servers.push_back("::");
+        }
+    }
+
+    // vector<string> nameservers = string_split(get_popen_string("cat /etc/resolv.conf"), '\n');
+    // for (string servers : nameservers){
+    //     // string eng = string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1];
+    //     // cout << "servers : " << servers << endl;
+    //     // cout << "Eng : " << eng << endl;
+    //     // ethernet->name_servers.push_back(string_split(get_popen_string("cat /etc/resolv.conf"), ' ')[1]);
+    // }
     
     // !!!!!!!!!!!!!!!!!!! ppt용 init !!!!!!!!!!!!!!!!!!!!!
     ethernet->dhcp_v4.dhcp_enabled = true;
@@ -502,7 +541,9 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     }
 
     if (ethernet->link_status == "LinkUp"){
-        int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth0 | wc -l"));
+        // int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth0 | wc -l"));
+        //#임시eth
+        int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth1 | wc -l"));
         
         for (int i = 0; i < ipv4_num; i++){
             string ipv4_alias = eth_id;
@@ -510,16 +551,22 @@ void init_ethernet(Collection *ethernet_collection, string _id)
                 ipv4_alias += ":" + i;
     
             IPv4_Address ipv4;
-            ipv4.address = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "inet addr");
+            //#임시eth
+            ipv4.address = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"netmask\"", "inet");
+            // ipv4.address = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "inet addr");
             ipv4.address_origin = get_value_from_cmd_str("cat /etc/network/interfaces | grep \"iface " + ipv4_alias + "\"", "inet");
-            ipv4.subnet_mask = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "Mask");
+            ipv4.subnet_mask = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"netmask\"", "netmask");
+            // ipv4.subnet_mask = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet addr\"", "Mask");
             ipv4.gateway = string_split(get_popen_string("ip r | grep default"), ' ')[2];
             ethernet->v_ipv4.push_back(ipv4);
     
             IPv6_Address ipv6;
-            string ipv6_temp = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet6 addr\"", "inet6 addr");
+            //#임시eth
+            string ipv6_temp = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet6\"", "inet6");
+            // string ipv6_temp = get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet6 addr\"", "inet6 addr");
             ipv6.address = string_split(ipv6_temp, '/')[0];
-            ipv6.prefix_length = stoi(string_split(ipv6_temp, '/')[1]);
+            ipv6.prefix_length = stoi(get_value_from_cmd_str("ifconfig " + ipv4_alias + " | grep \"inet6\"", "prefixlen"));
+            // ipv6.prefix_length = stoi(string_split(ipv6_temp, '/')[1]);
             // ipv6.address_origin = 
             // ipv6.address_state
             ethernet->v_ipv6.push_back(ipv6);
@@ -681,12 +728,10 @@ void init_chassis(Collection *chassis_collection, string _id)
     chassis->part_number = "";
     chassis->asset_tag = "";
     chassis->power_state = POWER_STATE_ON;
-     cout<<"step 0"<<endl;
     chassis->indicator_led = LED_OFF;
     //chassis->led_off(LED_YELLOW);
     //chassis->led_off(LED_RED);
     //chassis->led_blinking(LED_GREEN);
-     cout<<"step 1.1"<<endl;
     chassis->status.state = STATUS_STATE_ENABLED;
     chassis->status.health = STATUS_HEALTH_OK;
     
@@ -702,21 +747,18 @@ void init_chassis(Collection *chassis_collection, string _id)
     chassis->location.placement.rack = "";
     chassis->location.placement.rack_offset_units = "";
     chassis->location.placement.rack_offset = 0;
-     cout<<"step 1"<<endl;
     if (!record_is_exist(odata_id + "/Sensors")){
         chassis->sensors = new Collection(odata_id + "/Sensors", ODATA_SENSOR_COLLECTION_TYPE);
         chassis->sensors->name = "Computer Sensor Collection";
     
         init_sensor(chassis->sensors, "CabinetTemp");
     }
-     cout<<"step 2"<<endl;
     if (!record_is_exist(odata_id + "/Thermal")){
         chassis->thermal = new Thermal(odata_id + "/Thermal");
         chassis->thermal->name = "CMM Chassis Thermal";
 
         init_thermal(chassis->thermal);
     }
-     cout<<"step 3"<<endl;
     if (!record_is_exist(odata_id + "/Storage")){
         chassis->storage = new Collection(odata_id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
         chassis->storage->name = "Chassis Storage Collection";
@@ -729,21 +771,18 @@ void init_chassis(Collection *chassis_collection, string _id)
     //     chassis->storage->id = "/Storage";
     //     init_storage(chassis->storage);
     // }
-     cout<<"step 4"<<endl;
     if (!record_is_exist(odata_id + "/Power")){
         chassis->power = new Power(odata_id + "/Power");
         chassis->power->name = "CMM Chassis Power";        
         
         init_power(chassis->power);
     }
-     cout<<"step 5"<<endl;
     if (!record_is_exist(odata_id + "/LogServices")){
         chassis->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
         chassis->log_service->name = "Chassis Log Service Collection";
     
         init_log_service(chassis->log_service, "Log1");
     }
-     cout<<"step 6"<<endl;
     chassis_collection->add_member(chassis);
     return;
 }
@@ -1032,7 +1071,9 @@ void init_manager(Collection *manager_collection, string _id)
         manager->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         manager->ethernet->name = "Manager Ethernet Interface Collection";
 
-        int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        // int eth_num = stoi(get_popen_string("ifconfig -a | grep HWaddr | wc -l"));
+        // int eth_num = stoi(get_popen_string("ifconfig -a | grep eth | wc -l"));
+        int eth_num = 1;
         for (int i = 0; i < eth_num; i++){
             init_ethernet(manager->ethernet, to_string(i));
         }

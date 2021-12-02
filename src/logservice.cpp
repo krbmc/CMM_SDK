@@ -1199,5 +1199,8 @@ LogEntry* make_log(string odata_id, string id, SEL sel)
     le->sensor_type = sel.sensor_type;
     le->entry_code = sel.entry_code;
 
+    le->event_timestamp = sel.event_timestamp;
+    le->event_type = sel.event_type;
+
     return le;
 }
