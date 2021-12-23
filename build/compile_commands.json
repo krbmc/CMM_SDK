@@ -1,0 +1,72 @@
+[
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/main.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/main.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/main.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/handler.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/handler.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/handler.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/resource.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/resource.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/resource.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/util.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/util.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/util.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/record.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/record.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/record.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/hwcontrol.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/hwcontrol.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/hwcontrol.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/task.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/task.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/task.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/chassis_controller.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/chassis_controller.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/chassis_controller.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/TaskServer.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/TaskServer.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/TaskServer.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/init.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/init.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/init.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/lssdp.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/lssdp.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/lssdp.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/multipart_parser.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/multipart_parser.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/multipart_parser.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/logservice.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/logservice.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/logservice.cpp"
+},
+{
+  "directory": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/build/src",
+  "command": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/bin/aarch64-linux-g++   -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/host/aarch64-buildroot-linux-gnu/sysroot/usr/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/boost-1.66.0 -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/output/rockchip_rk3399/build/libcpprestsdk-v2.10.1/Release/include -I/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/include  -O1 -Wall -Wfatal-errors -fpermissive -w -DBOOST_LOG_DYN_LINK -Wno-psabi -std=c++11 -O0 -g   -o CMakeFiles/keti-redfish.dir/eventservice.cpp.o -c /home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/eventservice.cpp",
+  "file": "/home/keti/rk3399pro/linuxsdk-friendlyelec/buildroot/source/keti-redfish/src/eventservice.cpp"
+}
+]

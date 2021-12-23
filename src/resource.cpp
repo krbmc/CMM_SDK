@@ -154,7 +154,7 @@ bool Resource::load_json_from_file(json::value &j)
     }
     catch (json::json_exception &e)
     {
-        cout << "error : no Resource Data in " << this->odata.id << endl;
+        log(error) << "no Resource Data. Please check this file :" << this->odata.id;
         return false;
     }
     
@@ -366,6 +366,73 @@ json::value AccountService::get_json(void)
     j["Accounts"] = get_resource_odata_id_json(this->account_collection, this->odata.id);
     j["Roles"] = get_resource_odata_id_json(this->role_collection, this->odata.id);
 
+    // LDAP
+    json::value ldap;
+    ldap["AccountProviderType"] = json::value::string(this->ldap.account_provider_type);
+    ldap["PasswordSet"] = json::value::boolean(this->ldap.password_set);
+    ldap["ServiceEnabled"] = json::value::boolean(this->ldap.service_enabled);
+    ldap["Port"] = json::value::number(this->ldap.port);
+
+    json::value service_addresses = json::value::array();
+    for(int i=0; i<this->ldap.service_addresses.size(); i++){
+        service_addresses[i] = json::value::string(this->ldap.service_addresses[i]);
+    }
+    ldap["ServiceAddresses"] = service_addresses;
+    // ldap["ServiceAddresses"] = json::value::array(this->ldap.service_addresses); // vector
+
+    json::value auth;
+    auth["AuthenticationType"] = json::value::string(this->ldap.authentication.authentication_type);
+    auth["Username"] = json::value::string(this->ldap.authentication.username);
+    auth["Password"] = json::value::string(this->ldap.authentication.password);
+    ldap["Authentication"] = auth;
+
+    json::value service, setting;
+    setting["GroupsAttribute"] = json::value::string(this->ldap.ldap_service.search_settings.groups_attribute);
+    setting["GroupNameAttribute"] = json::value::string(this->ldap.ldap_service.search_settings.group_name_attribute);
+    setting["UsernameAttribute"] = json::value::string(this->ldap.ldap_service.search_settings.user_name_attribute);
+
+    json::value distinguish = json::value::array();
+    for(int i=0; i<this->ldap.ldap_service.search_settings.base_distinguished_names.size(); i++){
+        distinguish[i] = json::value::string(this->ldap.ldap_service.search_settings.base_distinguished_names[i]);
+    }
+    setting["BaseDistinguishedNames"] = distinguish;
+    // setting["BaseDistinguishedNames"] = json::value::array(this->ldap.ldap_service.search_settings.base_distinguished_names);
+    service["SearchSettings"] = setting;
+    ldap["LDAPService"] = service;
+
+    j["LDAP"] = ldap;
+
+    // Active Directory
+    json::value ad;
+    ad["AccountProviderType"] = json::value::string(this->active_directory.account_provider_type);
+    ad["ServiceEnabled"] = json::value::boolean(this->active_directory.service_enabled);
+    ad["Port"] = json::value::number(this->active_directory.port);
+
+    json::value service_addresses2 = json::value::array();
+    for(int i=0; i<this->active_directory.service_addresses.size(); i++){
+        service_addresses2[i] = json::value::string(this->active_directory.service_addresses[i]);
+    }
+    ad["ServiceAddresses"] = service_addresses2;
+    // ad["ServiceAddresses"] = json::value::array(this->active_directory.service_addresses);
+
+    json::value auth2;
+    auth2["AuthenticationType"] = json::value::string(this->active_directory.authentication.authentication_type);
+    auth2["Username"] = json::value::string(this->active_directory.authentication.username);
+    auth2["Password"] = json::value::string(this->active_directory.authentication.password);
+    ad["Authentication"] = auth2;
+
+    j["ActiveDirectory"] = ad;
+
+
+    // Radius
+    // json::value radius;
+    // radius["RadiusEnabled"] = json::value::boolean(this->radius.radius_enabled);
+    // radius["RadiusServer"] = json::value::string(this->radius.radius_server);
+    // radius["RadiusPortNumber"] = json::value::number(this->radius.radius_port);
+    // radius["RadiusSecret"] = json::value::string(this->radius.radius_secret);
+
+    // j["Radius"] = radius;
+
     return j;
 }
 
@@ -388,6 +455,70 @@ bool AccountService::load_json(json::value &j)
         status = j.at("Status");
         this->status.state = status.at("State").as_string();
         this->status.health = status.at("Health").as_string();
+
+        // LDAP
+        json::value ldap;
+        get_value_from_json_key(j, "LDAP", ldap);
+
+        get_value_from_json_key(ldap, "AccountProviderType", this->ldap.account_provider_type);
+        get_value_from_json_key(ldap, "PasswordSet", this->ldap.password_set);
+        get_value_from_json_key(ldap, "ServiceEnabled", this->ldap.service_enabled);
+        get_value_from_json_key(ldap, "Port", this->ldap.port);
+
+        json::value service_address;
+        get_value_from_json_key(ldap, "ServiceAddresses", service_address);
+        for(auto obj : service_address.as_array()){
+            this->ldap.service_addresses.push_back(obj.as_string());
+        }
+
+        json::value auth;
+        get_value_from_json_key(ldap, "Authentication", auth);
+        get_value_from_json_key(auth, "AuthenticationType", this->ldap.authentication.authentication_type);
+        get_value_from_json_key(auth, "Username", this->ldap.authentication.username);
+        get_value_from_json_key(auth, "Password", this->ldap.authentication.password);
+
+        json::value service, setting;
+        get_value_from_json_key(ldap, "LDAPService", service);
+        get_value_from_json_key(service, "SearchSettings", setting);
+
+        json::value distinguish;
+        get_value_from_json_key(setting, "BaseDistinguishedNames", distinguish);
+        for(auto obj : distinguish.as_array()){
+            this->ldap.ldap_service.search_settings.base_distinguished_names.push_back(obj.as_string());
+        }
+        get_value_from_json_key(setting, "GroupsAttribute", this->ldap.ldap_service.search_settings.groups_attribute);
+        get_value_from_json_key(setting, "GroupNameAttribute", this->ldap.ldap_service.search_settings.group_name_attribute);
+        get_value_from_json_key(setting, "UsernameAttribute", this->ldap.ldap_service.search_settings.user_name_attribute);
+
+        // Active Directory
+        json::value ad;
+        get_value_from_json_key(j, "ActiveDirectory", ad);
+
+        get_value_from_json_key(ad, "AccountProviderType", this->active_directory.account_provider_type);
+        get_value_from_json_key(ad, "ServiceEnabled", this->active_directory.service_enabled);
+        get_value_from_json_key(ad, "Port", this->active_directory.port);
+
+        json::value service_address2;
+        get_value_from_json_key(ad, "ServiceAddresses", service_address2);
+        for(auto obj : service_address2.as_array()){
+            this->active_directory.service_addresses.push_back(obj.as_string());
+        }
+
+        json::value auth2;
+        get_value_from_json_key(ad, "Authentication", auth2);
+        get_value_from_json_key(auth2, "AuthenticationType", this->active_directory.authentication.authentication_type);
+        get_value_from_json_key(auth2, "Username", this->active_directory.authentication.username);
+        get_value_from_json_key(auth2, "Password", this->active_directory.authentication.password);
+
+        // // Radius
+        // json::value radius;
+        // get_value_from_json_key(j, "Radius", radius);
+        // get_value_from_json_key(radius, "RadiusEnabled", this->radius.radius_enabled);
+        // get_value_from_json_key(radius, "RadiusServer", this->radius.radius_server);
+        // get_value_from_json_key(radius, "RadiusPortNumber", this->radius.radius_port);
+        // get_value_from_json_key(radius, "RadiusSecret", this->radius.radius_secret);
+
+
     }
     catch (json::json_exception &e)
     {
@@ -835,6 +966,21 @@ json::value Event::get_json(void)
     return j;
 }
 
+json::value SEL::get_json(void)
+{
+    json::value j;
+
+    j = this->message.get_json();
+    j["SensorNumber"] = json::value::number(this->sensor_number);
+    j["SensorType"] = json::value::string(this->sensor_type);
+    j["EntryCode"] = json::value::string(this->entry_code);
+    j["EventTimestamp"] = json::value::string(this->event_timestamp);
+    j["EventType"] = json::value::string(this->event_type);
+
+    return j;
+
+}
+
 bool event_is_exist(const string _uri)
 {
     if (event_map.find(_uri) != event_map.end())
@@ -931,6 +1077,17 @@ json::value EventService::get_json(void)
     j_sse[U("SubordinateResources")] = json::value::boolean(U(this->sse.subordinate_resources));
     j[U("SSEFilterPropertiesSupported")] = j_sse;
 
+
+    //smtp
+    json::value j_smtp;
+    j_smtp["SmtpServer"] = json::value::string(this->smtp.smtp_server);
+    j_smtp["SmtpUserName"] = json::value::string(this->smtp.smtp_username);
+    j_smtp["SmtpPassword"] = json::value::string(this->smtp.smtp_password);
+    j_smtp["SmtpSenderAddress"] = json::value::string(this->smtp.smtp_sender_address);
+    j_smtp["SmtpPortNumber"] = json::value::number(this->smtp.smtp_port);
+    j_smtp["SmtpSSLEnabled"] = json::value::boolean(this->smtp.smtp_ssl_enabled);
+    j["SMTP"] = j_smtp;
+
     j["Subscriptions"] = get_resource_odata_id_json(this->subscriptions, this->odata.id);
 
     j["Actions"] = get_action_info(this->actions);
@@ -941,7 +1098,7 @@ json::value EventService::get_json(void)
 bool EventService::load_json(json::value &j)
 {
     json::value status;
-    json::value event_types_for_subscription, sse;
+    json::value event_types_for_subscription, sse, smtp;
 
     try{
         Resource::load_json(j);
@@ -968,6 +1125,14 @@ bool EventService::load_json(json::value &j)
         this->sse.message_id = sse.at("MessageId").as_bool();
         this->sse.origin_resource = sse.at("OriginResource").as_bool();
         this->sse.subordinate_resources = sse.at("SubordinateResources").as_bool();
+
+        get_value_from_json_key(j, "SMTP", smtp);
+        get_value_from_json_key(smtp, "SmtpServer", this->smtp.smtp_server);
+        get_value_from_json_key(smtp, "SmtpUserName", this->smtp.smtp_username);
+        get_value_from_json_key(smtp, "SmtpPassword", this->smtp.smtp_password);
+        get_value_from_json_key(smtp, "SmtpSenderAddress", this->smtp.smtp_sender_address);
+        get_value_from_json_key(smtp, "SmtpPortNumber", this->smtp.smtp_port);
+        get_value_from_json_key(smtp, "SmtpSSLEnabled", this->smtp.smtp_ssl_enabled);
     }
     catch (json::json_exception &e)
     {
@@ -1980,6 +2145,11 @@ json::value Manager::get_json(void)
     j["VirtualMedia"] = get_resource_odata_id_json(this->virtual_media, this->odata.id);
     j["SyslogService"] = get_resource_odata_id_json(this->syslog, this->odata.id);
 
+    // j["LDAP"] = get_resource_odata_id_json(this->ldap, this->odata.id);
+    // j["ActiveDirectory"] = get_resource_odata_id_json(this->ad, this->odata.id);
+    j["Radius"] = get_resource_odata_id_json(this->radius, this->odata.id);
+    // j["SMTP"] = get_resource_odata_id_json(this->smtp, this->odata.id);
+
     json::value k;
     k[U("State")] = json::value::string(U(this->status.state));
     k[U("Health")] = json::value::string(U(this->status.health));
@@ -2037,7 +2207,7 @@ json::value SyslogService::get_json(void)
     if (j.is_null())
         return j;
     j["EnableSyslog"] = json::value::boolean(this->enabled);
-    j["SyslogPortNumber"] = json::value::string(this->port);
+    j["SyslogPortNumber"] = json::value::number(this->port);
     j["SyslogServer"] = json::value::string(this->ip);
 
     return j;
@@ -2059,6 +2229,223 @@ bool SyslogService::load_json(json::value &j)
     return true;
 }
 // Syslog end
+
+// LDAP, AD, Radius, SMTP start
+// json::value LDAP::get_json(void)
+// {
+//     json::value j;
+//     j = this->Resource::get_json();
+//     if (j.is_null())
+//         return j;
+
+//     j["Id"] = json::value::string(this->id);
+//     j["AccountProviderType"] = json::value::string(this->account_provider_type);
+//     j["PasswordSet"] = json::value::boolean(this->password_set);
+//     j["ServiceEnabled"] = json::value::boolean(this->service_enabled);
+//     j["Port"] = json::value::number(this->port);
+
+//     json::value service_addresses = json::value::array();
+//     for(int i=0; i<this->service_addresses.size(); i++){
+//         service_addresses[i] = json::value::string(this->service_addresses[i]);
+//     }
+//     j["ServiceAddresses"] = service_addresses;
+//     // ldap["ServiceAddresses"] = json::value::array(this->ldap.service_addresses); // vector
+
+//     json::value auth;
+//     auth["AuthenticationType"] = json::value::string(this->authentication.authentication_type);
+//     auth["Username"] = json::value::string(this->authentication.username);
+//     auth["Password"] = json::value::string(this->authentication.password);
+//     j["Authentication"] = auth;
+
+//     json::value service, setting;
+//     setting["GroupsAttribute"] = json::value::string(this->ldap_service.search_settings.groups_attribute);
+//     setting["GroupNameAttribute"] = json::value::string(this->ldap_service.search_settings.group_name_attribute);
+//     setting["UsernameAttribute"] = json::value::string(this->ldap_service.search_settings.user_name_attribute);
+
+//     json::value distinguish = json::value::array();
+//     for(int i=0; i<this->ldap_service.search_settings.base_distinguished_names.size(); i++){
+//         distinguish[i] = json::value::string(this->ldap_service.search_settings.base_distinguished_names[i]);
+//     }
+//     setting["BaseDistinguishedNames"] = distinguish;
+//     // setting["BaseDistinguishedNames"] = json::value::array(this->ldap.ldap_service.search_settings.base_distinguished_names);
+//     service["SearchSettings"] = setting;
+//     j["LDAPService"] = service;
+
+//     return j;
+// }
+
+// bool LDAP::load_json(json::value &j)
+// {
+//     json::value service_address, auth, service, setting, distinguish;
+
+//     try{
+//         Resource::load_json(j);
+//         get_value_from_json_key(j, "Id", this->id);
+//         get_value_from_json_key(j, "AccountProviderType", this->account_provider_type);
+//         get_value_from_json_key(j, "PasswordSet", this->password_set);
+//         get_value_from_json_key(j, "ServiceEnabled", this->service_enabled);
+//         get_value_from_json_key(j, "Port", this->port);
+
+//         get_value_from_json_key(j, "ServiceAddresses", service_address);
+//         for(auto obj : service_address.as_array()){
+//             this->service_addresses.push_back(obj.as_string());
+//         }
+
+//         get_value_from_json_key(j, "Authentication", auth);
+//         get_value_from_json_key(auth, "AuthenticationType", this->authentication.authentication_type);
+//         get_value_from_json_key(auth, "Username", this->authentication.username);
+//         get_value_from_json_key(auth, "Password", this->authentication.password);
+
+//         get_value_from_json_key(j, "LDAPService", service);
+//         get_value_from_json_key(service, "SearchSettings", setting);
+
+//         get_value_from_json_key(setting, "BaseDistinguishedNames", distinguish);
+//         for(auto obj : distinguish.as_array()){
+//             this->ldap_service.search_settings.base_distinguished_names.push_back(obj.as_string());
+//         }
+//         get_value_from_json_key(setting, "GroupsAttribute", this->ldap_service.search_settings.groups_attribute);
+//         get_value_from_json_key(setting, "GroupNameAttribute", this->ldap_service.search_settings.group_name_attribute);
+//         get_value_from_json_key(setting, "UsernameAttribute", this->ldap_service.search_settings.user_name_attribute);
+//     }
+//     catch (json::json_exception &e)
+//     {
+//         return false;
+//     }
+
+//     return true;
+// }
+
+// json::value ActiveDirectory::get_json(void)
+// {
+//     json::value j;
+//     j = this->Resource::get_json();
+//     if (j.is_null())
+//         return j;
+
+//     j["Id"] = json::value::string(this->id);
+//     j["AccountProviderType"] = json::value::string(this->account_provider_type);
+//     j["ServiceEnabled"] = json::value::boolean(this->service_enabled);
+//     j["Port"] = json::value::number(this->port);
+
+//     json::value service_addresses = json::value::array();
+//     for(int i=0; i<this->service_addresses.size(); i++){
+//         service_addresses[i] = json::value::string(this->service_addresses[i]);
+//     }
+//     j["ServiceAddresses"] = service_addresses;
+
+//     json::value auth;
+//     auth["AuthenticationType"] = json::value::string(this->authentication.authentication_type);
+//     auth["Username"] = json::value::string(this->authentication.username);
+//     auth["Password"] = json::value::string(this->authentication.password);
+//     j["Authentication"] = auth;
+
+//     return j;
+// }
+
+// bool ActiveDirectory::load_json(json::value &j)
+// {
+//     json::value service_address, auth;
+
+//     try{
+//         Resource::load_json(j);
+//         get_value_from_json_key(j, "Id", this->id);
+//         get_value_from_json_key(j, "AccountProviderType", this->account_provider_type);
+//         get_value_from_json_key(j, "ServiceEnabled", this->service_enabled);
+//         get_value_from_json_key(j, "Port", this->port);
+
+//         get_value_from_json_key(j, "ServiceAddresses", service_address);
+//         for(auto obj : service_address.as_array()){
+//             this->service_addresses.push_back(obj.as_string());
+//         }
+
+//         get_value_from_json_key(j, "Authentication", auth);
+//         get_value_from_json_key(auth, "AuthenticationType", this->authentication.authentication_type);
+//         get_value_from_json_key(auth, "Username", this->authentication.username);
+//         get_value_from_json_key(auth, "Password", this->authentication.password);
+//     }
+//     catch (json::json_exception &e)
+//     {
+//         return false;
+//     }
+
+//     return true;
+// }
+
+json::value Radius::get_json(void)
+{
+    json::value j;
+    j = this->Resource::get_json();
+    if (j.is_null())
+        return j;
+
+    j["Id"] = json::value::string(this->id);
+    j["RadiusEnabled"] = json::value::boolean(this->radius_enabled);
+    j["RadiusServer"] = json::value::string(this->radius_server);
+    j["RadiusPortNumber"] = json::value::number(this->radius_port);
+    j["RadiusSecret"] = json::value::string(this->radius_secret);
+
+    return j;
+}
+
+bool Radius::load_json(json::value &j)
+{
+    try{
+        Resource::load_json(j);
+        get_value_from_json_key(j, "Id", this->id);
+        get_value_from_json_key(j, "RadiusEnabled", this->radius_enabled);
+        get_value_from_json_key(j, "RadiusServer", this->radius_server);
+        get_value_from_json_key(j, "RadiusPortNumber", this->radius_port);
+        get_value_from_json_key(j, "RadiusSecret", this->radius_secret);
+        
+    }
+    catch (json::json_exception &e)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+// json::value SMTP::get_json(void)
+// {
+//     json::value j;
+//     j = this->Resource::get_json();
+//     if (j.is_null())
+//         return j;
+
+//     j["Id"] = json::value::string(this->id);
+//     j["SmtpServer"] = json::value::string(this->smtp_server);
+//     j["SmtpUserName"] = json::value::string(this->smtp_username);
+//     j["SmtpPassword"] = json::value::string(this->smtp_password);
+//     j["SmtpSenderAddress"] = json::value::string(this->smtp_sender_address);
+//     j["SmtpPortNumber"] = json::value::number(this->smtp_port);
+//     j["SmtpSSLEnabled"] = json::value::boolean(this->smtp_ssl_enabled);
+
+//     return j;
+// }
+
+// bool SMTP::load_json(json::value &j)
+// {
+//     try{
+//         Resource::load_json(j);
+//         get_value_from_json_key(j, "Id", this->id);
+//         get_value_from_json_key(j, "SmtpServer", this->smtp_server);
+//         get_value_from_json_key(j, "SmtpUserName", this->smtp_username);
+//         get_value_from_json_key(j, "SmtpPassword", this->smtp_password);
+//         get_value_from_json_key(j, "SmtpSenderAddress", this->smtp_sender_address);
+//         get_value_from_json_key(j, "SmtpPortNumber", this->smtp_port);
+//         get_value_from_json_key(j, "SmtpSSLEnabled", this->smtp_ssl_enabled);
+        
+//     }
+//     catch (json::json_exception &e)
+//     {
+//         return false;
+//     }
+
+//     return true;
+// }
+
+// LDAP, AD, Radius, SMTP end
 
 json::value EthernetInterfaces::get_json(void)
 {
@@ -3389,6 +3776,9 @@ json::value Certificate::get_json(void)
 
     j["ValidNotBefore"] = json::value::string(this->validNotBefore);
     j["ValidNotAfter"] = json::value::string(this->validNotAfter);
+
+    j["Email"] = json::value::string(this->email);
+    j["KeyBitLength"] = json::value::number(this->key_bit_length);
     
     j["KeyUsage"] = json::value::array();
     for(int i = 0; i < this->keyUsage.size(); i++)
@@ -3429,6 +3819,9 @@ bool Certificate::load_json(json::value &j)
         this->subject.organization = subject.at("Organization").as_string();
         this->subject.organizationUnit = subject.at("OrganizationUnit").as_string();
         this->subject.state = subject.at("State").as_string();
+        
+        get_value_from_json_key(j, "Email", this->email);
+        get_value_from_json_key(j, "KeyBitLength", this->key_bit_length);
     }
     catch (json::json_exception &e)
     {
@@ -4232,7 +4625,8 @@ const std::string currentDateTime(void)
     struct tm  tstruct;
     char       buf[80];
     tstruct = *localtime(&now);
-    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+    // strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+    strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
 
     return buf;
 }

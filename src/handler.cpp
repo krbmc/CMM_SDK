@@ -87,108 +87,112 @@ void Handler::handle_get(http_request _request)
 
             // #오픈시스넷 로그 디비 샘플 처리함수
             // /log/reading/CMM/type/detail/time
-            if(uri_tokens[0] == "log")
-            {
-                if(uri_tokens.size() < 6)
-                {
-                    response.set_status_code(status_codes::BadRequest);
-                    _request.reply(response);
-                    // _request.reply(status_codes::BadRequest);
-                    return ;
-                }
-
-                json::value open_result;
-
-                if(uri_tokens[1] == "reading" && uri_tokens[2] == "CMM1")
-                {
-                    if(uri_tokens[3] == "power")
-                    {
-                        if(uri_tokens[4] == "powercontrol")
-                        {
-                            if(uri_tokens[5] == "hour")
-                                open_result = opensys_powercontrol_hour();
-                            else if(uri_tokens[5] == "min")
-                                open_result = opensys_powercontrol_min();
-                        }
-                        else if(uri_tokens[4] == "powervoltage")
-                        {
-                            if(uri_tokens[5] == "hour")
-                                open_result = opensys_powervoltage_hour();
-                            else if(uri_tokens[5] == "min")
-                                open_result = opensys_powervoltage_min();
-                        }
-                        else if(uri_tokens[4] == "powersupply")
-                        {
-                            if(uri_tokens[5] == "hour")
-                                open_result = opensys_powersupply_hour();
-                            else if(uri_tokens[5] == "min")
-                                open_result = opensys_powersupply_min();
-                        }
-
-                    }
-                    else if(uri_tokens[3] == "thermal")
-                    {
-                        if(uri_tokens[4] == "temperature")
-                        {
-                            if(uri_tokens[5] == "hour")
-                                open_result = opensys_thermal_hour();
-                            else if(uri_tokens[5] == "min")
-                                open_result = opensys_thermal_min();
-                        }
-                        else if(uri_tokens[4] == "fan")
-                        {
-                            if(uri_tokens[5] == "hour")
-                                open_result = opensys_fan_hour();
-                            else if(uri_tokens[5] == "min")
-                                open_result = opensys_fan_min();
-                        }
-                        else if(uri_tokens[4] == "smartheater")
-                        {
-                            if(uri_tokens[5] == "hour")
-                                open_result = opensys_smartheater_hour();
-                            else if(uri_tokens[5] == "min")
-                                open_result = opensys_smartheater_min();
-                        }
-
-                    }
-
-                    response.set_status_code(status_codes::OK);
-                    response.set_body(open_result);
-                    _request.reply(response);
-                    // _request.reply(status_codes::OK, open_result);
-                    return ;
-                }
-                else
-                {
-                    response.set_status_code(status_codes::BadRequest);
-                    _request.reply(response);
-                    // _request.reply(status_codes::BadRequest);
-                    return ;
-                }
-
-            }
-
             // if(uri_tokens[0] == "log")
             // {
-            //     // /log/~ uri를 처리하는 함수
-            //     log_operation(_request);
-            //     return ;
+            //     if(uri_tokens.size() < 6)
+            //     {
+            //         response.set_status_code(status_codes::BadRequest);
+            //         _request.reply(response);
+            //         // _request.reply(status_codes::BadRequest);
+            //         return ;
+            //     }
+
+            //     json::value open_result;
+
+            //     if(uri_tokens[1] == "reading" && uri_tokens[2] == "CMM1")
+            //     {
+            //         if(uri_tokens[3] == "power")
+            //         {
+            //             if(uri_tokens[4] == "powercontrol")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_powercontrol_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_powercontrol_min();
+            //             }
+            //             else if(uri_tokens[4] == "powervoltage")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_powervoltage_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_powervoltage_min();
+            //             }
+            //             else if(uri_tokens[4] == "powersupply")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_powersupply_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_powersupply_min();
+            //             }
+
+            //         }
+            //         else if(uri_tokens[3] == "thermal")
+            //         {
+            //             if(uri_tokens[4] == "temperature")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_thermal_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_thermal_min();
+            //             }
+            //             else if(uri_tokens[4] == "fan")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_fan_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_fan_min();
+            //             }
+            //             else if(uri_tokens[4] == "smartheater")
+            //             {
+            //                 if(uri_tokens[5] == "hour")
+            //                     open_result = opensys_smartheater_hour();
+            //                 else if(uri_tokens[5] == "min")
+            //                     open_result = opensys_smartheater_min();
+            //             }
+
+            //         }
+
+            //         response.set_status_code(status_codes::OK);
+            //         response.set_body(open_result);
+            //         _request.reply(response);
+            //         // _request.reply(status_codes::OK, open_result);
+            //         return ;
+            //     }
+            //     else
+            //     {
+            //         response.set_status_code(status_codes::BadRequest);
+            //         _request.reply(response);
+            //         // _request.reply(status_codes::BadRequest);
+            //         return ;
+            //     }
+
             // }
+
+            if(uri_tokens[0] == "log")
+            {
+                // /log/~ uri를 처리하는 함수
+                log_operation(_request);
+                return ;
+            }
 
             // #오픈시스넷 /CMMHA 임시 처리부
             if(uri_tokens[0] == "CMMHA")
             {
                 json::value j;
-                j["ActiveIP"] = json::value::string("192.168.0.68");
+                j["ActiveIP"] = json::value::string("10.0.6.106");
+                // j["ActiveIP"] = json::value::string("192.168.0.68");
                 j["ActivePort"] = json::value::string("8000");
-                j["StandbyIP"] = json::value::string("10.0.6.106");
+                j["StandbyIP"] = json::value::string("10.0.6.105");
+                // j["StandbyIP"] = json::value::string("10.0.6.106");
                 j["StandbyPort"] = json::value::string("8000");
                 j["NetworkTimeOut"] = json::value::number(50);
                 j["HeartbeatInterval"] = json::value::number(5);
                 j["SwitchTimeOut"] = json::value::number(10);
                 j["IPList"] = json::value::array();
-                j["IPList"][0] = json::value::string("192.168.0.68");
-                j["IPList"][1] = json::value::string("10.0.6.106");
+                j["IPList"][0] = json::value::string("10.0.6.106");
+                // j["IPList"][0] = json::value::string("192.168.0.68");
+                j["IPList"][1] = json::value::string("10.0.6.105");
+                // j["IPList"][1] = json::value::string("10.0.6.106");
 
                 response.set_status_code(status_codes::OK);
                 response.set_body(j);
@@ -2256,7 +2260,7 @@ void reading_operation(http_request _request, http_response &_response)
     // 그래서 select_reading함수를 수정해야한다~~~~ 
 
     
-    _response.set_status_code(status_codes::Found);
+    _response.set_status_code(status_codes::OK);
     _response.set_body(result_jv);
     return ;
     
@@ -2280,7 +2284,7 @@ bool check_reading_detail(string _type, string _detail)
 {
     if(_type == "thermal")
     {
-        if(_detail == "temperature" || _detail == "fan")
+        if(_detail == "temperature" || _detail == "fan" || _detail == "smartheater")
             return true;
         
     }

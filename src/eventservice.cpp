@@ -87,7 +87,7 @@ Event_Info generate_event_info(string _event_id, string _event_type, string _msg
   return ev;
 }
 
-SEL generate_sel(unsigned int _sensor_num, string _code, string _sensor_type, string _msg, string _severity)
+SEL generate_sel(unsigned int _sensor_num, string _code, string _sensor_type, string _msg, string _severity, string _time, string _event_type)
 {
   SEL sel;
   sel.sensor_number = _sensor_num;
@@ -96,6 +96,8 @@ SEL generate_sel(unsigned int _sensor_num, string _code, string _sensor_type, st
   // sel.message.id = _msg_id;
   sel.message.message = _msg;
   sel.message.severity = _severity;
+  sel.event_timestamp = _time;
+  sel.event_type = _event_type;
 
   // sel event 정보를 따로받아야할거같은데? 메세지도 들어있고 severity라든가
 
@@ -124,6 +126,7 @@ void send_event_to_subscriber(Event_Info _ev)
             continue;
 
         Event event;
+        event.context = ed->context;
         event.events.push_back(_ev);
         if(ed->protocol == "Redfish")
         {
@@ -135,6 +138,43 @@ void send_event_to_subscriber(Event_Info _ev)
         {
             // SMTP로 전송
             shoot_smtp(ed->destination, event.get_json());
+        }
+
+    }
+    cout << "Get Out !" << endl;
+
+}
+
+void send_event_to_subscriber(SEL _sel)
+{
+    string col_odata = ODATA_EVENT_DESTINATION_ID;
+    Collection *col = (Collection *)g_record[col_odata];
+    cout << "Get In !" << endl;
+
+    // 구독자 목록 순회
+    for(int i=0; i<col->members.size(); i++)
+    {
+        EventDestination *ed = (EventDestination *)(col->members[i]);
+        cout << " Current Subscriber Context : " << ed->context << endl;
+
+        // #1 구독 state 유효한지 검사
+        if(ed->status.state != "Enabled")
+            continue;
+        
+        // #2 구독자의 이벤트 타입목록에 발생한 이벤트 타입이 있는지 검사
+        if(!event_type_exist(ed->event_types, _sel.event_type))
+            continue;
+
+        if(ed->protocol == "Redfish")
+        {
+            // HTTP로 전송
+            // 폼을 만들고 전송할 json폼 그다음에 해당 uri에 보내보내
+            shoot_redfish(ed->destination, _sel.get_json());
+        }
+        else if(ed->protocol == "SMTP")
+        {
+            // SMTP로 전송
+            shoot_smtp(ed->destination, _sel.get_json());
         }
 
     }

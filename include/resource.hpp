@@ -114,6 +114,11 @@
 
 #define ODATA_MESSAGE_REGISTRY_TYPE "#MessageRegistry." ODATA_TYPE_VERSION ".MessageRegistry"
 
+// #define ODATA_LDAP_TYPE "#LDAP." ODATA_TYPE_VERSION ".LDAP"
+// #define ODATA_ACTIVE_DIRECTORY_TYPE "#ActiveDirectory." ODATA_TYPE_VERSION ".ActiveDirectory"
+#define ODATA_RADIUS_TYPE "#Radius." ODATA_TYPE_VERSION ".Radius"
+// #define ODATA_SMTP_TYPE "#SMTP." ODATA_TYPE_VERSION ".SMTP"
+
 #define NO_DATA_TYPE 0
 
 /**
@@ -165,7 +170,7 @@ const std::string currentDateTime();
 #define CMM_ID "CMM1"
 // #define CMM_ID "1"
 // #define CMM_ADDRESS "10.0.6.107"
-#define CMM_ADDRESS "http://10.0.6.107:8000"
+#define CMM_ADDRESS "http://10.0.6.106:443"
 // #define CMM_ADDRESS "https://10.0.6.107:443"
 
 /**
@@ -240,6 +245,10 @@ enum RESOURCE_TYPE
     VOLUME_TYPE,
     MESSAGE_REGISTRY_TYPE,
     SYSLOG_SERVICE_TYPE,
+    // LDAP_TYPE,
+    // ACTIVE_DIRECTORY_TYPE,
+    RADIUS_TYPE
+    // SMTP_TYPE
 };
 
 enum ACTION_NAME
@@ -700,6 +709,69 @@ typedef struct _SensorMake
     Thresholds thresh;
     Status status;
 } SensorMake;
+
+typedef struct _Authentication
+{
+    string authentication_type;
+    string username;
+    string password;
+} Authentication;
+
+typedef struct _SearchSetting
+{
+    vector<string> base_distinguished_names;
+    string groups_attribute;
+    string group_name_attribute;
+    string user_name_attribute;
+
+} SearchSetting;
+
+typedef struct _LDAP_Service
+{
+    SearchSetting search_settings;
+} LDAP_Service;
+
+typedef struct _LDAP
+{
+    string account_provider_type;
+    bool password_set;
+    bool service_enabled;
+    int port;
+    vector<string> service_addresses;
+
+    Authentication authentication;
+    LDAP_Service ldap_service;
+} LDAP;
+
+typedef struct _ActiveDirectory
+{
+    string account_provider_type;
+    bool service_enabled;
+    int port;
+    vector<string> service_addresses;
+
+    Authentication authentication;
+} ActiveDirectory;
+
+// typedef struct _Radius
+// {
+//     string radius_server;
+//     string radius_secret;
+//     int radius_port;
+//     bool radius_enabled;
+// } Radius;
+
+typedef struct _SMTP
+{
+    string smtp_server;
+    string smtp_username;
+    string smtp_password;
+    string smtp_sender_address;
+    int smtp_port;
+    bool smtp_ssl_enabled;
+} SMTP;
+
+
 /**
  * @brief Resource of redfish schema
  */
@@ -959,6 +1031,10 @@ public:
     Collection *account_collection;
     Collection *role_collection;
 
+    LDAP ldap;
+    ActiveDirectory active_directory;
+    // Radius radius;
+
     // Class constructor, destructor oveloading
     AccountService() : Resource(ACCOUNT_SERVICE_TYPE, ODATA_ACCOUNT_SERVICE_ID, ODATA_ACCOUNT_SERVICE_TYPE)
     {
@@ -1187,8 +1263,12 @@ class SEL
     unsigned int sensor_number;
     string entry_code;
     string sensor_type;
-
+    string event_timestamp;
+    string event_type;
+  
     Message message;
+
+    json::value get_json(void);
 };
 
 class EventDestination : public Resource
@@ -1240,6 +1320,8 @@ class EventService : public Resource
     SSE_filter sse;
     Status status;
     Collection *subscriptions;
+
+    SMTP smtp;
 
     unordered_map<string, Actions> actions;
     
@@ -1378,6 +1460,10 @@ class Certificate : public Resource
     CertContent issuer;
     CertContent subject;
     vector<string> keyUsage;
+
+    // 기철need
+    string email;
+    int key_bit_length;
 
     unordered_map<string, Actions> actions;
 
@@ -1619,17 +1705,12 @@ public:
 class SyslogService : public Resource
 {
     public:
-    string port;
     string ip;
+    int port;
     bool enabled;
 
     SyslogService(const string _odata_id) : Resource(SYSLOG_SERVICE_TYPE, _odata_id, ODATA_SYSLOG_SERVICE_TYPE)
     {
-        this->name = "SyslogService";
-        this->port = "";
-        this->ip = "";
-        this->enabled = false;
-
         g_record[_odata_id] = this;
     };
     ~SyslogService()
@@ -1639,6 +1720,114 @@ class SyslogService : public Resource
     json::value get_json(void);
     bool load_json(json::value &j);
 };
+
+/**
+ * @brief Redfish Resource of Radius
+ * 
+ */
+
+// class LDAP : public Resource
+// {
+//     public:
+//     string id;
+//     string account_provider_type;
+//     bool password_set;
+//     bool service_enabled;
+//     int port;
+//     vector<string> service_addresses;
+
+//     Authentication authentication;
+//     LDAP_Service ldap_service;
+
+//     LDAP(const string _odata_id) : Resource(LDAP_TYPE, _odata_id, ODATA_LDAP_TYPE)
+//     {
+//         this->id = "LDAP";
+//         g_record[_odata_id] = this;
+//     };
+//     ~LDAP()
+//     {
+//         g_record.erase(this->odata.id);
+//     };
+
+//     json::value get_json(void);
+//     bool load_json(json::value &j);
+    
+// };
+
+// class ActiveDirectory : public Resource
+// {
+//     public:
+//     string id;
+//     string account_provider_type;
+//     bool service_enabled;
+//     int port;
+//     vector<string> service_addresses;
+
+//     Authentication authentication;
+ 
+//     ActiveDirectory(const string _odata_id) : Resource(ACTIVE_DIRECTORY_TYPE, _odata_id, ODATA_ACTIVE_DIRECTORY_TYPE)
+//     {
+//         this->id = "Active Directory";
+//         g_record[_odata_id] = this;
+//     };
+//     ~ActiveDirectory()
+//     {
+//         g_record.erase(this->odata.id);
+//     };
+
+//     json::value get_json(void);
+//     bool load_json(json::value &j);
+
+// };
+
+class Radius : public Resource
+{
+    public:
+    string id;
+    string radius_server;
+    string radius_secret;
+    int radius_port;
+    bool radius_enabled;
+
+    Radius(const string _odata_id) : Resource(RADIUS_TYPE, _odata_id, ODATA_RADIUS_TYPE)
+    {
+        this->id = "Radius";
+        g_record[_odata_id] = this;
+    };
+    ~Radius()
+    {
+        g_record.erase(this->odata.id);
+    };
+
+    json::value get_json(void);
+    bool load_json(json::value &j);
+};
+
+// class SMTP : public Resource
+// {
+//     public:
+//     string id;
+//     string smtp_server;
+//     string smtp_username;
+//     string smtp_password;
+//     string smtp_sender_address;
+//     int smtp_port;
+//     bool smtp_ssl_enabled;
+
+//     SMTP(const string _odata_id) : Resource(SMTP_TYPE, _odata_id, ODATA_SMTP_TYPE)
+//     {
+//         this->id = "SMTP";
+//         g_record[_odata_id] = this;
+//     };
+//     ~SMTP()
+//     {
+//         g_record.erase(this->odata.id);
+//     };
+
+//     json::value get_json(void);
+//     bool load_json(json::value &j);
+
+// };
 
 class Manager : public Resource
 {
@@ -1663,6 +1852,11 @@ public:
     AccountService *remote_account_service; // BMC의 계정정보를 관리하는 AccountService
     NetworkProtocol *network;
     SyslogService *syslog;
+
+    // LDAP *ldap;
+    // ActiveDirectory *ad;
+    Radius *radius;
+    // SMTP *smtp;
     
     unordered_map<string, Actions> actions;
 
@@ -1674,6 +1868,11 @@ public:
         this->network = nullptr;
         this->virtual_media = nullptr;
         this->syslog = nullptr;
+
+        // this->ldap = nullptr;
+        // this->ad = nullptr;
+        this->radius = nullptr;
+        // this->smtp = nullptr;
        
         Actions reset;
         reset.type = RESET_MANAGER;
@@ -2775,7 +2974,13 @@ void init_event_service(EventService *event_service);
 void init_event_destination(Collection *event_destination_collection, string _id);
 void init_account_service(AccountService *account_service);
 void init_session_service(SessionService *session_service);
+void init_syslog_service(SyslogService *syslog);
 void insert_virtual_media(Collection *virtual_media_collection, string _id, string _type);
+// void init_ldap(LDAP *ldap);
+// void init_active_directory(ActiveDirectory *active_directory);
+void init_radius(Radius *radius);
+// void init_smtp(SMTP *smtp);
+
 /**
  * @brief Root of redfish
  *        This resource create only once

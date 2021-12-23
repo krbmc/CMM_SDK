@@ -3,7 +3,8 @@
 ip=10.0.6.106
 id=root
 password=ketilinux
-path=/root
+path=/usr/sbin
+# path=/root
 # file=reboot
 file=keti-redfish
 # file=keti-redfish1024

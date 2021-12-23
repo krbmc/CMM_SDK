@@ -229,7 +229,8 @@ int make_json_hour_reading_callback(void *_struct, int argc, char **argv, char *
     tm_cur = localtime(&init_time);
 
     // 현재시간 string -> tm
-    strptime(time_val.c_str(), "%F %T", tm_cur);
+    strptime(time_val.c_str(), "%F %H:%M", tm_cur);
+    // strptime(time_val.c_str(), "%F %T", tm_cur);
 
     // 현재시간 tm -> time_t + 1시간 이전시간 계산
     time_t t1 = mktime(tm_cur);
@@ -240,14 +241,15 @@ int make_json_hour_reading_callback(void *_struct, int argc, char **argv, char *
     // 1시간 이전시간 time_t -> tm
     struct tm *tm_pre;
     tm_pre = localtime(&t1);
+    tm_pre->tm_sec = 0;
 
     // 1시간 이전시간 tm -> string
     char outout[30];
     make_time_with_tm(*tm_pre, outout);
     string str_out(outout);
 
-    // cout << "CUR : " << time_val << endl;
-    // cout << "Hour Before : " << str_out << endl;
+    cout << "CUR : " << time_val << endl;
+    cout << "Hour Before : " << str_out << endl;
 
     ((Hour_Reading_Info *)_struct)->compare_time = str_out;
 
@@ -1198,6 +1200,9 @@ LogEntry* make_log(string odata_id, string id, SEL sel)
     le->sensor_number = sel.sensor_number;
     le->sensor_type = sel.sensor_type;
     le->entry_code = sel.entry_code;
+
+    le->event_timestamp = sel.event_timestamp;
+    le->event_type = sel.event_type;
 
     return le;
 }

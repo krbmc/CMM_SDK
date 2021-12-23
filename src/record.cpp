@@ -165,6 +165,18 @@ json::value record_get_json(const string _uri)
         case SYSLOG_SERVICE_TYPE:
             j = ((SyslogService *)g_record[_uri])->get_json();
             break;
+        // case LDAP_TYPE:
+        //     j = ((LDAP *)g_record[_uri])->get_json();
+        //     break;
+        // case ACTIVE_DIRECTORY_TYPE:
+        //     j = ((ActiveDirectory *)g_record[_uri])->get_json();
+        //     break;
+        case RADIUS_TYPE:
+            j = ((Radius *)g_record[_uri])->get_json();
+            break;
+        // case SMTP_TYPE:
+        //     j = ((SMTP *)g_record[_uri])->get_json();
+        //     break;
         default:
             break;
     }
@@ -195,9 +207,9 @@ bool record_load_json(void)
         json::value j;
         
         // 파일을 읽어 기본 resource 정보를 읽음. type에 한하여 없는 경우, 읽지 않음.
-        // 파일이 존재하지 않는 경우 -> 서비스 루트에서 새로 추가된 파일..
+        // 손상된 파일의 경우, continue
         if (!(it->second->load_json_from_file(j)))
-            log(info) << "new file : " << it->second->odata.id;
+            continue;
         
         // Actions 예외처리
         string uri = it->second->odata.id;
@@ -602,6 +614,42 @@ bool record_load_json(void)
                 dependency_object.push_back(syslog);
                 break;
             }
+            // case LDAP_TYPE:{
+            //     string this_odata_id = it->second->odata.id;
+            //     gc.push_back(it->second);
+            //     LDAP *ldap = new LDAP(this_odata_id);
+            //     if (!ldap->load_json(j))
+            //         log(warning) << "load LDAP failed";
+            //     dependency_object.push_back(ldap);
+            //     break;
+            // }
+            // case ACTIVE_DIRECTORY_TYPE:{
+            //     string this_odata_id = it->second->odata.id;
+            //     gc.push_back(it->second);
+            //     ActiveDirectory *ad = new ActiveDirectory(this_odata_id);
+            //     if (!ad->load_json(j))
+            //         log(warning) << "load Active Directory failed";
+            //     dependency_object.push_back(ad);
+            //     break;
+            // }
+            case RADIUS_TYPE:{
+                string this_odata_id = it->second->odata.id;
+                gc.push_back(it->second);
+                Radius *radius = new Radius(this_odata_id);
+                if (!radius->load_json(j))
+                    log(warning) << "load Radius failed";
+                dependency_object.push_back(radius);
+                break;
+            }
+            // case SMTP_TYPE:{
+            //     string this_odata_id = it->second->odata.id;
+            //     gc.push_back(it->second);
+            //     SMTP *smtp = new SMTP(this_odata_id);
+            //     if (!smtp->load_json(j))
+            //         log(warning) << "load SMTP failed";
+            //     dependency_object.push_back(smtp);
+            //     break;
+            // }
             default:
                 log(warning) << "NOT IMPLEMETED IN LOAD JSON : " << it->second->odata.id;
                 gc.push_back(it->second);
@@ -1141,6 +1189,18 @@ void dependency_injection(Resource *res)
         case SYSLOG_SERVICE_TYPE:
             ((Manager *)g_record[parent_object_id])->syslog = (SyslogService *)res;
             break;
+        // case LDAP_TYPE:
+        //     ((Manager *)g_record[parent_object_id])->ldap = (LDAP *)res;
+        //     break;
+        // case ACTIVE_DIRECTORY_TYPE:
+        //     ((Manager *)g_record[parent_object_id])->ad = (ActiveDirectory *)res;
+        //     break;
+        case RADIUS_TYPE:
+            ((Manager *)g_record[parent_object_id])->radius = (Radius *)res;
+            break;
+        // case SMTP_TYPE:
+        //     ((Manager *)g_record[parent_object_id])->smtp = (SMTP *)res;
+        //     break;
         // certificate_service
         case CERTIFICATE_LOCATION_TYPE: 
             ((CertificateService *)g_record[parent_object_id])->certificate_location = (CertificateLocation *)res;
