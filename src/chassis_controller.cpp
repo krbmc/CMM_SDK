@@ -881,6 +881,9 @@ void bring_manager(Manager *_manager, json::value _info, string _addr)
     // bring_account_service 구현완료
     // bring_account_service에서 AccountService 인스턴스도 생성하는식으로 감
 
+    //radius
+    _manager->radius = new Radius(_manager->odata.id + "/Radius");
+
     json::value network_odata_info;
     if(get_value_from_json_key(_info, "NetworkProtocol", network_odata_info))
     {
@@ -938,6 +941,22 @@ void bring_manager(Manager *_manager, json::value _info, string _addr)
     json::value account_service_info;
     account_service_info = get_json_info(account_service_uri, _addr);
     bring_account_service(_manager, account_service_info, _addr);
+
+    json::value radius_odata_info;
+    if(get_value_from_json_key(_info, "Radius", radius_odata_info))
+    {
+        string radius_uri;
+        if(read_odata_id(radius_odata_info, radius_uri))
+        {
+            json::value radius_info;
+            radius_info = get_json_info(radius_uri, _addr);
+
+            string odata = _manager->radius->odata.id;
+
+            _manager->radius->load_json(radius_info);
+            _manager->radius->odata.id = odata;
+        }
+    }
 
 
 }

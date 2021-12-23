@@ -65,12 +65,9 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-<<<<<<< HEAD
-        "*.dat": "cpp"
-=======
         "*.dat": "cpp",
         "*.ipp": "cpp"
->>>>>>> b3b4d5821d29b312ec4e8ea846e298cd087df5e4
     },
-    "C_Cpp.errorSquiggles": "Disabled"
+    "C_Cpp.errorSquiggles": "Disabled",
+    "C_Cpp.intelliSenseEngine": "Default"
 }

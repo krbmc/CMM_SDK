@@ -119,46 +119,46 @@ void do_task_cmm_get(http_request _request)
         acc_type = stoi(acc_type_str);
         
         // cout << "acc_type : " << acc_type << endl;
-        if(acc_type == ACCOUNT_SERVICE_TYPE)
-        {
-            // json추가하고 
-            json::value ldap;
-            ldap["AccountProviderType"] = json::value::string("LDAPService");
-            ldap["PasswordSet"] = json::value::boolean(true);
-            ldap["ServiceEnabled"] = json::value::boolean(true);
-            ldap["ServiceAddresses"] = json::value::string("ldaps://ldap.example.org:636");
-            ldap["Port"] = json::value::number(DEFAULT_LDAP_PORT);
+        // if(acc_type == ACCOUNT_SERVICE_TYPE)
+        // {
+        //     // json추가하고 
+        //     json::value ldap;
+        //     ldap["AccountProviderType"] = json::value::string("LDAPService");
+        //     ldap["PasswordSet"] = json::value::boolean(true);
+        //     ldap["ServiceEnabled"] = json::value::boolean(true);
+        //     ldap["ServiceAddresses"] = json::value::string("ldaps://ldap.example.org:636");
+        //     ldap["Port"] = json::value::number(DEFAULT_LDAP_PORT);
             
-            json::value auth;
-            auth["AuthenticationType"] = json::value::string("UsernameAndPassword");
-            auth["Username"] = json::value::string("cn=Manager,dc=example,dc=org");
-            auth["Password"] = json::value::null();
-            ldap["Authentication"] = auth;
+        //     json::value auth;
+        //     auth["AuthenticationType"] = json::value::string("UsernameAndPassword");
+        //     auth["Username"] = json::value::string("cn=Manager,dc=example,dc=org");
+        //     auth["Password"] = json::value::null();
+        //     ldap["Authentication"] = auth;
 
-            json::value service, setting;
-            setting["BaseDistinguishedNames"] = json::value::string("dc=example,dc=org");
-            setting["GroupsAttribute"] = json::value::string("memberof");
-            setting["GroupNameAttribute"] = json::value::string("");
-            setting["UsernameAttribute"] = json::value::string("uid");
+        //     json::value service, setting;
+        //     setting["BaseDistinguishedNames"] = json::value::string("dc=example,dc=org");
+        //     setting["GroupsAttribute"] = json::value::string("memberof");
+        //     setting["GroupNameAttribute"] = json::value::string("");
+        //     setting["UsernameAttribute"] = json::value::string("uid");
 
-            service["SearchSettings"] = setting;
-            ldap["LDAPService"] = service;
+        //     service["SearchSettings"] = setting;
+        //     ldap["LDAPService"] = service;
 
-            jj["LDAP"] = ldap;
+        //     jj["LDAP"] = ldap;
 
-            json::value ad;
-            ad["AccountProviderType"] = json::value::string("ActiveDirectoryService");
-            ad["ServiceEnabled"] = json::value::boolean(true);
-            ad["ServiceAddresses"] = json::value::string("ad1.example.org");
-            ad["Port"] = json::value::number(DEFAULT_AD_PORT);
+        //     json::value ad;
+        //     ad["AccountProviderType"] = json::value::string("ActiveDirectoryService");
+        //     ad["ServiceEnabled"] = json::value::boolean(true);
+        //     ad["ServiceAddresses"] = json::value::string("ad1.example.org");
+        //     ad["Port"] = json::value::number(DEFAULT_AD_PORT);
 
-            json::value auth2;
-            auth2["AuthenticationType"] = json::value::string("UsernameAndPassword");
-            auth2["Username"] = json::value::string("KETI");
-            ad["Authentication"] = auth2;
+        //     json::value auth2;
+        //     auth2["AuthenticationType"] = json::value::string("UsernameAndPassword");
+        //     auth2["Username"] = json::value::string("KETI");
+        //     ad["Authentication"] = auth2;
 
-            jj["ActiveDirectory"] = ad;
-        }
+        //     jj["ActiveDirectory"] = ad;
+        // }
         
 
         jj.erase("type");
@@ -517,6 +517,12 @@ void do_task_cmm_post(http_request _request)
     Task_Manager *c_manager; // 컴플리트 매니저
 
     cout << "!@#$ CMM POST TASK ~~~~" << endl;
+    cout << "CONTENT_TYPE : " << content_type << endl;
+    cout << "BODY >> " << endl;
+    // auto bbbb = _request.extract_vector().get();
+    // string bbbb_str = {bbbb.begin(), bbbb.end()};
+    // cout << bbbb_str << endl;
+    cout << "ENDBODY >> " << endl;
     // cout << "Task size : " << task_map.size() << endl;
     // log(error) << "Task size : " << task_map.size();
 
@@ -2234,18 +2240,40 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
     {
         string path_redfish = "/redfish";
         char tar_buf[100];
-        sprintf(tar_buf, "tar -cvf /redfish_backup.tar %s", path_redfish.c_str());
+        // sprintf(tar_buf, "tar -cvf /redfish_backup.tar %s", path_redfish.c_str());
+        sprintf(tar_buf, "tar -cvf /redfish_backup.tar /redfish/v1 /redfish/v1.json");//%s", path_redfish.c_str());
         system(tar_buf);
         auto filestream = concurrency::streams::fstream::open_istream("/redfish_backup.tar").get();
         
 
         _response.set_body(filestream);
         _response.headers().set_content_type("application/x-tar");
+        _response.headers().add("Transfer-Encoding", "chunked");
+
         success_reply(_msg, json::value::null(), status_codes::OK, _response);
         return ;
     }
 
-    if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate" || _what == "ResourceRestore")
+    if(_what == "ResourceRestore")
+    {
+        string file_path = "/redfish/restore.tar";
+        string firm_id = get_current_object_name(file_path, "/");
+        // mkdir(file_path.c_str(), 0755);
+
+        // file_path = file_path + "/KETI-UPDATEFILE";
+        auto body_stream = _request.body();
+        auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(file_path), std::ios::out | std::ios::binary).get();
+        file_stream.flush();
+
+        body_stream.read_to_end(file_stream.streambuf()).wait();
+        file_stream.close().wait();
+
+        success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        return ;
+
+    }
+
+    if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate")
     {
         success_reply(_msg, json::value::null(), status_codes::OK, _response);
         return ;
@@ -3472,6 +3500,47 @@ bool patch_account_service(json::value _jv, string _record_uri)
         result = true;
     }
 
+    // ldap
+    // try
+    // {
+    //     json::value ldap;
+    //     if (get_value_from_json_key(_jv, "LDAP", ldap)) {
+    //         bool enabled;
+    //         if (get_value_from_json_key(ldap, "ServiceEnabled", enabled)){
+    //             if (enabled){
+    //                 ((AccountService *)g_record[_record_uri])->active_directory.service_enabled = false;
+    //                 ((AccountService *)g_record[_record_uri])->radius.service_enabled = false;
+    //             }
+    //             ((AccountService *)g_record[_record_uri])->ldap.service_enabled = enabled;
+    //             result = true;
+    //         }
+
+    //         bool password_set;
+    //         if (get_value_from_json_key(ldap, "PasswordSet", password_set)){
+    //             // password를 사용하지만 auth patch 정보가 없는경우 bad request
+    //             if (password_set){
+    //                 json::value auth;
+    //                 string password;
+    //                 if (!get_value_from_json_key(ldap, "Authentication", auth))
+    //                     return false;
+                    
+    //                 if (!get_value_from_json_key(auth, "Password", password)){
+    //                     // password validation?
+    //                     ((AccountService *)g_record[_record_uri])->ldap.authentication.password = password;
+    //                     result = true;
+    //                 }
+    //             }
+                
+    //             ((AccountService *)g_record[_record_uri])->ldap.password_set = password_set;
+    //             result = true;
+    //         }
+    //     }
+    // }
+    // catch(const std::exception& e)
+    // {
+    //     log(error) << "Patch LDAP Error" << e;
+    // }
+    
     // cout << "바꾼후~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
 
@@ -4088,7 +4157,7 @@ bool patch_syslog(json::value _jv, string _record_uri)
     bool result = true;
 
     bool enable;
-    string port;
+    int port;
     string server;
 
     if (get_value_from_json_key(_jv, "EnableSyslog", enable)){
@@ -4105,8 +4174,8 @@ bool patch_syslog(json::value _jv, string _record_uri)
     if (get_value_from_json_key(_jv, "SyslogPortNumber", port)){
         // todo : syslog config change (port)
         log(warning) << "Syslog Service is not implemeted now..";
-        if (!isNumber(port))
-            result = false;        // port가 숫자를 제외한 문자를 포함하고 있을 경우의 예외처리
+        // if (!isNumber(port))
+        //     result = false;        // port가 숫자를 제외한 문자를 포함하고 있을 경우의 예외처리
     }else
         port = syslog->port;
 
@@ -4605,47 +4674,47 @@ void success_reply(m_Request& _msg, json::value _jv, status_code _status, http_r
     _response.set_status_code(_status);
 
     // #오픈시스넷 임시 json 첨가 부분
-    string type;
-    get_value_from_json_key(_jv, "type", type);
-    if(type == "32") // accountservice
-    {
-        json::value ldap;
-        ldap["AccountProviderType"] = json::value::string("LDAPService");
-        ldap["PasswordSet"] = json::value::boolean(true);
-        ldap["ServiceEnabled"] = json::value::boolean(true);
-        ldap["ServiceAddresses"] = json::value::string("ldaps://ldap.example.org:636");
-        ldap["Port"] = json::value::number(DEFAULT_LDAP_PORT);
+    // string type;
+    // get_value_from_json_key(_jv, "type", type);
+    // if(type == "32") // accountservice
+    // {
+    //     json::value ldap;
+    //     ldap["AccountProviderType"] = json::value::string("LDAPService");
+    //     ldap["PasswordSet"] = json::value::boolean(true);
+    //     ldap["ServiceEnabled"] = json::value::boolean(true);
+    //     ldap["ServiceAddresses"] = json::value::string("ldaps://ldap.example.org:636");
+    //     ldap["Port"] = json::value::number(DEFAULT_LDAP_PORT);
         
-        json::value auth;
-        auth["AuthenticationType"] = json::value::string("UsernameAndPassword");
-        auth["Username"] = json::value::string("cn=Manager,dc=example,dc=org");
-        auth["Password"] = json::value::null();
-        ldap["Authentication"] = auth;
+    //     json::value auth;
+    //     auth["AuthenticationType"] = json::value::string("UsernameAndPassword");
+    //     auth["Username"] = json::value::string("cn=Manager,dc=example,dc=org");
+    //     auth["Password"] = json::value::null();
+    //     ldap["Authentication"] = auth;
 
-        json::value service, setting;
-        setting["BaseDistinguishedNames"] = json::value::string("dc=example,dc=org");
-        setting["GroupsAttribute"] = json::value::string("memberof");
-        setting["GroupNameAttribute"] = json::value::string("");
-        setting["UsernameAttribute"] = json::value::string("uid");
+    //     json::value service, setting;
+    //     setting["BaseDistinguishedNames"] = json::value::string("dc=example,dc=org");
+    //     setting["GroupsAttribute"] = json::value::string("memberof");
+    //     setting["GroupNameAttribute"] = json::value::string("");
+    //     setting["UsernameAttribute"] = json::value::string("uid");
 
-        service["SearchSettings"] = setting;
-        ldap["LDAPService"] = service;
+    //     service["SearchSettings"] = setting;
+    //     ldap["LDAPService"] = service;
 
-        _jv["LDAP"] = ldap;
+    //     _jv["LDAP"] = ldap;
 
-        json::value ad;
-        ad["AccountProviderType"] = json::value::string("ActiveDirectoryService");
-        ad["ServiceEnabled"] = json::value::boolean(true);
-        ad["ServiceAddresses"] = json::value::string("ad1.example.org");
-        ad["Port"] = json::value::number(DEFAULT_AD_PORT);
+    //     json::value ad;
+    //     ad["AccountProviderType"] = json::value::string("ActiveDirectoryService");
+    //     ad["ServiceEnabled"] = json::value::boolean(true);
+    //     ad["ServiceAddresses"] = json::value::string("ad1.example.org");
+    //     ad["Port"] = json::value::number(DEFAULT_AD_PORT);
 
-        json::value auth2;
-        auth2["AuthenticationType"] = json::value::string("UsernameAndPassword");
-        auth2["Username"] = json::value::string("KETI");
-        ad["Authentication"] = auth2;
+    //     json::value auth2;
+    //     auth2["AuthenticationType"] = json::value::string("UsernameAndPassword");
+    //     auth2["Username"] = json::value::string("KETI");
+    //     ad["Authentication"] = auth2;
 
-        _jv["ActiveDirectory"] = ad;
-    }
+    //     _jv["ActiveDirectory"] = ad;
+    // }
 
     if(_jv.has_field("type"))
         _jv.erase("type");

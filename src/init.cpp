@@ -506,7 +506,7 @@ void init_ethernet(Collection *ethernet_collection, string _id)
         if(ethernet->name_servers.size() == 1)
         {
             ethernet->name_servers.push_back("0.0.0.0");
-            ethernet->name_servers.push_back("::");
+            ethernet->name_servers.push_back("::ffff:0a00:0002");
             ethernet->name_servers.push_back("::");
         }
     }
@@ -1085,6 +1085,7 @@ void init_manager(Collection *manager_collection, string _id)
 
         init_log_service(manager->log_service, "Log1");
     }
+
     if (!record_is_exist(odata_id + "/VirtualMedia")){
         manager->virtual_media = new Collection(odata_id + "/VirtualMedia", ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE);
         manager->virtual_media->name = "VirtualMediaCollection";
@@ -1095,10 +1096,56 @@ void init_manager(Collection *manager_collection, string _id)
         // insert_virtual_media(manager->virtual_media, "CD2", "CD");
         insert_virtual_media(manager->virtual_media, "USB1", "USB");
     }
+
     if (!record_is_exist(odata_id + "/Syslog")){
         manager->syslog = new SyslogService(odata_id + "/Syslog");
+        manager->syslog->name = "Manager Syslog Service";
+
+        init_syslog_service(manager->syslog);
     }
+
+    // if (!record_is_exist(odata_id + "/LDAP")){
+    //     manager->ldap = new LDAP(odata_id + "/LDAP");
+    //     manager->ldap->name = "LDAP";
+
+    //     init_ldap(manager->ldap);
+    // }
+
+    // if (!record_is_exist(odata_id + "/ActiveDirectory")){
+    //     manager->ad = new ActiveDirectory(odata_id + "/ActiveDirectory");
+    //     manager->ad->name = "Active Directory";
+
+    //     init_active_directory(manager->ad);
+    // }
+
+    if (!record_is_exist(odata_id + "/Radius")){
+        manager->radius = new Radius(odata_id + "/Radius");
+        manager->radius->name = "Radius";
+
+        init_radius(manager->radius);
+    }
+
+    // if (!record_is_exist(odata_id + "/SMTP")){
+    //     manager->smtp = new SMTP(odata_id + "/SMTP");
+    //     manager->smtp->name = "SMTP";
+
+    //     init_smtp(manager->smtp);
+    // }
+
+
     manager_collection->add_member(manager);
+    return;
+}
+
+void init_syslog_service(SyslogService *syslog)
+{
+    /**
+    * Syslog Service Configuration
+    */
+    syslog->ip = "";
+    syslog->port = DEFAULT_SYSLOG_PORT;
+    syslog->enabled = false;
+
     return;
 }
 
@@ -1222,6 +1269,62 @@ void insert_virtual_media(Collection *virtual_media_collection, string _id, stri
     return;
 }
 
+// void init_ldap(LDAP *ldap)
+// {
+//     ldap->account_provider_type = "LDAPService";
+//     ldap->password_set = false;
+//     ldap->service_enabled = false;
+//     ldap->port = DEFAULT_LDAP_PORT;
+//     ldap->service_addresses.push_back("ldaps://ldap.example.org:636");
+//     ldap->authentication.authentication_type = "UsernameAndPassword";
+//     ldap->authentication.username = "cn=Manager, dc=example, dc=org";
+//     ldap->authentication.password = "";
+    
+//     ldap->ldap_service.search_settings.base_distinguished_names.push_back("dc=example");
+//     ldap->ldap_service.search_settings.base_distinguished_names.push_back("dc=org");
+//     ldap->ldap_service.search_settings.group_name_attribute = "";
+//     ldap->ldap_service.search_settings.groups_attribute = "memberof";
+//     ldap->ldap_service.search_settings.user_name_attribute = "uid";
+
+//     return ;
+// }
+
+// void init_active_directory(ActiveDirectory *active_directory)
+// {
+//     active_directory->account_provider_type = "ActiveDirectoryService";
+//     active_directory->service_enabled = false;
+//     active_directory->port = DEFAULT_AD_PORT;
+//     active_directory->service_addresses.push_back("ad1.example.org");
+//     active_directory->service_addresses.push_back("ad2.example.org");
+    
+//     active_directory->authentication.authentication_type = "UsernameAndPassword";
+//     active_directory->authentication.username = "Administrators";
+
+//     return ;
+// }
+
+void init_radius(Radius *radius)
+{
+    radius->radius_server = "localhost";
+    radius->radius_secret = "SECRET";
+    radius->radius_port = DEFAULT_RADIUS_PORT;
+    radius->radius_enabled = false;
+
+    return ;
+}
+
+// void init_smtp(SMTP *smtp)
+// {
+//     smtp->smtp_ssl_enabled = true;
+//     smtp->smtp_server = "smtp.gmail.com";
+//     smtp->smtp_port = 587;
+//     smtp->smtp_username = "myketimail555";
+//     smtp->smtp_password = "";
+//     smtp->smtp_sender_address = "myketimail555@gmail.com";
+
+//     return ;
+// }
+
 void init_update_service(UpdateService *update_service)
 {
     string odata_id = update_service->odata.id;
@@ -1263,6 +1366,43 @@ void init_update_service(UpdateService *update_service)
         bmc->manufacturer = "KETI";
         bmc->release_date = currentDateTime();
         bmc->lowest_supported_version = "v1.0";
+
+        // CMM & BMC 분리
+        SoftwareInventory* cmm1 = init_software_inventory(update_service->firmware_inventory, "CMM1");
+        cmm1->version = "v1.0";
+        cmm1->manufacturer = "KETI";
+        cmm1->release_date = currentDateTime();
+        cmm1->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* cmm2 = init_software_inventory(update_service->firmware_inventory, "CMM2");
+        cmm2->version = "v1.0";
+        cmm2->manufacturer = "KETI";
+        cmm2->release_date = currentDateTime();
+        cmm2->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* cm1 = init_software_inventory(update_service->firmware_inventory, "CM1");
+        cm1->version = "v1.0";
+        cm1->manufacturer = "KETI";
+        cm1->release_date = currentDateTime();
+        cm1->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* cm2 = init_software_inventory(update_service->firmware_inventory, "CM2");
+        cm2->version = "v1.0";
+        cm2->manufacturer = "KETI";
+        cm2->release_date = currentDateTime();
+        cm2->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* sm1 = init_software_inventory(update_service->firmware_inventory, "SM1");
+        sm1->version = "v1.0";
+        sm1->manufacturer = "KETI";
+        sm1->release_date = currentDateTime();
+        sm1->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* sm2 = init_software_inventory(update_service->firmware_inventory, "SM2");
+        sm2->version = "v1.0";
+        sm2->manufacturer = "KETI";
+        sm2->release_date = currentDateTime();
+        sm2->lowest_supported_version = "v1.0";
     }
 
     if (!record_is_exist(odata_id + "/SoftwareInventory")){
@@ -1338,6 +1478,15 @@ void init_event_service(EventService *event_service)
     event_service->status.state = STATUS_STATE_ENABLED;
     event_service->status.health = STATUS_HEALTH_OK;
 
+    event_service->smtp.smtp_ssl_enabled = true;
+    event_service->smtp.smtp_server = "smtp.gmail.com";
+    event_service->smtp.smtp_port = 587;
+    event_service->smtp.smtp_username = "myketimail555";
+    event_service->smtp.smtp_password = "";
+    event_service->smtp.smtp_sender_address = "myketimail555@gmail.com";
+
+
+
 
     if (!record_is_exist(odata_id + "/Subscriptions")){
         event_service->subscriptions = new Collection(odata_id + "/Subscriptions", ODATA_EVENT_DESTINATION_COLLECTION_TYPE);
@@ -1386,11 +1535,42 @@ void init_account_service(AccountService *account_service)
     account_service->auth_failure_logging_threshold = 0;
     account_service->min_password_length = 6;
     account_service->max_password_length = 24;
-//
     account_service->account_lockout_threshold = 0;
     account_service->account_lockout_duration = 0;
     account_service->account_lockout_counter_reset_after = 0;
     account_service->account_lockout_counter_reset_enabled = true;
+
+    // LDAP
+    account_service->ldap.account_provider_type = "LDAPService";
+    account_service->ldap.password_set = false;
+    account_service->ldap.service_enabled = false;
+    account_service->ldap.port = DEFAULT_LDAP_PORT;
+    account_service->ldap.service_addresses.push_back("ldaps://ldap.example.org:636");
+    account_service->ldap.authentication.authentication_type = "UsernameAndPassword";
+    account_service->ldap.authentication.username = "cn=Manager, dc=example, dc=org";
+    account_service->ldap.authentication.password = "";
+    
+    account_service->ldap.ldap_service.search_settings.base_distinguished_names.push_back("dc=example");
+    account_service->ldap.ldap_service.search_settings.base_distinguished_names.push_back("dc=org");
+    account_service->ldap.ldap_service.search_settings.group_name_attribute = "";
+    account_service->ldap.ldap_service.search_settings.groups_attribute = "memberof";
+    account_service->ldap.ldap_service.search_settings.user_name_attribute = "uid";
+
+    // Active Directory
+    account_service->active_directory.account_provider_type = "ActiveDirectoryService";
+    account_service->active_directory.service_enabled = false;
+    account_service->active_directory.port = DEFAULT_AD_PORT;
+    account_service->active_directory.service_addresses.push_back("ad1.example.org");
+    account_service->active_directory.service_addresses.push_back("ad2.example.org");
+    
+    account_service->active_directory.authentication.authentication_type = "UsernameAndPassword";
+    account_service->active_directory.authentication.username = "Administrators";
+
+    // // Radius
+    // account_service->radius.radius_server = "localhost";
+    // account_service->radius.radius_secret = "SECRET";
+    // account_service->radius.radius_port = DEFAULT_RADIUS_PORT;
+    // account_service->radius.radius_enabled = false;
 
     if (!record_is_exist(odata_id + "/Roles")){
         account_service->role_collection = new Collection(odata_id + "/Roles", ODATA_ROLE_COLLECTION_TYPE);
@@ -1523,21 +1703,66 @@ void init_message_registry(void)
     Create.pattern = "ResourceCreated";
     Create.message = "Resource is Created!";
     Create.severity = "OK";
-    Create.resolution = "None";
+    Create.resolution = "Resource Information is in the message_args";
     Create.description = "Resource Create Notice";
-    Create.number_of_args = 0;
+    Create.number_of_args = 1;
+    Create.param_types.push_back("string");
     mr->messages.v_msg.push_back(Create);
 
-    Message_For_Registry StatusChange;
+    Message_For_Registry Remove;
 
-    StatusChange.pattern = "StatusChangeCritical";
-    StatusChange.message = "Status has changed to Critical at Resource. See message_args for information about Resource location";
-    StatusChange.severity = "Critical";
-    StatusChange.resolution = "Resource Location is in the message_args";
-    StatusChange.description = "Indicate Status Change to Critical";
-    StatusChange.number_of_args = 1;
-    StatusChange.param_types.push_back("string");
-    mr->messages.v_msg.push_back(StatusChange);
+    Remove.pattern = "ResourceRemoved";
+    Remove.message = "Resource is Removed!";
+    Remove.severity = "OK";
+    Remove.resolution = "Resource Information is in the message_args";
+    Remove.description = "Resource Remove Notice";
+    Remove.number_of_args = 1;
+    Remove.param_types.push_back("string");
+    mr->messages.v_msg.push_back(Remove);
+
+    Message_For_Registry Update;
+
+    Update.pattern = "ResourceUpdated";
+    Update.message = "Resource is Updated!";
+    Update.severity = "OK";
+    Update.resolution = "Resource Information is in the message_args";
+    Update.description = "Resource Update Notice";
+    Update.number_of_args = 1;
+    Update.param_types.push_back("string");
+    mr->messages.v_msg.push_back(Update);
+
+    Message_For_Registry StatusChange_critical;
+
+    StatusChange_critical.pattern = "StatusChangeCritical";
+    StatusChange_critical.message = "Status has changed to Critical at Resource. See message_args for information about Resource location";
+    StatusChange_critical.severity = "Critical";
+    StatusChange_critical.resolution = "Resource Location is in the message_args";
+    StatusChange_critical.description = "Indicate Status Change to Critical";
+    StatusChange_critical.number_of_args = 1;
+    StatusChange_critical.param_types.push_back("string");
+    mr->messages.v_msg.push_back(StatusChange_critical);
+
+    Message_For_Registry StatusChange_ok;
+
+    StatusChange_ok.pattern = "StatusChangeOK";
+    StatusChange_ok.message = "Status has changed to OK at Resource. See message_args for information about Resource location";
+    StatusChange_ok.severity = "OK";
+    StatusChange_ok.resolution = "Resource Location is in the message_args";
+    StatusChange_ok.description = "Indicate Status Change to OK";
+    StatusChange_ok.number_of_args = 1;
+    StatusChange_ok.param_types.push_back("string");
+    mr->messages.v_msg.push_back(StatusChange_ok);
+
+    Message_For_Registry StatusChange_warning;
+
+    StatusChange_warning.pattern = "StatusChangeWarning";
+    StatusChange_warning.message = "Status has changed to Warning at Resource. See message_args for information about Resource location";
+    StatusChange_warning.severity = "Warning";
+    StatusChange_warning.resolution = "Resource Location is in the message_args";
+    StatusChange_warning.description = "Indicate Status Change to Warning";
+    StatusChange_warning.number_of_args = 1;
+    StatusChange_warning.param_types.push_back("string");
+    mr->messages.v_msg.push_back(StatusChange_warning);
 
     // mr->messages.v_msg.push_back();
 }

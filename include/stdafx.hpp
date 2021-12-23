@@ -55,6 +55,8 @@
 #define DEFAULT_SSH_PORT 22
 #define DEFAULT_LDAP_PORT 636
 #define DEFAULT_AD_PORT 389
+#define DEFAULT_SYSLOG_PORT 514
+#define DEFAULT_RADIUS_PORT 1812
 
 // default conf file path define
 #define DHCPV4_CONF "/etc/dhcp/dhcpd.conf"

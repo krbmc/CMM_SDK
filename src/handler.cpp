@@ -179,16 +179,20 @@ void Handler::handle_get(http_request _request)
             if(uri_tokens[0] == "CMMHA")
             {
                 json::value j;
-                j["ActiveIP"] = json::value::string("192.168.0.68");
+                j["ActiveIP"] = json::value::string("10.0.6.106");
+                // j["ActiveIP"] = json::value::string("192.168.0.68");
                 j["ActivePort"] = json::value::string("8000");
-                j["StandbyIP"] = json::value::string("10.0.6.106");
+                j["StandbyIP"] = json::value::string("10.0.6.105");
+                // j["StandbyIP"] = json::value::string("10.0.6.106");
                 j["StandbyPort"] = json::value::string("8000");
                 j["NetworkTimeOut"] = json::value::number(50);
                 j["HeartbeatInterval"] = json::value::number(5);
                 j["SwitchTimeOut"] = json::value::number(10);
                 j["IPList"] = json::value::array();
-                j["IPList"][0] = json::value::string("192.168.0.68");
-                j["IPList"][1] = json::value::string("10.0.6.106");
+                j["IPList"][0] = json::value::string("10.0.6.106");
+                // j["IPList"][0] = json::value::string("192.168.0.68");
+                j["IPList"][1] = json::value::string("10.0.6.105");
+                // j["IPList"][1] = json::value::string("10.0.6.106");
 
                 response.set_status_code(status_codes::OK);
                 response.set_body(j);
@@ -2256,7 +2260,7 @@ void reading_operation(http_request _request, http_response &_response)
     // 그래서 select_reading함수를 수정해야한다~~~~ 
 
     
-    _response.set_status_code(status_codes::Found);
+    _response.set_status_code(status_codes::OK);
     _response.set_body(result_jv);
     return ;
     
@@ -2280,7 +2284,7 @@ bool check_reading_detail(string _type, string _detail)
 {
     if(_type == "thermal")
     {
-        if(_detail == "temperature" || _detail == "fan")
+        if(_detail == "temperature" || _detail == "fan" || _detail == "smartheater")
             return true;
         
     }

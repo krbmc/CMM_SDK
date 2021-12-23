@@ -122,20 +122,58 @@ int main(int _argc, char *_argv[])
     // Event_Info ev;
     // ev = generate_event_info("Event ID", "ResourceAdded", "ResourceCreated", args);
     // send_event_to_subscriber(ev);
-    // generate_log("Chassis", "Facility 1", ev);
+    // generate_log("Manager", "Log1", ev);
+    // // generate_log("Chassis", "Facility 1", ev);
 
-    // args.push_back("/redfish/v1/Chassis/CMM1");
+    // args.push_back("/redfish/v1/Managers/CMM1");
+    // // args.push_back("/redfish/v1/Chassis/CMM1");
     // ev = generate_event_info("Event ID 2", "StatusChange", "StatusChangeCritical", args);
     // send_event_to_subscriber(ev);
-    // generate_log("System", "Facility 5", ev);
+    // generate_log("Manager", "Log1", ev);
+    // // generate_log("System", "Facility 5", ev);
 
     // SEL sel;
     // sel = generate_sel(10, "Lower Critical - going high", "temperature",
     // "The reading crossed the Lower Critical threshold while going high", "Criticial",
     // "2021-11-26 15:00:00", "Alert");
     // send_event_to_subscriber(sel);
-    // generate_log("Chassis", "Facility 1", sel);
+    // generate_log("Manager", "Log1", sel);
+    // // generate_log("Chassis", "Facility 1", sel);
+
+
+    // cm1 샤시 스토리지 만들기
+    // string chassis_sto_odata = "/redfish/v1/Chassis/CM1";
+    // Chassis *cha = (Chassis *)g_record[chassis_sto_odata];
+    // // cha->storage = new Collection(cha->odata.id + "/Storage", ODATA_STORAGE_COLLECTION_TYPE);
+    // // cha->storage->name = "Chassis Storage Collection";
+
+    // Storage *sto = new Storage(cha->storage->odata.id + "/1", "1");
+    // cha->storage->add_member(sto);
+
+    // 샘플 fan 생성
+    // Thermal *therm = (Thermal *)g_record["/redfish/v1/Chassis/CMM1/Thermal"];
+    // Fan *fan_1 = new Fan(therm->fans->odata.id + "/1");
+    // fan_1->status.state = STATUS_STATE_ENABLED;
+    // fan_1->status.health = STATUS_HEALTH_OK;
+    // fan_1->reading = 1000;
+    // therm->fans->add_member(fan_1);
+    // resource_save_json(fan_1);
     
+    
+    // Fan *fan_2 = new Fan(therm->fans->odata.id + "/4");
+    // fan_2->status.state = STATUS_STATE_ENABLED;
+    // fan_2->status.health = STATUS_HEALTH_OK;
+    // fan_2->reading = 800;
+    // therm->fans->add_member(fan_2);
+    // resource_save_json(fan_2);
+    
+    // Fan *fan_3 = new Fan(therm->fans->odata.id + "/6");
+    // fan_3->status.state = STATUS_STATE_ENABLED;
+    // fan_3->status.health = STATUS_HEALTH_WARNING;
+    // fan_3->reading = 1500;
+    // therm->fans->add_member(fan_3);
+    // resource_save_json(fan_3);
+    // resource_save_json(therm->fans);
     
 
     // ssdp discover (not working yet)
