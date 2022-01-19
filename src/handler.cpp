@@ -1291,17 +1291,20 @@ void Handler::handle_post(http_request _request)
 
             res = get_popen_string(boo);
             result = res;
+            // cout << "RESULT!!!! : " << result << endl;
 
             // Todo
             // (popen하는 시간땜에 1초정도 쉬고)
             // 로드(스탠바이상태인 cmm녀석이 백업을 하는거)
 
             j[U("Status")] = json::value::string("OK");
-            cout << "dd : " << result << endl;
+            // cout << "dd : " << result << endl;
             // j[U("Result")] = json::value::string(result);
 
             response.set_status_code(status_codes::OK);
+            // cout << "STATUS : " << response.status_code() << endl;
             response.set_body(j);
+            // cout << "BODY : " << j << endl;
             _request.reply(response);
             // _request.reply(status_codes::OK, j);
             return ;
@@ -2150,10 +2153,10 @@ void log_operation(http_request _request)
     {
         reading_operation(_request, response);
     }
-    else if(uri_tokens[1] == "event")
-    {
-        event_operation(_request, response);
-    }
+    // else if(uri_tokens[1] == "event")
+    // {
+    //     event_operation(_request, response);
+    // } // 사용x
     else
     {
         json::value j = get_error_json("Not Supported URI");
@@ -2247,17 +2250,6 @@ void reading_operation(http_request _request, http_response &_response)
     else if(param_time_option == "hour")
         result_jv = select_hour_reading(param_module, param_type, param_detail, 30);
     // result_jv = select_all_reading()
-
-    // module 값의 uri토큰이 all 인지 특정 모듈인지에 따라서
-    // DB에서 읽을때 모듈 칼럼의 where절 값에 들어가는 조건이 달라지는거지 그거에 해당하는 파라미터가 필요하고 
-    // select_reading거기에서 ㅇㅇ 그리고 그 함수 인자값만 지정하는거야 여기서는
-    // 그다음엔 type검사해서 type값 지정하고
-    // time_option 검사해서 값 지정하고 다 모인 파라미터값들을 인자로해서
-    // select_reading함수를 호출해 
-
-    // 그러면 select_reading함수에서 인자들 가지고 쿼리문 만들어서 해당하는 DB데이터 긁어올것이고 그걸 json형태로
-    // 만들어서 반환하면 그걸가지고 여기서 reply해주면됨 
-    // 그래서 select_reading함수를 수정해야한다~~~~ 
 
     
     _response.set_status_code(status_codes::OK);
