@@ -284,14 +284,113 @@ void do_task_bmc_get(http_request _request)
 
     json::value j = json::value::parse(string_stream);
 
+    // //// BMC 모듈id 추가 부분
+    // string original_string = j.serialize();
+    // int whole_length = original_string.length();
+    // int cur_index=0;
+    // string result_string = "";
+    // cout << " << [Serialize] >>  : " << whole_length << endl;
+    // cout << original_string << endl;
+
+    // // cout << " TEST INDEX PRINT " << endl;
+    // // for(int i=0; i<20; i++)
+    // // {
+    // //     cout << "[" << i << "] : " << original_string.at(i) << endl;
+    // // }
+
+    // /* #1 copy_string : original string(BMC 반환 json을 string화)을 작업용으로 카피
+    // /* cur_index : 현재까지 result_string에 들어간 문자열 이후의 index를 가리킴
+    // /* move_index : cur_index 부터해서 copy_string에서 해당하는 uri를 찾아서 그 다음 index를 가리킴
+    // /* #2 copy_string에서 뒷부분 모듈id를 추가해야할 uri를 찾고
+    // /* 모듈id를 입력하기 전 부분을 result_string에 담고 모듈id를 추가함
+    // /* #3 그 작업스트링녀석을가지고 odata.id를 찾아서 뒤에 /redfish/v1/샤시,매니저,시스템 까지 맞는 인덱스를 찾고
+    // /* 찾았으면 그때까지 string을 result에 추가해주고 그 뒤에 모듈추가하고 인덱스 갱신하고 돌리면될듯?
+    // */
+    // while(cur_index < whole_length)
+    // {
+    //     // cout << "[INFO] : 1 Cycle Start >>>>>>> " << endl;
+    //     int find_man=0, find_cha=0, find_sys=0;
+    //     int find_index=0;
+    //     int move_index=0;
+    //     string copy_string = original_string;
+
+    //     // cout << " AFTER SUBSTR " << endl;
+    //     // cout << "[COPY] : " << copy_string << endl;
+
+    //     // string만 define으로 선언하고 밑에 move_index 20,19부분 length로만 수정하면될듯
+    //     string str_man = ODATA_MANAGER_ID;
+    //     string str_cha = ODATA_CHASSIS_ID;
+    //     string str_sys = ODATA_SYSTEM_ID;
+
+    //     find_man = copy_string.find(str_man, cur_index);
+    //     find_cha = copy_string.find(str_cha, cur_index);
+    //     find_sys = copy_string.find(str_sys, cur_index);
+    //     // find_man = copy_string.find("/redfish/v1/Managers", cur_index);
+    //     // find_cha = copy_string.find("/redfish/v1/Chassis", cur_index);
+    //     // find_sys = copy_string.find("/redfish/v1/Systems", cur_index);
+
+    //     if(find_man != string::npos)
+    //     {
+    //         // cout << "Managers FIND ! " << endl;
+    //         find_index = find_man;
+    //         move_index = str_man.length() + find_man;
+    //         // move_index = 20 + find_man;
+    //     }
+    //     else if(find_cha != string::npos)
+    //     {
+    //         // cout << "Chassis FIND ! " << endl;
+    //         find_index = find_cha;
+    //         move_index = str_cha.length() + find_cha;
+    //         // move_index = 19 + find_cha;
+    //     }
+    //     else if(find_sys != string::npos)
+    //     {
+    //         // cout << "Systems FIND ! " << endl;
+    //         find_index = find_sys;
+    //         move_index = str_sys.length() + find_sys;
+    //         // move_index = 19 + find_sys;
+    //     }
+    //     else
+    //     {
+    //         // cout << "Not Found ! " << endl;
+    //         move_index = whole_length;
+    //         // cout << " Fin : " << copy_string.substr(cur_index) << endl;
+    //         result_string.append(copy_string.substr(cur_index));
+    //         // cout << "[RESULT] : " << result_string << endl;
+    //         cur_index = whole_length;
+    //         // cout << "[INFO] : 1 Cycle End >>>>>>> " << endl;
+    //         continue;
+    //     }
+
+    //     // cout << "FIND INDEX : " << find_index << endl;
+    //     // cout << "MOVE INDEX : " << move_index << endl;
+
+    //     // 앞에꺼 붙이는거는 cur_index부터 move_index까지를 하면됨 근데 이건 copy기준이라서
+    //     result_string.append(copy_string.substr(cur_index, move_index-cur_index));
+    //     result_string.append("/!@#$" + uri_tokens[3]);
+
+    //     // cout << "[RESULT] : " << result_string << endl;
+    //     // cout << " Cut : " << copy_string.substr(move_index) << endl;
+
+    //     cur_index = move_index;
+    //     // cout << "[INFO] : 1 Cycle End >>>>>>> " << endl;
+
+
+    // }
+
+    // json::value modified_json = json::value::parse(result_string);
+    // response.set_body(modified_json);
+    // // 여기까지가 모듈id추가 구현부 , 주석풀고 밑에 response.set_body(j)만 주석하면됨
+    
+
     response.set_status_code(status_codes::OK);
     response.set_body(j);
     _request.reply(response);
     return ;
+    // #오픈시스넷 json파일읽어서 반환 부분 끝
 
-
-    // #오픈시스넷 딜레이문제발생하여 do_task_bmc_get 함수 원래기능 다 주석하고
-    // redfish 폴더에 들어있는 CM1 부분 json파일 읽어서 반환하게 함
+    // // #오픈시스넷 딜레이문제발생하여 do_task_bmc_get 함수 원래기능 다 주석하고
+    // // redfish 폴더에 들어있는 CM1 부분 json파일 읽어서 반환하게 함
     // Task_Manager *t_manager; // 작업 매니저
     // Task_Manager *c_manager; // 컴플리트 매니저
 
@@ -336,8 +435,8 @@ void do_task_bmc_get(http_request _request)
     // req.set_request_uri(new_uri);
     // req.set_body(jv);
     
-    // if(_request.headers().find("X-Auth-Token") != _request.headers().end())
-    //     req.headers().add(_request.headers().find("X-Auth-Token")->first, _request.headers().find("X-Auth-Token")->second);
+    // // if(_request.headers().find("X-Auth-Token") != _request.headers().end())
+    // //     req.headers().add(_request.headers().find("X-Auth-Token")->first, _request.headers().find("X-Auth-Token")->second);
     // // req.headers().add(U("TEST_HEADER"), U("VALUE!!"));
     // // 나중에는 이 헤더붙이는게 이런식이 아니라 현재 이 cmm을 이용할수있게 하는 세션session에 접근해서 거기에 저장되어있는
     // // bmc_id에 맞는 토큰이 있으면 그걸로 여기서 헤더에 추가를 해주면 bmc토큰인증이 되는식으로 바뀌어야함
@@ -372,6 +471,16 @@ void do_task_bmc_get(http_request _request)
     //         msg.result.result_status = WORK_FAIL;
 
     //     response_json = response.extract_json().get();
+
+    //     // // odata module_id 추가하기
+    //     // cout << " << [Serialize] >> " << endl;
+    //     // cout << response_json.serialize() << endl;
+
+    //     // string whole_original = response_json
+
+
+
+
     //     msg.result.response_json = response_json;
     //     response.set_body(response_json);
     //     msg.result.result_datetime = currentDateTime();
@@ -381,42 +490,42 @@ void do_task_bmc_get(http_request _request)
     // catch(const std::exception& e)
     // {
     //     // uri.json에 해당하는 파일로 내용 바로 리턴때린다   @@@@ 제출용임시추가
-    //     log(info) << "BMC not connected PART";
-    //     if(!fs::exists(uri+".json"))
-    //     {
-    //         json::value tmp_jv;
-    //         log(warning) << "not found json file named : " << uri;
-    //         tmp_jv[U("Error")] = json::value::string(U("No Json File named : " + uri));
-    //         _request.reply(status_codes::BadRequest, tmp_jv);
-    //         return ;
-    //     }
+    //     // log(info) << "BMC not connected PART";
+    //     // if(!fs::exists(uri+".json"))
+    //     // {
+    //     //     json::value tmp_jv;
+    //     //     log(warning) << "not found json file named : " << uri;
+    //     //     tmp_jv[U("Error")] = json::value::string(U("No Json File named : " + uri));
+    //     //     _request.reply(status_codes::BadRequest, tmp_jv);
+    //     //     return ;
+    //     // }
 
-    //     ifstream json_file(uri+".json");
-    //     stringstream string_stream;
+    //     // ifstream json_file(uri+".json");
+    //     // stringstream string_stream;
 
-    //     string_stream << json_file.rdbuf();
-    //     json_file.close();
+    //     // string_stream << json_file.rdbuf();
+    //     // json_file.close();
 
-    //     json::value j = json::value::parse(string_stream);
-    //     http_response temporary_res;
+    //     // json::value j = json::value::parse(string_stream);
+    //     // http_response temporary_res;
 
-    //     temporary_res.headers().add("Access-Control-Allow-Origin", "*");
-    //     temporary_res.headers().add("Access-Control-Allow-Credentials", "true");
-    //     temporary_res.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
-    //     temporary_res.headers().add("Access-Control-Max-Age", "3600");
-    //     temporary_res.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
-    //     temporary_res.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+    //     // temporary_res.headers().add("Access-Control-Allow-Origin", "*");
+    //     // temporary_res.headers().add("Access-Control-Allow-Credentials", "true");
+    //     // temporary_res.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    //     // temporary_res.headers().add("Access-Control-Max-Age", "3600");
+    //     // temporary_res.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    //     // temporary_res.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
-    //     temporary_res.set_status_code(status_codes::OK);
-    //     temporary_res.set_body(j);
-    //     _request.reply(temporary_res);
-    //     return ;
+    //     // temporary_res.set_status_code(status_codes::OK);
+    //     // temporary_res.set_body(j);
+    //     // _request.reply(temporary_res);
+    //     // return ;
 
     //     // _---------------------------------------------------- @@@@
-    //     // std::cerr << e.what() << '\n';
-    //     // cout << "BMC 서버 닫혀있을거임~~" << endl;
+    //     std::cerr << e.what() << '\n';
+    //     cout << "BMC 서버 닫혀있을거임~~" << endl;
 
-    //     // error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+    //     error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
     // }
     
 
@@ -436,11 +545,11 @@ void do_task_bmc_get(http_request _request)
 
     // // Make m_Response
     // // m_Response msg_res;
-    // // msg_res.result_datetime = currentDateTime();
-    // // msg_res.result_response = response;
-    // // msg_res.res_number = msg.task_number;
-    // // // msg_res.result_status = WORK_SUCCESS; // 응답 response의 상태에 따라 다르게 해야할텐데
-    // // msg.result = msg_res;
+    // msg_res.result_datetime = currentDateTime();
+    // msg_res.result_response = response;
+    // msg_res.res_number = msg.task_number;
+    // // msg_res.result_status = WORK_SUCCESS; // 응답 response의 상태에 따라 다르게 해야할텐데
+    // msg.result = msg_res;
 
 
     // /*Before Move 테스트용 출력 */
@@ -501,7 +610,7 @@ void do_task_bmc_get(http_request _request)
     // // _request.reply(U(response.status_code()), response_json);
     // _request.reply(response);
     // return ;
-    // #오픈시스넷 여기까지 원본 주석
+    // // #오픈시스넷 여기까지 원본 주석
 }
 
 void do_task_cmm_post(http_request _request)
@@ -1456,7 +1565,7 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             // #오픈시스넷 패치로그서비스 (리소스 get_json)
             if(patch_logservice(_jv, uri))
             {
-                // resource_save_json(g_record[uri]);
+                resource_save_json(g_record[uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
                 return ;
             }
@@ -1497,7 +1606,7 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             // #오픈시스넷 패치로그서비스 (리소스 get_json)
             if(patch_logservice(_jv, uri))
             {
-                // resource_save_json(g_record[uri]);
+                resource_save_json(g_record[uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
                 return ;
             }
@@ -1554,7 +1663,7 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             // #오픈시스넷 패치로그서비스 (리소스 get_json)
             if(patch_logservice(_jv, uri))
             {
-                // resource_save_json(g_record[uri]);
+                resource_save_json(g_record[uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
                 return ;
             }
@@ -1565,7 +1674,6 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             }
         }
 
-        // #오픈시스넷 임시 드라이브패치
         if(get_current_object_name(minus_one, "/") == "Drives")
         {
             if(!record_is_exist(uri)){
@@ -1573,7 +1681,12 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 return;
             }
 
-            success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            if (patch_drive(_jv, uri)) {
+                resource_save_json(g_record[uri]);
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            } else {
+                error_reply(_msg, get_error_json("Error Occur in Drive PATCH"), status_codes::BadRequest, _response);
+            }
             return ;
         }
     }
@@ -1834,7 +1947,7 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
             string obj = get_current_object_name(resource_uri, "/");
             if(obj == "CMM1" || obj == "CM1" || obj == "CM1-REST" || obj == "CM1-IPMI" || obj == "CM1-READING")
             {
-                ;
+                cout << "None but here catch UPDATE : " << resource_uri << endl;
             }
             else
             {
@@ -2158,34 +2271,45 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
     //     return ;
     // }
 
-    // if(_what == "FirmwareUpdate")
-    // {
-    //     string file_path = inventory->odata.id;
-    //     string firm_id = get_current_object_name(file_path, "/");
-    //     mkdir(file_path.c_str(), 0755);
+    // 액션종류에따라서 리소스 uri 깊이가 달라져서 먼저 _what부터 검사
+    if(!(_what == "FirmwareUpdate" || _what == "SoftwareUpdate" 
+    || _what == "ResourceBackUp" || _what == "ResourceRestore"))
+    {
+        error_reply(_msg, get_error_json("No Action in UpdateService"), status_codes::BadRequest, _response);
+        return ;
+    }
 
-    //     file_path = file_path + "/KETI-UPDATEFILE";
-    //     auto body_stream = _request.body();
-    //     auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(file_path), std::ios::out | std::ios::binary).get();
-    //     file_stream.flush();
+    if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate")
+    {
+        string file_path = _resource;
+        // string file_path = inventory->odata.id;
+        string firm_id = get_current_object_name(file_path, "/");
+        mkdir(file_path.c_str(), 0755);
 
-    //     body_stream.read_to_end(file_stream.streambuf()).wait();
-    //     file_stream.close().wait();
+        file_path = file_path + "/" + firm_id + "_UPDATEFILE";
+        auto body_stream = _request.body();
+        auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(file_path), std::ios::out | std::ios::binary).get();
+        file_stream.flush();
 
-    //     string cmd = "chmod +x " + file_path;
-    //     system(cmd.c_str());
-    //     // 파일 전송완료
+        body_stream.read_to_end(file_stream.streambuf()).wait();
+        file_stream.close().wait();
+
+        string cmd = "chmod +x " + file_path;
+        system(cmd.c_str());
+        log(info) << "[Firmware & Software Update] : " << file_path;
+        // 파일 전송완료
         
-    //     if(firm_id == "CMM"){
-    //         // 이제 쉘스크립트로 실행시켜서 해당하는거 하게끔
-    //         string sh_path = "/root/updateimg.sh";
-    //         string cmd_test = sh_path + " -t /root/keti-redfish -b " + file_path + " -n keti-redfish";
-    //         system(cmd_test.c_str());
-    //     } // cmm update일 경우
+        // 각 종류의 ID마다 처리해주면 됨
+        // if(firm_id == "CMM"){
+        //     // 이제 쉘스크립트로 실행시켜서 해당하는거 하게끔
+        //     string sh_path = "/root/updateimg.sh";
+        //     string cmd_test = sh_path + " -t /root/keti-redfish -b " + file_path + " -n keti-redfish";
+        //     system(cmd_test.c_str());
+        // } // cmm update일 경우
 
-    //     success_reply(_msg, json::value::null(), status_codes::OK, _response);
-    //     return ;
-    // }
+        success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        return ;
+    }
 
     
 
@@ -2235,7 +2359,7 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
 
     // }
     
-    // #오픈시스넷 임시 status반환코드
+    // /redfish/v1/UpdateService/SoftwareInventory/Action~~
     if(_what == "ResourceBackUp")
     {
         string path_redfish = "/redfish";
@@ -2249,6 +2373,7 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
         _response.set_body(filestream);
         _response.headers().set_content_type("application/x-tar");
         _response.headers().add("Transfer-Encoding", "chunked");
+        // _response.headers().add("Myheader", "Yeah");
 
         success_reply(_msg, json::value::null(), status_codes::OK, _response);
         return ;
@@ -2256,7 +2381,7 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
 
     if(_what == "ResourceRestore")
     {
-        string file_path = "/redfish/restore.tar";
+        string file_path = "/redfish/resource_restore.tar";
         string firm_id = get_current_object_name(file_path, "/");
         // mkdir(file_path.c_str(), 0755);
 
@@ -2273,16 +2398,17 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
 
     }
 
-    if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate")
-    {
-        success_reply(_msg, json::value::null(), status_codes::OK, _response);
-        return ;
-    }
-    else
-    {
-        error_reply(_msg, get_error_json("Wrong Update Action"), status_codes::BadRequest, _response);
-        return ;
-    }
+    // #오픈시스넷 임시 OK반환
+    // if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate")
+    // {
+    //     success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    //     return ;
+    // }
+    // else
+    // {
+    //     error_reply(_msg, get_error_json("Wrong Update Action"), status_codes::BadRequest, _response);
+    //     return ;
+    // }
     
 }
 
@@ -2349,6 +2475,7 @@ void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string
     //     {
     //         // insert에 실패하면 만들었던 리소스도 다시 지워줘야함
     //         delete(vm);
+    //         // g_record에 erase안해줘도 되나?
     //         if(type == "CD")
     //             delete_numset_num(ALLOCATE_VM_CD_NUM, id_num);
     //         else if(type == "USB")
@@ -3378,168 +3505,222 @@ bool patch_account_service(json::value _jv, string _record_uri)
     // cout << " $$$$$$$ " << endl;
 
     bool result = true;
+    AccountService *account_service = (AccountService *)g_record[_record_uri];
 
-    // Min & Max Password Length
-    unsigned int min_after;
-    unsigned int min_before = ((AccountService *)g_record[_record_uri])->min_password_length;
-    if(get_value_from_json_key(_jv, "MinPasswordLength", min_after))
+    try
     {
-        // ((AccountService *)g_record[_record_uri])->min_password_length = min;
-        if(min_after == 0)
+        // Min & Max Password Length
+        // Min & Max Password Length
+        unsigned int min_after;
+        unsigned int min_before = account_service->min_password_length;
+        if(get_value_from_json_key(_jv, "MinPasswordLength", min_after))
         {
-            // 이건 minpassword가 입력으로 왔지만 0을 입력했다는걸로 오류
-            return false;
+            // ((AccountService *)g_record[_record_uri])->min_password_length = min;
+            if(min_after == 0)
+            {
+                // 이건 minpassword가 입력으로 왔지만 0을 입력했다는걸로 오류
+                return false;
+            }
+            result = true;
         }
-        result = true;
-    }
 
-    unsigned int max_after;
-    unsigned int max_before = ((AccountService *)g_record[_record_uri])->max_password_length;
-    if(get_value_from_json_key(_jv, "MaxPasswordLength", max_after))
-    {
-        // ((AccountService *)g_record[_record_uri])->max_password_length = max;
-        if(max_after == 0)
+        unsigned int max_after;
+        unsigned int max_before = account_service->max_password_length;
+        if(get_value_from_json_key(_jv, "MaxPasswordLength", max_after))
         {
-            // 이건 maxpassword가 입력으로 왔지만 0을 입력했다는걸로 오류
-            return false;
+            // ((AccountService *)g_record[_record_uri])->max_password_length = max;
+            if(max_after == 0)
+            {
+                // 이건 maxpassword가 입력으로 왔지만 0을 입력했다는걸로 오류
+                return false;
+            }
+            result = true;
         }
-        result = true;
-    }
 
-    // min max 둘다 0이면 변경안한거라 out min에는 0이 들어갈수도있는데아니지 1은 들어가야지 min도 ㅇㅋ
-    // min만 0이다 그럼 min_before랑 < max_after 비교처리
-    // max만 0이다 그럼 min_after랑 < max_before 비교처리
-    // 둘다 0아니다 그럼 min_after < max_after 비교처리
-    if(min_after == 0 && max_after == 0)
-    {
-        ;
-    }
-    else if(min_after == 0 && max_after != 0)
-    {
-        if(min_before <= max_after)
+        // min max 둘다 0이면 변경안한거라 out min에는 0이 들어갈수도있는데아니지 1은 들어가야지 min도 ㅇㅋ
+        // min만 0이다 그럼 min_before랑 < max_after 비교처리
+        // max만 0이다 그럼 min_after랑 < max_before 비교처리
+        // 둘다 0아니다 그럼 min_after < max_after 비교처리
+        if(min_after == 0 && max_after == 0)
         {
-            // ok max변경해
-            ((AccountService *)g_record[_record_uri])->max_password_length = max_after;
+            ;
         }
-        else
+        else if(min_after == 0 && max_after != 0)
         {
-            // 안돼 불가능
-            return false;
+            if(min_before <= max_after)
+            {
+                // ok max변경해
+                account_service->max_password_length = max_after;
+            }
+            else
+            {
+                // 안돼 불가능
+                return false;
+            }
         }
-    }
-    else if(min_after != 0 && max_after == 0)
-    {
-        if(min_after <= max_before)
+        else if(min_after != 0 && max_after == 0)
         {
-            // ok min변경해
-            ((AccountService *)g_record[_record_uri])->min_password_length = min_after;
-        }
-        else
-        {
-            // 안돼 불가능
-            return false;
-        }
-    }
-    else
-    {
-        if(min_after <= max_after)
-        {
-            // ok min,max변경해
-            ((AccountService *)g_record[_record_uri])->max_password_length = max_after;
-            ((AccountService *)g_record[_record_uri])->min_password_length = min_after;
+            if(min_after <= max_before)
+            {
+                // ok min변경해
+                account_service->min_password_length = min_after;
+            }
+            else
+            {
+                // 안돼 불가능
+                return false;
+            }
         }
         else
         {
-            // 안돼 불가능
-            return false;
+            if(min_after <= max_after)
+            {
+                // ok min,max변경해
+                account_service->max_password_length = max_after;
+                account_service->min_password_length = min_after;
+            }
+            else
+            {
+                // 안돼 불가능
+                return false;
+            }
         }
-    }
 
-    // check_password_range(min_before, min_after, max_before, max_after)
+        // check_password_range(min_before, min_after, max_before, max_after)
+        
+        bool service_enabled;
+        if(get_value_from_json_key(_jv, "ServiceEnabled", service_enabled))
+        {
+            account_service->service_enabled = service_enabled;
+        }
 
-    
-    bool service_enabled;
-    if(get_value_from_json_key(_jv, "ServiceEnabled", service_enabled))
-    {
-        ((AccountService *)g_record[_record_uri])->service_enabled = service_enabled;
-        result = true;
-    }
+        unsigned int aflt;
+        if(get_value_from_json_key(_jv, "AuthFailureLoggingThreshold", aflt))
+        {
+            account_service->auth_failure_logging_threshold = aflt;
+        }
 
-    unsigned int aflt;
-    if(get_value_from_json_key(_jv, "AuthFailureLoggingThreshold", aflt))
-    {
-        ((AccountService *)g_record[_record_uri])->auth_failure_logging_threshold = aflt;
-        result = true;
-    }
+        unsigned int alt;
+        if(get_value_from_json_key(_jv, "AccountLockoutThreshold", alt))
+        {
+            account_service->account_lockout_threshold = alt;
+        }
 
-    unsigned int alt;
-    if(get_value_from_json_key(_jv, "AccountLockoutThreshold", alt))
-    {
-        ((AccountService *)g_record[_record_uri])->account_lockout_threshold = alt;
-        result = true;
-    }
+        unsigned int ald;
+        if(get_value_from_json_key(_jv, "AccountLockoutDuration", ald))
+        {
+            account_service->account_lockout_duration = ald;
+            result = true;
+        }
 
-    unsigned int ald;
-    if(get_value_from_json_key(_jv, "AccountLockoutDuration", ald))
-    {
-        ((AccountService *)g_record[_record_uri])->account_lockout_duration = ald;
-        result = true;
-    }
+        unsigned int alcra;
+        if(get_value_from_json_key(_jv, "AccountLockoutCounterResetAfter", alcra))
+        {
+            account_service->account_lockout_counter_reset_after = alcra;
+        }
 
-    unsigned int alcra;
-    if(get_value_from_json_key(_jv, "AccountLockoutCounterResetAfter", alcra))
-    {
-        ((AccountService *)g_record[_record_uri])->account_lockout_counter_reset_after = alcra;
-        result = true;
-    }
+        bool alcre;
+        if(get_value_from_json_key(_jv, "AccountLockoutCounterResetEnabled", alcre))
+        {
+            account_service->account_lockout_counter_reset_enabled = alcre;
+        }
 
-    bool alcre;
-    if(get_value_from_json_key(_jv, "AccountLockoutCounterResetEnabled", alcre))
-    {
-        ((AccountService *)g_record[_record_uri])->account_lockout_counter_reset_enabled = alcre;
-        result = true;
-    }
+        json::value ldap;
+        if (get_value_from_json_key(_jv, "LDAP", ldap)) {
+            bool enabled;
+            if (get_value_from_json_key(ldap, "ServiceEnabled", enabled)){
+                if (enabled){
+                    account_service->active_directory.service_enabled = false;
+                    // account_service->radius.service_enabled = false;
+                }
+                account_service->ldap.service_enabled = enabled;
+            }
 
-    // ldap
-    // try
-    // {
-    //     json::value ldap;
-    //     if (get_value_from_json_key(_jv, "LDAP", ldap)) {
-    //         bool enabled;
-    //         if (get_value_from_json_key(ldap, "ServiceEnabled", enabled)){
-    //             if (enabled){
-    //                 ((AccountService *)g_record[_record_uri])->active_directory.service_enabled = false;
-    //                 ((AccountService *)g_record[_record_uri])->radius.service_enabled = false;
-    //             }
-    //             ((AccountService *)g_record[_record_uri])->ldap.service_enabled = enabled;
-    //             result = true;
-    //         }
-
-    //         bool password_set;
-    //         if (get_value_from_json_key(ldap, "PasswordSet", password_set)){
-    //             // password를 사용하지만 auth patch 정보가 없는경우 bad request
-    //             if (password_set){
-    //                 json::value auth;
-    //                 string password;
-    //                 if (!get_value_from_json_key(ldap, "Authentication", auth))
-    //                     return false;
+            bool password_set;
+            if (get_value_from_json_key(ldap, "PasswordSet", password_set)){
+                // password를 사용하지만 auth patch 정보가 없는경우 bad request
+                if (password_set){
+                    json::value auth;
+                    string password;
+                    if (!get_value_from_json_key(ldap, "Authentication", auth))
+                        return false;
                     
-    //                 if (!get_value_from_json_key(auth, "Password", password)){
-    //                     // password validation?
-    //                     ((AccountService *)g_record[_record_uri])->ldap.authentication.password = password;
-    //                     result = true;
-    //                 }
-    //             }
+                    if (get_value_from_json_key(auth, "Password", password)){
+                        // password validation?
+                        account_service->ldap.authentication.password = password;
+                    } else {
+                        return false;
+                    }
+                }
+                account_service->ldap.password_set = password_set;
+            }
+
+            json::value ldap_ip;
+            if (get_value_from_json_key(ldap, "ServiceAddresses", ldap_ip)){
+                int size = account_service->ldap.service_addresses.size();
                 
-    //             ((AccountService *)g_record[_record_uri])->ldap.password_set = password_set;
-    //             result = true;
-    //         }
-    //     }
-    // }
-    // catch(const std::exception& e)
-    // {
-    //     log(error) << "Patch LDAP Error" << e;
-    // }
+                if (ldap_ip.as_array().size()){
+                    if (size) {
+                        account_service->ldap.service_addresses[0] = ldap_ip.as_array()[0].as_string();
+                    } else {
+                        account_service->ldap.service_addresses.push_back(ldap_ip.as_array()[0].as_string());
+                    }
+                }
+            }
+
+            json::value ldap_service;
+            if (get_value_from_json_key(ldap, "LDAPService", ldap_service)){
+                json::value search_settings;
+                if (get_value_from_json_key(ldap_service, "SearchSettings", search_settings)) {
+                    json::value bdn;
+                    if (get_value_from_json_key(search_settings, "BaseDistinguishedNames", bdn)){
+                        account_service->ldap.ldap_service.search_settings.base_distinguished_names.clear();
+                        for (auto name : bdn.as_array()){
+                            account_service->ldap.ldap_service.search_settings.base_distinguished_names.push_back(name.as_string());
+                        }
+                    }
+                    // TODO : Searchbase 오픈시스넷이 보내주는 String 분기하여 각 GroupName, GroupsAttribute, UsernameAttribute 에 저장
+                }
+            }         
+        }        
+
+        json::value ad;
+        if (get_value_from_json_key(_jv, "ActiveDirectory", ad)) {
+            bool enable;
+            if (get_value_from_json_key(ad, "ServiceEnabled", enable)) {
+                account_service->active_directory.service_enabled = enable;
+                // TODO : Actual Service Enable
+            }
+
+            int port;
+            if (get_value_from_json_key(ad, "Port", port)) {
+                if (isNumber(to_string(port))) {
+                    account_service->active_directory.port = port;
+                } else {
+                    result = false;
+                }
+            }
+
+            json::value ad_ip;
+            if (get_value_from_json_key(ad, "ServiceAddresses", ad_ip)) {
+                account_service->active_directory.service_addresses.clear();
+                account_service->active_directory.service_addresses.push_back(ad_ip.as_array()[0].as_string());
+            }
+
+            json::value ad_auth;
+            if (get_value_from_json_key(ad, "Authentication", ad_auth)) {
+                string ad_username;
+                if (get_value_from_json_key(ad, "Username", ad_username)){
+                    account_service->active_directory.authentication.username = ad_username;
+                }
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        log(error) << "PATCH AccountService Error";
+        return false;
+    }
     
     // cout << "바꾼후~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
@@ -3645,6 +3826,7 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
     }
 
     json::value snmp;
+    // TODO : SNMP의 실질적인 작동 미구현
     if(get_value_from_json_key(_jv, "SNMP", snmp))
     {
         /* jv example
@@ -3873,40 +4055,44 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
             if (enabled){
                 int port;
                 string primary_ntp_server, secondary_ntp_server;
-                if (get_value_from_json_key(ntp, "Port", port))
-                    network->ntp.port = port;
+                if (get_value_from_json_key(ntp, "Port", port)){
+                    if (isNumber(to_string(port))){
+                        network->ntp.port = port;
+                    } else {
+                        result = false;
+                    }
+                }
                 if (get_value_from_json_key(ntp, "PrimaryNTPServer", primary_ntp_server))
                     network->ntp.primary_ntp_server = primary_ntp_server;
                 if (get_value_from_json_key(ntp, "SecondaryNTPServer", secondary_ntp_server))
                     network->ntp.secondary_ntp_server = secondary_ntp_server;
                 // ntp 설정을 바꾼 후 서버 시간 동기화 작업 필요
-            }else {
+            } else {
                 string date_str, time_str, timezone;
                 if (get_value_from_json_key(ntp, "Date", date_str))
                     network->ntp.date_str = date_str;
                 
-                if (get_value_from_json_key(ntp, "Time", time_str))
+                if (get_value_from_json_key(ntp, "Time", time_str)){
                     network->ntp.time_str = time_str;
+                }
                 
-                if (get_value_from_json_key(ntp, "TimeZone", timezone))
-                    network->ntp.timezone = timezone;
+                if (get_value_from_json_key(ntp, "TimeZone", timezone)){
+                    if (validateDatetimeLocalOffset(timezone)){
+                        network->ntp.timezone = timezone;
+                    } else {
+                        return false;
+                    }
+                }
                 // ubuntu date 명령어를 통해 서버 시간 동기화
             }
             result = true;
         }
     }
-
-    // NTPServers 는 여러개가 들어가있는 형식인데 어떻게 수정해야하지?
-    // request에서 json에 두 공간에서 받아야할듯 a,b입력란이라고 하면
-    // a에서 받은 ntpservers가 존재하면 b검사하고 b에도 입력한게 있으면 그걸로 수정
-    // a에서 받은 ntpservers가 존재하지않으면 걍 추가 이런식으로??
-    
     // dyk  
     // client 에서 NTP Servers 배열을 받아 Primary Server, Secondary Server를 선택할 수 있음. NTP Servers를 추가하거나
     // 삭제하는 부분은 구현되어있지 않음. 즉 서버에 등록되어있는 NTP Servers에서만 선택 가능
     // 혹은 client에서 ntp Server를 지정하지 않고 [YYYY-MM-DD hh:mm:ss] 형식으로 서버 시간을 조정할 수 있음.
-    // 이러한 값들을 다루기 위해 NTP 리소스를 Manager 밑에 구현해야 함.
-
+    
     // cout << "바꾼후~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
 
@@ -3995,160 +4181,207 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
     EthernetInterfaces *eth = (EthernetInterfaces *)g_record[_record_uri];
     bool result = true;
 
-    string description;
-    if(get_value_from_json_key(_jv, "Description", description))
+    try
     {
-        eth->description = description;
-        result = true;
-    }
-
-    // string fqdn;
-    // if(get_value_from_json_key(_jv, "FQDN", fqdn))
-    // {
-    //     eth->fqdn = fqdn;
-    //     if(_flag == 1)
-    //     {
-    //         string buf = "hostname ";
-
-    //     }
-    // }
-
-    string hostname;
-    if(get_value_from_json_key(_jv, "HostName", hostname))
-    {
-        if(_flag == 1)
-        {
-            string buf = "hostname ";
-            buf = buf + hostname;
-            cout << "hostname buf : " << buf << endl;
-            // system(buf.c_str());
+        bool enable;
+        if (get_value_from_json_key(_jv, "InterfaceEnabled", enable)){
+            eth->interfaceEnabled = enable;
         }
-        eth->hostname = hostname;
-        result = true;
-    }
 
-    string mac;
-    if(get_value_from_json_key(_jv, "MACAddress", mac))
-    {
-        if(_flag == 1)
+        string description;
+        if(get_value_from_json_key(_jv, "Description", description))
         {
-            string buf = "macchanger -m ";
-            buf = buf + mac + " eth" + eth->id;
-            cout << "macaddress buf : " << buf << endl;
-            // system(buf.c_str());
+            eth->description = description;
         }
-        eth->mac_address = mac;
-        result = true;
-    }
 
-    int mtu;
-    if(get_value_from_json_key(_jv, "MTUSize", mtu))
-    {
-        if(_flag == 1)
+        string fqdn;
+        if(get_value_from_json_key(_jv, "FQDN", fqdn))
         {
-            string buf = "ip link set ";
-            buf = buf + "eth" + eth->id;
-            buf = buf + " mtu " + to_string(mtu);
-            cout << "mtusize buf : " << buf << endl;
-            // system(buf.c_str());
-        }
-        eth->mtu_size = mtu;
-        result = true;
-    }
+            // if(_flag == 1)
+            // {
+            //     string buf = "hostname ";
 
-    // ipv4, ipv6 주소들은 array로 되어있는데 patch request body로는 일단 object하나라고 생각하고 구현
-    json::value ipv4;
-    if(get_value_from_json_key(_jv, "IPv4Addresses", ipv4))
-    {
-        int size = eth->v_ipv4.size();
-        if(size == 0)
-        {
-            return false;
+            // }
+            eth->fqdn = fqdn;
         }
-        // ipv4 1개이상있을때 첫번째꺼만 수정되는걸로
 
-        string address;
-        string netmask;
-        string gateway;
-        if(get_value_from_json_key(ipv4, "Address", address))
+        string hostname;
+        if(get_value_from_json_key(_jv, "HostName", hostname))
         {
             if(_flag == 1)
             {
-                string buf = "ifconfig eth";
-                buf = buf + eth->id + " " + address;
-                cout << "ipv4 address buf : " << buf << endl;
+                string buf = "hostname ";
+                buf = buf + hostname;
+                cout << "hostname buf : " << buf << endl;
                 // system(buf.c_str());
             }
-            eth->v_ipv4[0].address = address;
-            result = true;
+            eth->hostname = hostname;
         }
 
-        if(get_value_from_json_key(ipv4, "SubnetMask", netmask))
+        string mac;
+        if(get_value_from_json_key(_jv, "MACAddress", mac))
         {
             if(_flag == 1)
             {
-                string buf = "ifconfig eth";
-                buf = buf + eth->id + " netmask " + netmask;
-                cout << "ipv4 subnetmask buf : " << buf << endl;
+                string buf = "macchanger -m ";
+                buf = buf + mac + " eth" + eth->id;
+                cout << "macaddress buf : " << buf << endl;
                 // system(buf.c_str());
             }
-            eth->v_ipv4[0].subnet_mask = netmask;
-            result = true;
+            eth->mac_address = mac;
         }
 
-        if(get_value_from_json_key(ipv4, "Gateway", gateway))
+        int mtu;
+        if(get_value_from_json_key(_jv, "MTUSize", mtu))
         {
             if(_flag == 1)
             {
-                string buf = "route add default gw ";
-                buf = buf + gateway;
-                cout << "ipv4 gateway buf : " << buf << endl;
+                string buf = "ip link set ";
+                buf = buf + "eth" + eth->id;
+                buf = buf + " mtu " + to_string(mtu);
+                cout << "mtusize buf : " << buf << endl;
                 // system(buf.c_str());
             }
-            eth->v_ipv4[0].gateway = gateway;
-            result = true;
+            eth->mtu_size = mtu;
         }
 
-        // 현재 여기 변수들이 바뀌면 107번 서버동작이 안돼서 명령어 주석처리
+        // ipv4, ipv6 주소들은 array로 되어있는데 patch request body로는 일단 object하나라고 생각하고 구현
+        json::value ipv4;
+        if(get_value_from_json_key(_jv, "IPv4Addresses", ipv4))
+        {
+            int size = eth->v_ipv4.size();
+            string address;
+            string netmask;
+            string gateway;
+            IPv4_Address v4;
+
+            if(get_value_from_json_key(ipv4, "Address", address))
+            {
+                if (validateIPv4(address)){
+                    if(_flag == 1)
+                    {
+                        string buf = "ifconfig eth";
+                        buf = buf + eth->id + " " + address;
+                        cout << "ipv4 address buf : " << buf << endl;
+                        // system(buf.c_str());
+                    }
+                    if (size)
+                        eth->v_ipv4[0].address = address;
+                    else
+                        v4.address = address;
+                } else {
+                    log(error) << "IPv4 Address format error";
+                    return false;
+                }
+            }
+
+            if(get_value_from_json_key(ipv4, "SubnetMask", netmask))
+            {
+                if (validateIPv4(netmask)){
+                    if(_flag == 1)
+                    {
+                        string buf = "ifconfig eth";
+                        buf = buf + eth->id + " netmask " + netmask;
+                        cout << "ipv4 subnetmask buf : " << buf << endl;
+                        // system(buf.c_str());
+                    }
+                    if (size)
+                        eth->v_ipv4[0].subnet_mask = netmask;
+                    else
+                        v4.subnet_mask = netmask;
+                } else {
+                    log(error) << "IPv4 Netmask format error";
+                    return false;
+                }
+            }
+
+            if(get_value_from_json_key(ipv4, "Gateway", gateway))
+            {
+                if (validateIPv4(gateway)) {
+                    if(_flag == 1)
+                    {
+                        string buf = "route add default gw ";
+                        buf = buf + gateway;
+                        cout << "ipv4 gateway buf : " << buf << endl;
+                        // system(buf.c_str());
+                    }
+                    if (size)
+                        eth->v_ipv4[0].gateway = gateway;
+                    else
+                        v4.gateway = gateway;
+                } else {
+                    log(error) << "IPv4 Gateway format error";
+                    return false;
+                }
+            }
+
+            if (size == 0){
+                eth->v_ipv4.push_back(v4);
+            }
+        }
+
+        json::value ipv6;
+        if(get_value_from_json_key(_jv, "IPv6Addresses", ipv6))
+        {
+            // ipv6는 추가하는식
+            int size = eth->v_ipv6.size();
+            if(size == 0)
+            {
+                return false;
+            }
+
+            string address;
+            if(get_value_from_json_key(ipv6, "Address", address))
+            {
+                IPv6_Address new_ipv6;
+                new_ipv6.address = address;
+                new_ipv6.address_origin = eth->v_ipv6[0].address_origin;
+                new_ipv6.prefix_length = eth->v_ipv6[0].prefix_length;
+                new_ipv6.address_state = eth->v_ipv6[0].address_state;
+                if(_flag == 1)
+                {
+                    string buf = "ifconfig eth";
+                    buf = buf + eth->id + " inet6 add " + address + "/" + to_string(new_ipv6.prefix_length);
+                    cout << "ipv6 address buf : " << buf << endl;
+                    // system(buf.c_str());
+                }
+                eth->v_ipv6.push_back(new_ipv6);
+            }
+        }
+
+        json::value dhcp_v4, dhcp_v6;
+        if (get_value_from_json_key(_jv, "DHCPv4", dhcp_v4)) {
+            bool enable;
+            if (get_value_from_json_key(dhcp_v4, "DHCPEnabled", enable)){
+                eth->dhcp_v4.dhcp_enabled = enable;
+                // todo : dhcp 사용
+            }   
+        }
+
+        if (get_value_from_json_key(_jv, "DHCPv6", dhcp_v6)) {
+            string op_mode;
+            if (get_value_from_json_key(dhcp_v6, "OperatingMode", op_mode)){
+                if (validateDHCPv6OperatingMode(op_mode)){
+                    eth->dhcp_v6.operating_mode = op_mode;
+                    // todo : dhcp 사용
+                } else {
+                    log(error) << "DHCPv6 is not provide Operating Mode : " << op_mode;
+                    return false;
+                }
+            }   
+        }
+
     }
-
-    json::value ipv6;
-    if(get_value_from_json_key(_jv, "IPv6Addresses", ipv6))
+    catch(const std::exception& e)
     {
-        // ipv6는 추가하는식
-        int size = eth->v_ipv6.size();
-        if(size == 0)
-        {
-            return false;
-        }
-
-        string address;
-        if(get_value_from_json_key(ipv6, "Address", address))
-        {
-            IPv6_Address new_ipv6;
-            new_ipv6.address = address;
-            new_ipv6.address_origin = eth->v_ipv6[0].address_origin;
-            new_ipv6.prefix_length = eth->v_ipv6[0].prefix_length;
-            new_ipv6.address_state = eth->v_ipv6[0].address_state;
-            if(_flag == 1)
-            {
-                string buf = "ifconfig eth";
-                buf = buf + eth->id + " inet6 add " + address + "/" + to_string(new_ipv6.prefix_length);
-                cout << "ipv6 address buf : " << buf << endl;
-                // system(buf.c_str());
-            }
-            eth->v_ipv6.push_back(new_ipv6);
-            result = true;
-        }
-
+        log(error) << "PATCH EthernetInterface error";
+        return false;
     }
-
-
+    
     // cout << "바꾼후~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
 
     return result;
-
 }
 
 bool patch_syslog(json::value _jv, string _record_uri)
@@ -4160,40 +4393,41 @@ bool patch_syslog(json::value _jv, string _record_uri)
     int port;
     string server;
 
-    if (get_value_from_json_key(_jv, "EnableSyslog", enable)){
-        if (enable){
-            // todo : syslog service on! (ex. /etc/init.d/S**Syslog restart or start)
-            log(warning) << "Syslog Service is not implemeted now..";
-        } else {
-            // todo : syslog service off! (ex. /etc/init.d/S**Syslog stop)
-            log(warning) << "Syslog Service is not implemeted now..";
+    try
+    {
+        if (get_value_from_json_key(_jv, "EnableSyslog", enable)){
+            syslog->enabled = enable;
+            if (enable){
+                // todo : syslog service on! (ex. /etc/init.d/S**Syslog restart or start)
+                log(warning) << "Syslog Service is not implemeted now..";
+            } else {
+                // todo : syslog service off! (ex. /etc/init.d/S**Syslog stop)
+                log(warning) << "Syslog Service is not implemeted now..";
+            }
         }
-    }else
-        enable = syslog->enabled;
 
-    if (get_value_from_json_key(_jv, "SyslogPortNumber", port)){
-        // todo : syslog config change (port)
-        log(warning) << "Syslog Service is not implemeted now..";
-        // if (!isNumber(port))
-        //     result = false;        // port가 숫자를 제외한 문자를 포함하고 있을 경우의 예외처리
-    }else
-        port = syslog->port;
+        if (get_value_from_json_key(_jv, "SyslogPortNumber", port)){
+            if (isNumber(to_string(port))){
+                syslog->port = port;
+            } else {
+                result = false;
+            }      
+        }
 
-    if (get_value_from_json_key(_jv, "SyslogServer", server)){
-        // todo : syslog config change (ip)
-        log(warning) << "Syslog Service is not implemeted now..";
+        if (get_value_from_json_key(_jv, "SyslogServer", server)){
+            if (validateIPv4(server)) {
+                syslog->ip = server;
+            } else {
+                result = false;
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        log(error) << "PATCH SyslogService error";
+        return false;
+    }
 
-        if (!validateIPv4(server))
-            result = false;
-    }else
-        server = syslog->ip;
-
-    if (result == false)
-        return result;
-    
-    syslog->enabled = enable;
-    syslog->port = port;
-    syslog->ip = server;
     return true;
 }
 
@@ -4205,18 +4439,6 @@ bool patch_system(json::value _jv, string _record_uri)
 
     // #오픈시스넷 임시 true
     bool result = true;
-
-    
-
-    // if(_jv.as_object().find("Description") != _jv.as_object().end())
-    //     ((Systems *)g_record[_record_uri])->description = _jv.at("Description").as_string();
-
-    // if(_jv.as_object().find("HostName") != _jv.as_object().end())
-    //     ((Systems *)g_record[_record_uri])->hostname = _jv.at("HostName").as_string();
-
-    // if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
-    //     ((Systems *)g_record[_record_uri])->asset_tag = _jv.at("AssetTag").as_string();
-
 
     string led;
     if(get_value_from_json_key(_jv, "IndicatorLED", led))
@@ -4252,17 +4474,6 @@ bool patch_system(json::value _jv, string _record_uri)
         result = true;
     }
     
-    // if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
-    // {
-    //     string led = _jv.at("IndicatorLED").as_string();
-    //     if(led == "Off")
-    //         ((Systems *)g_record[_record_uri])->indicator_led = LED_OFF;
-    //     else if(led == "Blinking")
-    //         ((Systems *)g_record[_record_uri])->indicator_led = LED_BLINKING;
-    //     else if(led == "Lit")
-    //         ((Systems *)g_record[_record_uri])->indicator_led = LED_LIT;
-    // }
-
     json::value boot;
     if(get_value_from_json_key(_jv, "Boot", boot))
     {
@@ -4291,25 +4502,6 @@ bool patch_system(json::value _jv, string _record_uri)
             result = true;
         }
     }
-
-    // if(_jv.as_object().find("Boot") != _jv.as_object().end())
-    // {
-    //     json::value j = json::value::object();
-    //     j = _jv.at("Boot");
-
-    //     if(j.as_object().find("BootSourceOverrideEnabled") != j.as_object().end())
-    //         ((Systems *)g_record[_record_uri])->boot.boot_source_override_enabled = j.at("BootSourceOverrideEnabled").as_string();
-
-    //     if(j.as_object().find("BootSourceOverrideTarget") != j.as_object().end())
-    //         ((Systems *)g_record[_record_uri])->boot.boot_source_override_target = j.at("BootSourceOverrideTarget").as_string();
-
-    //     if(j.as_object().find("BootSourceOverrideMode") != j.as_object().end())
-    //         ((Systems *)g_record[_record_uri])->boot.boot_source_override_mode = j.at("BootSourceOverrideMode").as_string();
-
-    //     if(j.as_object().find("UefiTargetBootSourceOverride") != j.as_object().end())
-    //         ((Systems *)g_record[_record_uri])->boot.uefi_target_boot_source_override = j.at("UefiTargetBootSourceOverride").as_string();
-    // }
-
 
     // cout << "바꾼후~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
@@ -4345,21 +4537,6 @@ bool patch_chassis(json::value _jv, string _record_uri)
         ((Chassis *)g_record[_record_uri])->asset_tag = asset_tag;
         result = true;
     }
-
-    // if(_jv.as_object().find("AssetTag") != _jv.as_object().end())
-    //     ((Chassis *)g_record[_record_uri])->asset_tag = _jv.at("AssetTag").as_string();
-
-    // if(_jv.as_object().find("IndicatorLED") != _jv.as_object().end())
-    // {
-    //     string led = _jv.at("IndicatorLED").as_string();
-    //     if(led == "Off")
-    //         // ((Chassis *)g_record[_record_uri])->led_off
-    //         ((Chassis *)g_record[_record_uri])->indicator_led = LED_OFF;
-    //     else if(led == "Blinking")
-    //         ((Chassis *)g_record[_record_uri])->indicator_led = LED_BLINKING;
-    //     else if(led == "Lit")
-    //         ((Chassis *)g_record[_record_uri])->indicator_led = LED_LIT;
-    // }
 
     json::value location;
     if(get_value_from_json_key(_jv, "Location", location))
@@ -4433,48 +4610,6 @@ bool patch_chassis(json::value _jv, string _record_uri)
         }
     }
 
-    // if(_jv.as_object().find("Location") != _jv.as_object().end())
-    // {
-    //     json::value j;
-    //     j = _jv.at("Location");
-
-    //     if(j.as_object().find("PostalAddress") != j.as_object().end())
-    //     {
-    //         json::value k;
-    //         k = j.at("PostalAddress");
-
-    //         if(k.as_object().find("Country") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.postal_address.country = k.at("Country").as_string();
-    //         if(k.as_object().find("Territory") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.postal_address.territory = k.at("Territory").as_string();
-    //         if(k.as_object().find("City") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.postal_address.city = k.at("City").as_string();
-    //         if(k.as_object().find("Street") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.postal_address.street = k.at("Street").as_string();
-    //         if(k.as_object().find("HouseNumber") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.postal_address.house_number = k.at("HouseNumber").as_string();
-    //         if(k.as_object().find("Name") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.postal_address.name = k.at("Name").as_string();
-    //         if(k.as_object().find("PostalCode") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.postal_address.postal_code = k.at("PostalCode").as_string();
-    //     }
-
-    //     if(j.as_object().find("Placement") != j.as_object().end())
-    //     {
-    //         json::value k;
-    //         k = j.at("Placement");
-
-    //         if(k.as_object().find("Row") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.placement.row = k.at("Row").as_string();
-    //         if(k.as_object().find("Rack") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.placement.rack = k.at("Rack").as_string();
-    //         if(k.as_object().find("RackOffsetUnits") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.placement.rack_offset_units = k.at("RackOffsetUnits").as_string();
-    //         if(k.as_object().find("RackOffset") != k.as_object().end())
-    //             ((Chassis *)g_record[_record_uri])->location.placement.rack_offset = k.at("RackOffset").as_integer();
-    //     }
-    // }
-
     // cout << "바꾼후~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
 
@@ -4512,21 +4647,23 @@ bool patch_power_control(json::value _jv, string _record_uri)
         }
     }
 
-    // if(_jv.as_object().find("PowerLimit") != _jv.as_object().end())
-    // {
-    //     json::value j;
-    //     j = _jv.at("PowerLimit");
+    return result;
+}
 
-    //     if(j.as_object().find("CorrectionInMs") != j.as_object().end())
-    //         ((PowerControl *)g_record[_record_uri])->power_limit.correction_in_ms = j.at("CorrectionInMs").as_integer();
-    //     if(j.as_object().find("LimitException") != j.as_object().end())
-    //         ((PowerControl *)g_record[_record_uri])->power_limit.limit_exception = j.at("LimitException").as_string();
-    //     if(j.as_object().find("LimitInWatts") != j.as_object().end())
-    //         ((PowerControl *)g_record[_record_uri])->power_limit.limit_in_watts = j.at("LimitInWatts").as_double();
-    // }
-
-    // cout << "바꾼후~~ " << endl;
+bool patch_drive(json::value _jv, string _record_uri)
+{
+    // cout << "바뀌기전~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
+
+    bool result = false;
+
+    string asset_tag;
+    if(get_value_from_json_key(_jv, "AssetTag", asset_tag))
+    {
+        ((Drive *)g_record[_record_uri])->asset_tag = asset_tag;
+        result = true;
+    }
 
     return result;
 }
@@ -4634,10 +4771,99 @@ bool patch_subscription(json::value _jv, string _record_uri)
     return result;
 }
 
-// #오픈시스넷 패치로그서비스 (리소스 get_json)
 bool patch_logservice(json::value _jv, string _record_uri)
 {
-    return true;
+    /* jv example
+        Log1{
+            "@odata.id": "/redfish/v1/Managers/CMM1/LogServices/Log1",
+            "@odata.type": "#LogService.v1_0_0.LogService",
+            "Actions": {
+                "#LogService.ClearLog": {
+                "target": "/redfish/v1/Managers/CMM1/LogServices/Log1/Actions/LogService.ClearLog"
+                }
+            },
+            "DateTime": "",
+            "DateTimeLocalOffset": "+09:00",
+            "Description": "Keti.1.0.TempReport Logs",
+            "Entries": {
+                "@odata.id": "/redfish/v1/Managers/CMM1/LogServices/Log1/Entries"
+            },
+            "Id": "Log1",
+            "LogEntryType": "Event",
+            "MaxNumberOfRecords": 1000,
+            "Name": "",
+            "OverWritePolicy": "WrapsWhenFull",
+            "ServiceEnabled": true,
+            "Status": {
+                "Health": "OK",
+                "State": "Enabled"
+            },
+            "SyslogFilters": [
+                {
+                "LogFacilities": [
+                    "Syslog"
+                ],
+                "LowestSeverity": "All"
+                }
+            ]
+        }
+    */
+    string datetime_local_offset;
+    bool enable;
+    json::value syslog_filters;
+    bool result = true;
+
+    LogService *log = (LogService *)g_record[_record_uri];
+
+    try {
+        if (get_value_from_json_key(_jv, "ServiceEnabled", enable)) {
+            log->service_enabled = enable;
+        }    
+
+        if (get_value_from_json_key(_jv, "DateTimeLocalOffset", datetime_local_offset)) {
+            if (validateDatetimeLocalOffset(datetime_local_offset)) {
+                log->datetime_local_offset = datetime_local_offset;
+            } else {
+                result = false;
+            }
+        }
+
+        if (get_value_from_json_key(_jv, "SyslogFilters", syslog_filters)) {
+            json::value log_facilities;
+            string lowest_severity;
+            SyslogFilter sf;
+
+            for (auto syslog_filter : syslog_filters.as_array()) {
+                if (get_value_from_json_key(syslog_filter, "LogFacilities", log_facilities)) {
+                    for (auto log_facility : log_facilities.as_array()) {
+                        string s = log_facility.as_string();
+                        if (validateLogFacility(s)) {
+                            sf.logFacilities.push_back(s);
+                        } else {
+                            result = false;
+                        }
+                    }
+                }
+
+                if (get_value_from_json_key(syslog_filter, "LowestSeverity", lowest_severity)) {
+                    if (validateSeverity(lowest_severity)) {
+                        sf.lowestSeverity = lowest_severity;
+                    } else {
+                        result = false;
+                    }
+                }
+
+                if (result) {
+                    log->syslogFilters.push_back(sf);
+                }
+            }
+ 
+        }
+    } catch (const std::exception& e){
+        log(error) << "PATCH LogService error";
+        return false;
+    }
+    return result;
 }
 
 void error_reply(m_Request& _msg, json::value _jv, status_code _status, http_response& _response)

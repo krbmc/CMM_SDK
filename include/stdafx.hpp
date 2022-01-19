@@ -149,6 +149,11 @@ string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
 bool validateIPv4(const string str);
+bool validateDatetimeLocalOffset(const string str);
+bool validateSeverity(const string str);
+bool validateLogFacility(const string str);
+bool validateDHCPv6OperatingMode(const string str);
+
 string ltrim(string str);
 
 char *get_popen_string(char *command);

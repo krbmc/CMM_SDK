@@ -579,8 +579,11 @@ void init_ethernet(Collection *ethernet_collection, string _id)
                 v.vlan_id = stoi(string_split(get_popen_string("cat /proc/net/vlan/config | grep " + eth_id), '|')[1]);
             } else {
                 ethernet->vlan.vlan_enable = false;
-                ethernet->vlan.vlan_id = 0;
+                ethernet->vlan.vlan_id = -1;
             }
+        } else {
+            ethernet->vlan.vlan_enable = false;
+            ethernet->vlan.vlan_id = -1;
         }
     }
     
@@ -1633,7 +1636,7 @@ void init_account_service(AccountService *account_service)
         // Root account configure
         Account *_root = new Account(acc_odata, acc_id, "Administrator");
         _root->id = "root";
-        _root->name = "User Account";
+        _root->name = "Root Account";
         _root->user_name = "root";
         _root->password = "ketilinux";
         
@@ -1641,6 +1644,18 @@ void init_account_service(AccountService *account_service)
         _root->certificates->add_member(cert);
         
         account_service->account_collection->add_member(_root);
+
+        acc_odata = account_service->account_collection->odata.id;
+        acc_id = to_string(allocate_numset_num(ALLOCATE_ACCOUNT_NUM));
+        acc_odata = acc_odata + "/" + acc_id;
+
+        Account *admin = new Account(acc_odata, acc_id, "Administrator");
+        admin->id = "admin";
+        admin->name = "Admin Account";
+        admin->user_name = "admin";
+        admin->password = "admin";
+
+        account_service->account_collection->add_member(admin);
     }
     return;
 }
@@ -1657,7 +1672,7 @@ void init_session_service(SessionService *session_service)
     session_service->status.state = STATUS_STATE_ENABLED;
     session_service->status.health = STATUS_HEALTH_OK;
     session_service->service_enabled = true;
-    session_service->session_timeout = 86400; // 30sec to 86400sec
+    session_service->session_timeout = 1800;//86400; // 30sec to 86400sec
         
     if (!record_is_exist(odata_id + "/Sessions")){
         session_service->session_collection = new Collection(ODATA_SESSION_ID, ODATA_SESSION_COLLECTION_TYPE);

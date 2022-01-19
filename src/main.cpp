@@ -213,12 +213,13 @@ int main(int _argc, char *_argv[])
         // });
 
         log(info) << "Server crt file path: " << SERVER_CERTIFICATE_CHAIN_PATH;
-        // _ctx.use_certificate_chain_file("/conf/ssl/server.pem");
+        // _ctx.use_certificate_chain_file("/conf/ssl/test/my_rootca.crt");
         _ctx.use_certificate_chain_file(SERVER_CERTIFICATE_CHAIN_PATH);
         log(info) << "Server key file path: " << SERVER_PRIVATE_KEY_PATH;
-        // _ctx.use_private_key_file("/conf/ssl/server.pem", boost::asio::ssl::context::pem);
+        // _ctx.use_private_key_file("/conf/ssl/test/my_rootca.key", boost::asio::ssl::context::pem);
         _ctx.use_private_key_file(SERVER_PRIVATE_KEY_PATH, boost::asio::ssl::context::pem);
         log(info) << "Server pem file path: " << SERVER_TMP_DH_PATH;
+        // _ctx.use_tmp_dh_file("/conf/ssl/test/my_dh2048.pem");
         _ctx.use_tmp_dh_file(SERVER_TMP_DH_PATH);
     });
 

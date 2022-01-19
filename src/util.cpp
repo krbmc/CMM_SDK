@@ -299,6 +299,131 @@ bool validateIPv4(const string str)
     return true;
 }
 
+/**
+ * @brief get string, check if it is validate Datetime Local Offset (ex. +09:00)
+ * @author dyk
+ * @return if string is available datetime local offset, retrun 1. else return 0. 
+ */
+bool validateDatetimeLocalOffset(const string str)
+{
+    vector<string> available{
+        "-12:00",
+        "-11:00",
+        "-10:00",
+        "-09:00",
+        "-08:00",
+        "-07:00",
+        "-06:00",
+        "-05:00",
+        "-04:00",
+        "-03:00",
+        "-02:00",
+        "-01:00",
+        "00:00",
+        "+01:00",
+        "+02:00",
+        "+03:00",
+        "+04:00",
+        "+05:00",
+        "+06:00",
+        "+07:00",
+        "+08:00",
+        "+09:00",
+        "+10:00",
+        "+11:00",
+        "+12:00",
+    };
+
+    if (find(available.begin(), available.end(), str) == available.end()) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate Severity
+ * @author dyk
+ * @return if string is available severity, retrun 1. else return 0. 
+ */
+bool validateSeverity(const string str)
+{
+    vector<string> available{
+        "Alert",
+        "All",
+        "Critical",
+        "Debug",
+        "Emergency",
+        "Error",
+        "Informational",
+        "Notice",
+        "Warning",
+    };
+
+    if (find(available.begin(), available.end(), str) == available.end()) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate log facility
+ * @author dyk
+ * @return if string is available log facility, retrun 1. else return 0. 
+ */
+bool validateLogFacility(const string str)
+{
+    vector<string> available{
+        "Auth",
+        "Authpriv",
+        "Console",
+        "Cron",
+        "Daemon",
+        "FTP",
+        "Kern",
+        "Local0",
+        "Local1",
+        "Local2",
+        "Local3",
+        "Local4",
+        "Local5",
+        "Local6",
+        "Local7",
+        "LPR",
+        "Mail",
+        "News",
+        "NTP",
+        "Security",
+        "SolarisCron",
+        "Syslog",
+        "User",
+        "UUCP",
+    };
+
+    if (find(available.begin(), available.end(), str) == available.end()) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate DHCPv6 Operating Mode
+ * @author dyk
+ * @return if string is available DHCPv6 Operating Mode, retrun 1. else return 0. 
+ */
+bool validateDHCPv6OperatingMode(const string str)
+{
+    vector<string> available{
+        "Disabled",
+        "Stateful",
+        "Stateless",
+    };
+
+    if (find(available.begin(), available.end(), str) == available.end()) {
+        return false;
+    }
+    return true;
+}
+
 char *get_popen_string(char *command)
 {
     FILE *fp = popen(command, "r");
