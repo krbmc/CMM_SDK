@@ -37,8 +37,6 @@ Handler::Handler(utility::string_t _url, http_listener_config _config) : m_liste
  */
 void Handler::handle_get(http_request _request)
 {
-    // 핸들러get, put, delete, put 전부에서 task 하나 만들고 task_map에 올려 정보넣어주고 그런다음에 pplx create때리고
-    // 그 pplx task에서 원래하던 요청처리를 한다. 태스크가 끝나면서 태스크 정보수정하고 옮겨주고 task_map 수정
 
     log(info) << "Request method: GET";
     string uri = _request.request_uri().to_string();
@@ -205,28 +203,63 @@ void Handler::handle_get(http_request _request)
             if(uri_tokens[0] == "HAlastcommand")
             {
                 json::value j;
+
                 j["CMS"] = json::value::array();
                 j["SMS"] = json::value::array();
-                json::value obj;
-                obj["CMID"]= json::value::string("CM1");
-                obj["Value"]=json::value::string("/redfish/v1/Chassis");
-                obj["Time"]=json::value::string("2021-11-15 11:00");
-                j["CMS"][0]=obj;
-                json::value obj2;
-                obj2["CMID"]= json::value::string("CM2");
-                obj2["Value"]=json::value::string("/redfish/v1/Chassis");
-                obj2["Time"]=json::value::string("2021-11-15 11:00");
-                j["CMS"][1]=obj2;
-                json::value smobj1;
-                smobj1["CMID"]= json::value::string("SM1");
-                smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
-                smobj1["Time"]=json::value::string("2021-11-15 11:00");
-                j["SMS"][0]=smobj1;
-                json::value smobj2;
-                smobj1["CMID"]= json::value::string("SM2");
-                smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
-                smobj1["Time"]=json::value::string("2021-11-15 11:00");
-                j["SMS"][1]=smobj1;
+
+                // json::value test;
+                // j["CMS"][0] = test;
+
+                // cout << " SIZE " << endl;
+                // cout << "j : " << j.size() << endl;
+                // cout << "CMS : " << j["CMS"].size() << endl;
+                // cout << "SMS : " << j["SMS"].size() << endl;
+                
+                
+                for(int i=0; i<last_command_list.size(); i++)
+                {
+                    
+                    LCI cur = last_command_list[i];
+
+                    json::value obj;
+                    obj["CMID"] = json::value::string(cur.module_id);
+                    obj["Value"]=json::value::string(cur.uri);
+                    obj["Time"]=json::value::string(cur.time);
+                    
+                    if(cur.module_id[0] == 'C')
+                    {
+                        //CMS
+                        j["CMS"][j["CMS"].size()] = obj;
+                    }
+                    else if(cur.module_id[0] == 'S')
+                    {
+                        //SMS
+                        j["SMS"][j["SMS"].size()] = obj;
+                    }
+
+                }
+                
+                // 오픈시스넷 샘플데이터
+                // json::value obj;
+                // obj["CMID"]= json::value::string("CM1");
+                // obj["Value"]=json::value::string("/redfish/v1/Chassis");
+                // obj["Time"]=json::value::string("2021-11-15 11:00");
+                // j["CMS"][0]=obj;
+                // json::value obj2;
+                // obj2["CMID"]= json::value::string("CM2");
+                // obj2["Value"]=json::value::string("/redfish/v1/Chassis");
+                // obj2["Time"]=json::value::string("2021-11-15 11:00");
+                // j["CMS"][1]=obj2;
+                // json::value smobj1;
+                // smobj1["CMID"]= json::value::string("SM1");
+                // smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
+                // smobj1["Time"]=json::value::string("2021-11-15 11:00");
+                // j["SMS"][0]=smobj1;
+                // json::value smobj2;
+                // smobj1["CMID"]= json::value::string("SM2");
+                // smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
+                // smobj1["Time"]=json::value::string("2021-11-15 11:00");
+                // j["SMS"][1]=smobj1;
 
 
                 response.set_status_code(status_codes::OK);
@@ -1115,7 +1148,7 @@ void Handler::handle_post(http_request _request)
             
             // cout << "####################### end" << endl;
             // // 헤더에서 바운더리값 추출하고 라인돌면서 name값으로 무엇인지 파악후 2줄뒤부터 내용컨텐츠읽어서 
-            // // 추출하거나 처리 어디까지 읽냐 바운더리또나올때까지 그렇게 해서 사용해보자 파일저장을 해보자 ㅇㅇ
+            // // 추출하거나 처리 어디까지. 바운더리또나올때까지
 
             _request.reply(status_codes::OK);
             return ;
@@ -1324,7 +1357,7 @@ void Handler::handle_post(http_request _request)
             // #5 존재하지 않는다면 리소스를 생성하고 넘겨받은 정보들로 값 넣어줌
             // #6 4,5 두 경우 모두 수행하고나서 DataBase Reading Table에 로그기록 insert해줘야함
 
-            // ㄱㄱ
+            
 
             json::value jv = _request.extract_json().get();
             json::value jv_error;
@@ -1400,7 +1433,7 @@ void Handler::handle_post(http_request _request)
                 {
                     // 없으면 생성
                     // cout << " Nope ! " << endl;
-                    // 생성하고 그 받은 json으로 load때리고 odata만 수정해주면될듯 ㅇㅇ
+                    // 생성하고 그 받은 json으로 load때리고 odata만 수정해주면될듯
                     Sensor *sensor = new Sensor(odata, s_id);
                     sensor->load_json(sensors_info[i]);
                     sensor->odata.id = odata;
@@ -1459,7 +1492,7 @@ void Handler::handle_post(http_request _request)
             if(uri_tokens[2] == "AccountService" || uri_tokens[2] == "SessionService" || uri_tokens[2] == "TaskService"
             || uri_tokens[2] == "CertificateService" || uri_tokens[2] == "EventService" || uri_tokens[2] == "UpdateService")
             {
-                //CMM자체 동작으로다가 처리하시면됨
+                //CMM자체 동작으로다가 처리
                 do_task_cmm_post(_request);
             }
             else

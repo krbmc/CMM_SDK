@@ -587,6 +587,9 @@ typedef struct _Value_About_HA
     int second_port;
     bool origin;
     bool enabled;
+    int network_timeout;
+    int heartbeat;
+    int switch_timeout;
 } Value_About_HA;
 
 typedef struct _Message

@@ -1,3 +1,4 @@
+// #pragma once
 #include "resource.hpp"
 #include "handler.hpp"
 #include "task.hpp"

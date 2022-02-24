@@ -1,3 +1,6 @@
+#ifndef _HWCONTROL_H
+#define _HWCONTROL_H
+
 #include "stdafx.hpp"
 #include <sys/mman.h>
 
@@ -36,3 +39,5 @@ double get_intake_humidity(uint8_t _sensor_index);
 bool get_intake_temperature_config(double *_range);
 double get_intake_temperature(uint8_t _sensor_index);
 double get_cpu_temperature(uint8_t _sensor_index);
+
+#endif
