@@ -15,11 +15,11 @@ extern unordered_map<string, Event*> event_map;
  * m_Request를 이동시킨다.
  */
 
-// 락 걸어야할 부분
+// 락
 // task_map쓰는 category관련
 // g_record쓰는 record_save_json관련
 // task_numset(번호할당) 쓰는 allocate_task_num관련
-// 보니깐 요청처리하는데에도 record exist나 session valid g_record 사용되네
+// record exist나 session valid에 g_record 사용됨
 
 void do_task_cmm_get(http_request _request)
 {
@@ -283,6 +283,8 @@ void do_task_bmc_get(http_request _request)
     json_file.close();
 
     json::value j = json::value::parse(string_stream);
+
+    save_last_command(new_uri, uri_tokens[3]);
 
     // //// BMC 모듈id 추가 부분
     // string original_string = j.serialize();
@@ -2208,12 +2210,6 @@ void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string
         return ;
     }
 
-    // event map 을 이용해서 안에있는 이벤트들을 sub들에게 보내는 걸 한번 해볼게 일단 그 함수를 짤거고
-    // 근데 보내는게 맵돌면서 이벤트 타입에 따라서 안에있는 event들을 토대로 보내 누구한테? sub한테 근데 sub들도 redfish인거에만일단
-    // 보내고나면 보낸내역들은 eventlog로 기록을할뿐 그러면 안에있는 event map에서 제거를해야하냐 retryattempt가 있어서
-    // 음.. 이거 pplx로 해야하나? 이건.. 보여주기에도 웹쪽을 보여줄거같음 근데 웹에 보여준다는게 로그로 가면되잖아.. 아하
-    // 그럼 pplx랑 retry같은건 고려하지않고 단순히 이벤트를 보내는거만 한번 짜볼게
-
     success_reply(_msg, result, status_codes::OK, _response);
     return ;
 }
@@ -2416,7 +2412,7 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
 void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
     // 얘는 리소스가 무조건 virtualmedia가 아니라 insert면 virtual컬렉션 eject면 virtualmedia리소스임 그래서 리소스부터 따고
-    // 들어갈수가없네 _what부터 구분해야겟네
+    // 들어갈수가없음 _what부터 구분해야함
 
     if(!(_what == "InsertMediaCD" || _what == "InsertMediaUSB" || _what == "EjectMedia"))
     {
@@ -5205,7 +5201,6 @@ json::value get_json_task_manager(Task_Manager *_tm)
 
 void create_task_map_from_json(json::value _jv)
 {
-    // 토할거같다!! 
     // 음 이건 테스트를 할때 cmm꺼 가지고 할거니깐 일단 지금의 task_map초기화한후 그걸로 json뽑아보고
     // 깨끗할거아니여 그런담에 이걸로 읽어서 task_map 구성하고 다시 json뽑았을때 똑같으면 됨
     // 도중에 요청들어와서 taskmap 충돌나는건  이건 ha에서 할거니깐 아 잠깐만 ha에도 요청들어오는데?
@@ -5460,3 +5455,39 @@ void create_task_manager_from_json(Task_Manager *_tm, json::value _jv)
 }
 // task map backup은 액티브cmm에서 스탠바이cmm으로 json 주기적으로 보내면
 // 스탠바이쪽에서 task_map 구축해놓고 있는걸로
+
+
+/**
+ * @brief CMM->BMC로 전달되는 요청의 경우에 last command로 저장하는 함수
+ * 
+ * @param _uri 수행한 uri ex) /redfish/v1/Chassis , 모듈id가 빠진 BMC전달형태의 uri로 저장한다.
+ * @param _name 모듈id ex) CM1
+ */
+void save_last_command(string _uri, string _name)
+{
+    // cout << " !@#$  !@#$  !@#$ " << endl;
+    int index = -1;
+    if(last_command_index_map.find(_name) != last_command_index_map.end())
+    {
+        index = last_command_index_map.find(_name)->second;
+        last_command_list[index].uri = _uri;
+        last_command_list[index].time = currentDateTime();
+        // cout << " FIND " << endl;
+    }
+    else
+    {
+        LCI lci;
+        lci.module_id = _name;
+        lci.uri = _uri;
+        lci.time = currentDateTime();
+
+        last_command_list.push_back(lci);
+        index = last_command_list.size() - 1;
+        last_command_index_map.insert({_name, index});
+        // cout << " NEW " << endl;
+    }
+
+    // cout << "Module_id : " << last_command_list[index].module_id << endl;
+    // cout << "Uri : " << last_command_list[index].uri << endl;
+    // cout << "Time : " << last_command_list[index].time << endl;    
+}

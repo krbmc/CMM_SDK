@@ -1,3 +1,4 @@
+// #pragma once
 #include "handler.hpp"
 #include "resource.hpp"
 #include "hwcontrol.hpp"
@@ -17,6 +18,8 @@ map<string, string> module_id_table;
 // unordered_map<string, unordered_map<string, Task *> > task_map;
 unordered_map<uint8_t, Task_Manager *> task_map;
 string uuid_str;
+map<string, int> last_command_index_map;
+vector<LCI> last_command_list;
 
 /**
  * @brief 

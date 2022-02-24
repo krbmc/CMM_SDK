@@ -55,6 +55,16 @@ typedef struct _m_Request
 
 } m_Request;
 
+typedef struct _Last_Command_Info
+{
+    string module_id;
+    string uri;
+    string time;
+} LCI;
+
+extern map<string, int> last_command_index_map;
+extern vector<LCI> last_command_list;
+
 class Task_Manager
 {
     public:
@@ -144,6 +154,8 @@ json::value get_json_task_map(void);
 json::value get_json_task_manager(Task_Manager *_tm);
 void create_task_map_from_json(json::value _jv);
 void create_task_manager_from_json(Task_Manager *_tm, json::value _jv);
+
+void save_last_command(string _uri, string _name);
 
 // daemon
 int daemon_init(void);
