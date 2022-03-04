@@ -190,6 +190,14 @@ void load_module_id(void);
 string make_module_address(string _id); // module_id 에 대한 주소생성함수
 void remove_if_exists(fs::path file);
 
+
+/**
+ * @brief Get the value from json key object
+ * 
+ * @param body json내용이 있는 곳... ~에서
+ * @param key 읽어오는 Key값 ... ~을 읽어서
+ * @param value 읽어온 값을 담을 변수 ... ~에 저장
+ */
 bool get_value_from_json_key(json::value body, string key, int& value);
 bool get_value_from_json_key(json::value body, string key, unsigned int& value);
 bool get_value_from_json_key(json::value body, string key, string& value);

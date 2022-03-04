@@ -589,7 +589,8 @@ typedef struct _Value_About_HA
     bool enabled;
     int network_timeout;
     int heartbeat;
-    int switch_timeout;
+    int heartbeat_retry;
+    // int switch_timeout;
 } Value_About_HA;
 
 typedef struct _Message
