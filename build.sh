@@ -6,7 +6,8 @@ password=ketilinux
 path=/usr/sbin
 # path=/root
 # file=reboot
-file=keti-redfish
+file=keti-redfish_binary
+# file=keti-redfish
 # file=keti-redfish1024
 
 ssh-keygen -f "/root/.ssh/known_hosts" -R "$ip"
@@ -16,6 +17,7 @@ cmake CMakeLists.txt
 make -j 60
 # mv src/reboot .
 mv src/keti-redfish .
+mv ./keti-redfish $file
 # mv src/keti-redfish1024 .
 
 sshpass -p $password scp $file $id@$ip:$path

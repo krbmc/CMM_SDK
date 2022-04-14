@@ -3024,24 +3024,32 @@ bool Systems::Reset(json::value body)
     string this_proc_name(get_popen_string(cmds)); // todo : not this process, target system
     log(info) << pid << " : " << this_proc_name;
 
+    cout <<"RESET BODY !!!!!!!!!!!!!!!!!!!!" << endl;
+    cout << body << endl;
+    cout <<"RESET BODY !!!!!!!!!!!!!!!!!!!!" << endl;
+
     get_value_from_json_key(body, "ResetType", reset_type);
     memset(cmds, 0, sizeof(cmds));
     
     if (reset_type == "On"){
         this->power_state = "On";
+        cout << "[RESET INFO] : On" << endl;
         // todo: led 켜기
         return true;
     }
     if (reset_type == "ForceOff"){
         sprintf(cmds, "kill -9 %d", pid);
+        cout << "[RESET INFO] : ForceOff" << endl;
     }
     if (reset_type == "GracefulShutdown"){
         this->power_state = "Off";
+        cout << "[RESET INFO] : GracefulShutdown" << endl;
         // todo: led 끄기
         return true;
     }
     if (reset_type == "GracefulRestart"){
         sprintf(cmds, "/etc/init.d/rcK && /etc/init.d/rcS");
+        cout << "[RESET INFO] : GracefulRestart" << endl;
     }
     if (reset_type == "ForceRestart"){
         sprintf(cmds, "reboot");
@@ -3093,7 +3101,7 @@ bool Systems::Reset(json::value body)
         // ?????????????????????????????????????????????????????????????????????????????????????????????????????
     }
 
-    system(cmds);
+    // system(cmds);
 
     return true;
 }
@@ -4281,7 +4289,7 @@ json::value VirtualMedia::InsertMedia(json::value body)
         mkdir("/etc/nfs", 777);
     
     // #1-2 using nfs, 
-    string cmd = "mount -vt nfs " + image + " /etc/nfs";
+    string cmd = "mount -vt nfs " + image + " /etc/nfs -o vers=3";
     cout << "CMD : " << cmd << endl;
     ret = system(cmd.c_str());
     if (ret == -1){

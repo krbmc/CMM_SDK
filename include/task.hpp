@@ -64,6 +64,8 @@ typedef struct _Last_Command_Info
 
 extern map<string, int> last_command_index_map;
 extern vector<LCI> last_command_list;
+// 하나의 모듈을 last_command_list벡터에 저장하고 해당 벡터에서 index로 접근하기 위해
+// last_command_index_map에다가 (모듈id, last_command_list에서의 index) 로 관리
 
 class Task_Manager
 {
@@ -103,9 +105,19 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
 void act_certificate(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_certificate_service(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_system(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+
+
 void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_update_service(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+void update_firmware(http_request _request, m_Request& _msg, string _firm_id, http_response& _response);
+void update_software(http_request _request, m_Request& _msg, string _firm_id, http_response& _response);
+void update_resource_backup(m_Request& _msg, http_response& _response);
+void update_resource_restore(http_request& _request, m_Request& _msg, http_response& _response);
+void get_software_category(string _str, string& _front, string& _end);
+void save_file_from_request(http_request _request, string _path);
+bool pass_request_to_bmc(http_request _request, string _module);
+
 void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void make_account(m_Request& _msg, json::value _jv, http_response& _response);
 void make_session(m_Request& _msg, json::value _jv, http_response& _response);
