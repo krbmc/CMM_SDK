@@ -143,6 +143,12 @@ int main(int _argc, char *_argv[])
     // generate_log("Manager", "Log1", sel);
     // // generate_log("Chassis", "Facility 1", sel);
 
+    // Log Entry 생성
+    // Event_Info t_ev;
+    // vector<string> args;
+    // t_ev = generate_event_info("TEST Event 1", "Alert", "ResourceUpdated", args);
+    // generate_log("Manager", "TestLogService", t_ev);
+
 
     // cm1 샤시 스토리지 만들기
     // string chassis_sto_odata = "/redfish/v1/Chassis/CM1";
@@ -177,6 +183,7 @@ int main(int _argc, char *_argv[])
     // therm->fans->add_member(fan_3);
     // resource_save_json(fan_3);
     // resource_save_json(therm->fans);
+    
     
 
     // ssdp discover (not working yet)

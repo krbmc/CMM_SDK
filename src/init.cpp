@@ -635,7 +635,7 @@ void init_log_entry(Collection *log_entry_collection, string _id)
     
     log_entry->entry_type = "Event";
     log_entry->name = "Log Entry 1";
-    log_entry->created = "2021-07-25.13:07:10";
+    log_entry->created = currentDateTime();//"2021-07-25.13:07:10"; 뭐여이거 하드코딩
     log_entry->severity = "OK";
     log_entry->message.message = "Current temperature";
     log_entry->message.id = "Keti.1.0.TempReport";
@@ -965,7 +965,7 @@ void init_power(Power *power)
 
     if (!record_is_exist(odata_id + "/PowerControl")){
         power->power_control = new List(odata_id + "/PowerControl", POWER_CONTROL_TYPE);
-        power->power_control->name = "Chassis PowerControl";
+        power->power_control->name = "Chassis PowerControl";  
 
         init_power_control(power->power_control, "0");
     }
@@ -1635,7 +1635,7 @@ void init_account_service(AccountService *account_service)
 
         // Root account configure
         Account *_root = new Account(acc_odata, acc_id, "Administrator");
-        _root->id = "root";
+        _root->id = acc_id;
         _root->name = "Root Account";
         _root->user_name = "root";
         _root->password = "ketilinux";
@@ -1650,7 +1650,7 @@ void init_account_service(AccountService *account_service)
         acc_odata = acc_odata + "/" + acc_id;
 
         Account *admin = new Account(acc_odata, acc_id, "Administrator");
-        admin->id = "admin";
+        admin->id = acc_id;
         admin->name = "Admin Account";
         admin->user_name = "admin";
         admin->password = "admin";

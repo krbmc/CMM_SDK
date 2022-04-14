@@ -83,6 +83,19 @@ void Handler::handle_get(http_request _request)
                 return ;
             }
 
+            // update file test
+            if(uri_tokens[0] == "asdfasdf")
+            {
+                json::value j;
+                // j["Version"] = json::value::string("OLD Version");
+                j["Version"] = json::value::string("NEW Version");
+                response.set_status_code(status_codes::OK);
+                response.set_body(j);
+                _request.reply(response);
+                return ;
+
+            }
+
             // #오픈시스넷 로그 디비 샘플 처리함수
             // /log/reading/CMM/type/detail/time
             // if(uri_tokens[0] == "log")
@@ -231,62 +244,67 @@ void Handler::handle_get(http_request _request)
             {
                 json::value j;
 
-                j["CMS"] = json::value::array();
-                j["SMS"] = json::value::array();
+                // 찐 HAlastcommand
+                // j["CMS"] = json::value::array();
+                // j["SMS"] = json::value::array();
 
-                // json::value test;
-                // j["CMS"][0] = test;
+                // // json::value test;
+                // // j["CMS"][0] = test;
 
-                // cout << " SIZE " << endl;
-                // cout << "j : " << j.size() << endl;
-                // cout << "CMS : " << j["CMS"].size() << endl;
-                // cout << "SMS : " << j["SMS"].size() << endl;
+                // // cout << " SIZE " << endl;
+                // // cout << "j : " << j.size() << endl;
+                // // cout << "CMS : " << j["CMS"].size() << endl;
+                // // cout << "SMS : " << j["SMS"].size() << endl;
                 
                 
-                for(int i=0; i<last_command_list.size(); i++)
-                {
+                // for(int i=0; i<last_command_list.size(); i++)
+                // {
                     
-                    LCI cur = last_command_list[i];
+                //     LCI cur = last_command_list[i];
 
-                    json::value obj;
-                    obj["CMID"] = json::value::string(cur.module_id);
-                    obj["Value"]=json::value::string(cur.uri);
-                    obj["Time"]=json::value::string(cur.time);
+                //     json::value obj;
+                //     // obj["CMID"] = json::value::string(cur.module_id);
+                //     obj["Value"]=json::value::string(cur.uri);
+                //     obj["Time"]=json::value::string(cur.time);
                     
-                    if(cur.module_id[0] == 'C')
-                    {
-                        //CMS
-                        j["CMS"][j["CMS"].size()] = obj;
-                    }
-                    else if(cur.module_id[0] == 'S')
-                    {
-                        //SMS
-                        j["SMS"][j["SMS"].size()] = obj;
-                    }
+                //     if(cur.module_id[0] == 'C')
+                //     {
+                //         //CMS
+                //         obj["CMID"] = json::value::string(cur.module_id);
+                //         j["CMS"][j["CMS"].size()] = obj;
+                //     }
+                //     else if(cur.module_id[0] == 'S')
+                //     {
+                //         //SMS
+                //         obj["SMID"] = json::value::string(cur.module_id);
+                //         j["SMS"][j["SMS"].size()] = obj;
+                //     }
 
-                }
+                // }
                 
                 // 오픈시스넷 샘플데이터
-                // json::value obj;
-                // obj["CMID"]= json::value::string("CM1");
-                // obj["Value"]=json::value::string("/redfish/v1/Chassis");
-                // obj["Time"]=json::value::string("2021-11-15 11:00");
-                // j["CMS"][0]=obj;
-                // json::value obj2;
-                // obj2["CMID"]= json::value::string("CM2");
-                // obj2["Value"]=json::value::string("/redfish/v1/Chassis");
-                // obj2["Time"]=json::value::string("2021-11-15 11:00");
-                // j["CMS"][1]=obj2;
-                // json::value smobj1;
+                json::value obj;
+                obj["CMID"]= json::value::string("CM1");
+                obj["Value"]=json::value::string("/redfish/v1/Chassis");
+                obj["Time"]=json::value::string("2021-11-15 12:00");
+                j["CMS"][0]=obj;
+                json::value obj2;
+                obj2["CMID"]= json::value::string("CM2");
+                obj2["Value"]=json::value::string("/redfish/v1/Managers");
+                obj2["Time"]=json::value::string("2021-11-15 13:00");
+                j["CMS"][1]=obj2;
+                json::value smobj1;
                 // smobj1["CMID"]= json::value::string("SM1");
-                // smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
-                // smobj1["Time"]=json::value::string("2021-11-15 11:00");
-                // j["SMS"][0]=smobj1;
-                // json::value smobj2;
+                smobj1["SMID"]= json::value::string("SM1");
+                smobj1["Value"]=json::value::string("/redfish/v1/Systems");
+                smobj1["Time"]=json::value::string("2021-11-15 14:00");
+                j["SMS"][0]=smobj1;
+                json::value smobj2;
                 // smobj1["CMID"]= json::value::string("SM2");
-                // smobj1["Value"]=json::value::string("/redfish/v1/Chassis");
-                // smobj1["Time"]=json::value::string("2021-11-15 11:00");
-                // j["SMS"][1]=smobj1;
+                smobj1["SMID"]= json::value::string("SM2");
+                smobj1["Value"]=json::value::string("/redfish/v1/Managers/NetworkProtocol");
+                smobj1["Time"]=json::value::string("2021-11-15 15:00");
+                j["SMS"][1]=smobj1;
 
 
                 response.set_status_code(status_codes::OK);
@@ -1775,10 +1793,6 @@ void Handler::handle_patch(http_request _request)
         // 찐 CMMHA
         if(uri_tokens[0] == "CMMHA")
         {
-            // HA로 요청 전달하고 받은 status OK면 CMM에도 반영... 아 이거 스탠바이에도 보내야함?
-            // 그럴필요없이 HA에서 Switch 생성할때 내용을 함수화해서 생성자에서 함수호출로 변경하고
-            // HA PATCH 처리에서 성공적으로 마무리되었으면 그함수 다시 호출하는걸로하지 (CMM_HA쏘는 함수)
-
             string ha_shoot = "http://10.0.6.107:644/CMMHA";
             json::value jv = _request.extract_json().get();
             http_client client(ha_shoot);

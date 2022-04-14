@@ -154,6 +154,8 @@ bool validateSeverity(const string str);
 bool validateLogFacility(const string str);
 bool validateDHCPv6OperatingMode(const string str);
 
+bool validateModuleID(const string str);
+
 string ltrim(string str);
 
 char *get_popen_string(char *command);

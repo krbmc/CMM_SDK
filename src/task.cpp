@@ -620,7 +620,8 @@ void do_task_cmm_post(http_request _request)
     string uri = _request.request_uri().to_string();
     string content_type = _request.headers()["Content-Type"];
     json::value jv = json::value::null();
-    if(content_type == "application/json")
+    if(content_type.find("application/json") != string::npos)
+    // if(content_type == "application/json")
         jv = _request.extract_json().get();
     vector<string> uri_tokens = string_split(uri, '/');
 
@@ -1941,30 +1942,30 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
     cout << "By : " << action_by << endl;
     cout << "What : " << action_what << endl;
 
-    if(!record_is_exist(resource_uri))
-    {
-        // #오픈시스넷 Update액션들 리소스 없는거 예외처리
-        if(action_by == "UpdateService")
-        {
-            string obj = get_current_object_name(resource_uri, "/");
-            if(obj == "CMM1" || obj == "CM1" || obj == "CM1-REST" || obj == "CM1-IPMI" || obj == "CM1-READING")
-            {
-                cout << "None but here catch UPDATE : " << resource_uri << endl;
-            }
-            else
-            {
-                error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
-                return ;
+    // if(!record_is_exist(resource_uri))
+    // {
+    //     // #오픈시스넷 Update액션들 리소스 없는거 예외처리
+    //     if(action_by == "UpdateService")
+    //     {
+    //         string obj = get_current_object_name(resource_uri, "/");
+    //         if(obj == "CMM1" || obj == "CM1" || obj == "CM1-REST" || obj == "CM1-IPMI" || obj == "CM1-READING")
+    //         {
+    //             cout << "None but here catch UPDATE : " << resource_uri << endl;
+    //         }
+    //         else
+    //         {
+    //             error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
+    //             return ;
 
-            }
-        }
-        else
-        {
-            error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
-            return ;
-            // 원래 이프문 안에 얘네 두 줄만 본체임
-        }
-    }
+    //         }
+    //     }
+    //     else
+    //     {
+    //         error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
+    //         return ;
+    //         // 원래 이프문 안에 얘네 두 줄만 본체임
+    //     }
+    // }
 
     // if(!record_is_exist(resource_uri))
     // {
@@ -2280,20 +2281,21 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
         string file_path = _resource;
         // string file_path = inventory->odata.id;
         string firm_id = get_current_object_name(file_path, "/");
-        mkdir(file_path.c_str(), 0755);
+        // cout << "FIRMFIRM!! :: " << firm_id << endl;
+        if(!fs::exists(file_path))
+            mkdir(file_path.c_str(), 0755);
 
-        file_path = file_path + "/" + firm_id + "_UPDATEFILE";
-        auto body_stream = _request.body();
-        auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(file_path), std::ios::out | std::ios::binary).get();
-        file_stream.flush();
+        // #1 펌웨어인지 소프트웨어인지에 따라 함수 분리
+        // #2 펌웨어는 펌id가 모듈id형태라 모듈유효검사만 진행
+        // 소프트웨어는 펌id가 모듈id-@ 형태라 파싱작업 필요
+        // #3 펌웨어는 현재 블락상태, 소프트웨어는 CMM이면 2개 자체처리 / BMC이면 전달
 
-        body_stream.read_to_end(file_stream.streambuf()).wait();
-        file_stream.close().wait();
+        if(_what == "FirmwareUpdate")
+            update_firmware(_request, _msg, firm_id, _response);
+        
+        if(_what == "SoftwareUpdate")
+            update_software(_request, _msg, firm_id, _response);
 
-        string cmd = "chmod +x " + file_path;
-        system(cmd.c_str());
-        log(info) << "[Firmware & Software Update] : " << file_path;
-        // 파일 전송완료
         
         // 각 종류의 ID마다 처리해주면 됨
         // if(firm_id == "CMM"){
@@ -2303,7 +2305,19 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
         //     system(cmd_test.c_str());
         // } // cmm update일 경우
 
-        success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        // success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        return ;
+    }
+
+    if(_what == "ResourceBackUp")
+    {
+        update_resource_backup(_msg, _response);
+        return ;
+    }
+
+    if(_what == "ResourceRestore")
+    {
+        update_resource_restore(_request, _msg, _response);
         return ;
     }
 
@@ -2350,61 +2364,224 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
 
     //     success_reply(_msg, json::value::null(), status_codes::OK, _response);
     //     return ;
-        
-
-
     // }
     
-    // /redfish/v1/UpdateService/SoftwareInventory/Action~~
-    if(_what == "ResourceBackUp")
+}
+
+void update_firmware(http_request _request, m_Request& _msg, string _firm_id, http_response& _response)
+{
+    // 현재 펌웨어 블락
+    error_reply(_msg, get_error_json("Not Supported FirmwareUpdate yet"), status_codes::BadRequest, _response);
+    return ;
+
+    // 모듈 유효성검사
+    if(!validateModuleID(_firm_id))
     {
-        string path_redfish = "/redfish";
-        char tar_buf[100];
-        // sprintf(tar_buf, "tar -cvf /redfish_backup.tar %s", path_redfish.c_str());
-        sprintf(tar_buf, "tar -cvf /redfish_backup.tar /redfish/v1 /redfish/v1.json");//%s", path_redfish.c_str());
-        system(tar_buf);
-        auto filestream = concurrency::streams::fstream::open_istream("/redfish_backup.tar").get();
+        error_reply(_msg, get_error_json("Invalid Firmware ID"), status_codes::BadRequest, _response);
+        return ;
+    }
+
+}
+
+void update_software(http_request _request, m_Request& _msg, string _firm_id, http_response& _response)
+{
+    string front="", end=""; // CMM1-READING일때 CMM1이 front, READING이 end
+    get_software_category(_firm_id, front, end);
+    cout << "FRONT / END : " << front << " / " << end << endl;
+
+    if(!validateModuleID(front))
+    {
+        error_reply(_msg, get_error_json("Invalid Software ID"), status_codes::BadRequest, _response);
+        return ;
+    }
+
+    // CMM요청이면 처리하고 BMC이면 전달 .. 인데 나중에 CMM1,2구분처리 필요
+    if(!(front == CMM_ID))
+    {
+        // BMC 요청전달
+        cout << "[BMC PASS CASE] ------------------ ####################" << endl;
+        cout << " URI : " << _request.request_uri().to_string() << endl;
+        cout << " METHOD : " << _request.method() << endl;
+
+        success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        return ;
+
+        // BMC전달 부분, 연동 때 BMC에 처리구현하고 활성화 시키기
+        // if(pass_request_to_bmc(_request, front))
+        // {
+        //     success_reply(_msg, json::value::null(), status_codes::OK, _response);
+        //     return ;
+        // }
+        // else
+        // {
+        //     error_reply(_msg, get_error_json("BMC PASS Fail"), status_codes::BadRequest, _response);
+        //     return ;
+        // }
+
+        // return ;
+    }
+
+    // CMM Part
+    string update_cmd;
+    string optical_cmd;
+    string save_file_path;
+
+    if(end == "") // keti-redfish
+    {
+        save_file_path = "/firmware/new_version_redfish";
+        update_cmd = "/firmware/update_redfish.sh";
+        optical_cmd = "chmod +x " + save_file_path;
+    }
+    // else if(end == "REST") // CMM은없음
+    // {
+
+    // }
+    // else if(end == "IPMI") // CMM은없음
+    // {
+
+    // }
+    else if(end == "READING") // 센서로그 디비파일
+    {
+        save_file_path = "/firmware/new_version_db";
+        update_cmd = "/firmware/update_log_db.sh";
+        optical_cmd = "";
+    }
+    else
+    {
+        error_reply(_msg, get_error_json("Invalid Software ID"), status_codes::BadRequest, _response);
+        return ;
+    }
+
+    try
+    {
+        save_file_from_request(_request, save_file_path);
+
+        system(optical_cmd.c_str());
+        log(info) << "[Firmware & Software Update] : " << save_file_path;
+        // 파일 수신완료
         
+        sleep(1);
 
-        _response.set_body(filestream);
-        _response.headers().set_content_type("application/x-tar");
-        _response.headers().add("Transfer-Encoding", "chunked");
-        // _response.headers().add("Myheader", "Yeah");
-
-        success_reply(_msg, json::value::null(), status_codes::OK, _response);
-        return ;
+        system(update_cmd.c_str());
     }
-
-    if(_what == "ResourceRestore")
+    catch(const std::exception& e)
     {
-        string file_path = "/redfish/resource_restore.tar";
-        string firm_id = get_current_object_name(file_path, "/");
-        // mkdir(file_path.c_str(), 0755);
-
-        // file_path = file_path + "/KETI-UPDATEFILE";
-        auto body_stream = _request.body();
-        auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(file_path), std::ios::out | std::ios::binary).get();
-        file_stream.flush();
-
-        body_stream.read_to_end(file_stream.streambuf()).wait();
-        file_stream.close().wait();
-
-        success_reply(_msg, json::value::null(), status_codes::OK, _response);
-        return ;
-
+        std::cerr << e.what() << '\n';
+        log(error) << "Software Update Error!!";
     }
 
-    // #오픈시스넷 임시 OK반환
-    // if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate")
-    // {
-    //     success_reply(_msg, json::value::null(), status_codes::OK, _response);
-    //     return ;
-    // }
-    // else
-    // {
-    //     error_reply(_msg, get_error_json("Wrong Update Action"), status_codes::BadRequest, _response);
-    //     return ;
-    // }
+    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    return ;
+
+}
+
+void update_resource_backup(m_Request& _msg, http_response& _response)
+{
+    // string path_redfish = "/redfish";
+    char tar_buf[100];
+    // sprintf(tar_buf, "tar -cvf /redfish_backup.tar %s", path_redfish.c_str());
+    sprintf(tar_buf, "tar -cvf /redfish_backup.tar /redfish/v1 /redfish/v1.json");//%s", path_redfish.c_str());
+    system(tar_buf);
+    auto filestream = concurrency::streams::fstream::open_istream("/redfish_backup.tar").get();
+    
+
+    _response.set_body(filestream);
+    _response.headers().set_content_type("application/x-tar");
+    _response.headers().add("Transfer-Encoding", "chunked");
+    // _response.headers().add("Myheader", "Yeah");
+
+    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    return ;
+}
+
+void update_resource_restore(http_request& _request, m_Request& _msg, http_response& _response)
+{
+    string file_path = "/redfish/resource_restore.tar";
+    string firm_id = get_current_object_name(file_path, "/");
+    // mkdir(file_path.c_str(), 0755);
+
+    // file_path = file_path + "/KETI-UPDATEFILE";
+    save_file_from_request(_request, file_path);
+    // auto body_stream = _request.body();
+    // auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(file_path), std::ios::out | std::ios::binary).get();
+    // file_stream.flush();
+
+    // body_stream.read_to_end(file_stream.streambuf()).wait();
+    // file_stream.close().wait();
+
+    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    return ;
+
+}
+
+void get_software_category(string _str, string& _front, string& _end)
+{
+    // 하이픈 찾아서 분리하고
+    int index;
+    if((index = _str.find("-")) != string::npos)
+    {
+        _front = _str.substr(0, index);
+        _end = _str.substr(index+1, string::npos);
+    }
+    else
+    {
+        _front = _str;
+        _end = "";
+    }
+}
+
+void save_file_from_request(http_request _request, string _path)
+{
+    auto body_stream = _request.body();
+    auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(_path), std::ios::out | std::ios::binary).get();
+    file_stream.flush();
+
+    // 옵션이 binary로 되어있음 x권한 들어가있는지 확인! -> 안들어감
+
+    body_stream.read_to_end(file_stream.streambuf()).wait();
+    file_stream.close().wait();
+}
+
+bool pass_request_to_bmc(http_request _request, string _module)
+{
+    string address = module_id_table[_module];
+
+    cout << "ADDRESS : " << address << endl;
+    http_client client(address);
+    http_request req;
+    req.set_method(_request.method());
+    req.set_request_uri(_request.request_uri().to_string());
+    req.set_body(_request.body());
+    // BMC연동할때 body잘 담겨서 전달되는지 확인필요함 
+    // uri랑 method 전달되는건 확인함
+
+    http_response response;
+
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
+    try
+    {
+        /* code */
+        pplx::task<http_response> responseTask = client.request(req);
+        response = responseTask.get();
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
+    cout << "STATUS CODE : " << response.status_code() << endl;
+    // cout << "BODY JSON : " << response.extract_json().get() << endl;
+    if(response.status_code() == status_codes::OK)
+        return true;
+    else
+        return false;
+    
     
 }
 
@@ -2420,83 +2597,83 @@ void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string
         return ;
     }
 
-    // json::value result_value;
-    // VirtualMedia *vm = nullptr;
-    // unsigned int id_num;
-    // string type;
+    json::value result_value;
+    VirtualMedia *vm = nullptr;
+    unsigned int id_num;
+    string type;
 
-    // if(_what == "EjectMedia")
-    // {
-    //     VirtualMedia *v_media = (VirtualMedia *)g_record[_resource];
-    //     result_value = v_media->EjectMedia();
-    // }
-    // else
-    // {
-    //     string odata = _resource;
+    if(_what == "EjectMedia")
+    {
+        VirtualMedia *v_media = (VirtualMedia *)g_record[_resource];
+        result_value = v_media->EjectMedia();
+    }
+    else
+    {
+        string odata = _resource;
         
-    //     if(_what == "InsertMediaCD")
-    //     {
-    //         id_num = allocate_numset_num(ALLOCATE_VM_CD_NUM);
-    //         type = "CD";
-    //         odata = odata + "/CD" + to_string(id_num);
-    //         VirtualMedia *v_media = new VirtualMedia(odata);
-    //         v_media->media_type.push_back("CD");
-    //         vm = v_media;
-    //         vm->id = "CD" + to_string(id_num);
-    //     }
-    //     else if(_what == "InsertMediaUSB")
-    //     {
-    //         id_num = allocate_numset_num(ALLOCATE_VM_USB_NUM);
-    //         type = "USB";
-    //         odata = odata + "/USB" + to_string(id_num);
-    //         VirtualMedia *v_media = new VirtualMedia(odata);
-    //         v_media->media_type.push_back("USBStick");
-    //         vm = v_media;
-    //         vm->id = "USB" + to_string(id_num);
-    //     }
+        if(_what == "InsertMediaCD")
+        {
+            id_num = allocate_numset_num(ALLOCATE_VM_CD_NUM);
+            type = "CD";
+            odata = odata + "/CD" + to_string(id_num);
+            VirtualMedia *v_media = new VirtualMedia(odata);
+            v_media->media_type.push_back("CD");
+            vm = v_media;
+            vm->id = "CD" + to_string(id_num);
+        }
+        else if(_what == "InsertMediaUSB")
+        {
+            id_num = allocate_numset_num(ALLOCATE_VM_USB_NUM);
+            type = "USB";
+            odata = odata + "/USB" + to_string(id_num);
+            VirtualMedia *v_media = new VirtualMedia(odata);
+            v_media->media_type.push_back("USBStick");
+            vm = v_media;
+            vm->id = "USB" + to_string(id_num);
+        }
 
-    //     vm->name = "VirtualMedia";
-    //     vm->connected_via = "URI";
-    //     vm->inserted = false;
-    //     vm->write_protected = true;
+        vm->name = "VirtualMedia";
+        vm->connected_via = "URI";
+        vm->inserted = false;
+        vm->write_protected = true;
 
-    //     result_value = vm->InsertMedia(_jv);
-    // }
+        result_value = vm->InsertMedia(_jv);
+    }
 
 
-    // if(result_value == json::value::null())
-    // {
-    //     //error
-    //     if(vm != nullptr)
-    //     {
-    //         // insert에 실패하면 만들었던 리소스도 다시 지워줘야함
-    //         delete(vm);
-    //         // g_record에 erase안해줘도 되나?
-    //         if(type == "CD")
-    //             delete_numset_num(ALLOCATE_VM_CD_NUM, id_num);
-    //         else if(type == "USB")
-    //             delete_numset_num(ALLOCATE_VM_USB_NUM, id_num);
-    //     }
-    //     error_reply(_msg, get_error_json("Problem Occur in VirtualMedia Actions"), status_codes::BadRequest, _response);
-    //     return ;
-    // }
-    // else
-    // {
-    //     //success
-    //     if(vm != nullptr)
-    //     {
-    //         Collection *col = (Collection *)g_record[_resource];
-    //         col->add_member(vm);
-    //         resource_save_json(col);
-    //         resource_save_json(vm);
-    //     }
+    if(result_value == json::value::null())
+    {
+        //error
+        if(vm != nullptr)
+        {
+            // insert에 실패하면 만들었던 리소스도 다시 지워줘야함
+            delete(vm);
+            // g_record에 erase안해줘도 되나?
+            if(type == "CD")
+                delete_numset_num(ALLOCATE_VM_CD_NUM, id_num);
+            else if(type == "USB")
+                delete_numset_num(ALLOCATE_VM_USB_NUM, id_num);
+        }
+        error_reply(_msg, get_error_json("Problem Occur in VirtualMedia Actions"), status_codes::BadRequest, _response);
+        return ;
+    }
+    else
+    {
+        //success
+        if(vm != nullptr)
+        {
+            Collection *col = (Collection *)g_record[_resource];
+            col->add_member(vm);
+            resource_save_json(col);
+            resource_save_json(vm);
+        }
 
-    //     success_reply(_msg, result_value, status_codes::OK, _response);
-    //     return ;
-    // }
+        success_reply(_msg, result_value, status_codes::OK, _response);
+        return ;
+    }
     
     // #오픈시스넷 임시 코드
-    success_reply(_msg, json::value::null(), status_codes::OK, _response);
+    // success_reply(_msg, json::value::null(), status_codes::OK, _response);
     return ;
 }
 
@@ -2985,137 +3162,146 @@ void modify_account(http_request _request, m_Request& _msg, json::value _jv, str
     //     return ;
     // }
 
-    // if(!(record_is_exist(_uri)))
-    // {
-    //     // 해당 계정이 없음
-    //     error_reply(_msg, get_error_json("No Account"), status_codes::BadRequest, _response);
-    //     return ;
-    // }
+    if(!(record_is_exist(_uri)))
+    {
+        // 해당 계정이 없음
+        error_reply(_msg, get_error_json("No Account"), status_codes::BadRequest, _response);
+        return ;
+    }
 
-    // // cout << "바뀌기전~~ " << endl;
-    // // cout << record_get_json(_uri) << endl;
-    // // cout << " $$$$$$$ " << endl;
+    // cout << "바뀌기전~~ " << endl;
+    // cout << record_get_json(_uri) << endl;
+    // cout << " $$$$$$$ " << endl;
 
-    // if(!_request.headers().has("X-Auth-Token"))
-    // {
-    //     // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
-    //     error_reply(_msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
-    //     return ;
-    // }
+    if(!_request.headers().has("X-Auth-Token"))
+    {
+        // 로그인이 안되어있음(X-Auth-Token이 존재하지않음)
+        error_reply(_msg, get_error_json("Login Required"), status_codes::BadRequest, _response);
+        return ;
+    }
 
-    // string session_token = _request.headers()["X-Auth-Token"];
+    string session_token = _request.headers()["X-Auth-Token"];
 
-    // if(!is_session_valid(session_token))
-    // {
-    //     // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
-    //     error_reply(_msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
-    //     return ;
-    // }
+    if(!is_session_valid(session_token))
+    {
+        // 세션이 유효하지않음(X-Auth-Token은 존재하나 유효하지 않음)
+        error_reply(_msg, get_error_json("Session Unvalid"), status_codes::BadRequest, _response);
+        return ;
+    }
 
-    // string session_uri = get_session_odata_id_by_token(session_token);
-    // // session_uri = session_uri + "/" + session_token;
-    // cout << "SESSION ! : " << session_uri << endl;
+    string session_uri = get_session_odata_id_by_token(session_token);
+    // session_uri = session_uri + "/" + session_token;
+    cout << "SESSION ! : " << session_uri << endl;
 
-    // // Session session = *((Session *)g_record[session_uri]);
-    // Session *session = (Session *)g_record[session_uri];
+    // Session session = *((Session *)g_record[session_uri]);
+    Session *session = (Session *)g_record[session_uri];
 
-    // string last = get_current_object_name(_uri, "/"); // account_id임 last는
+    string last = get_current_object_name(_uri, "/"); // account_id임 last는
 
-    // bool op_role=false, op_name=false, op_pass=false; // 일괄처리를 위한 플래그
-    // string role_odata;
-    // string input_username;
-    // string input_password;
+    bool op_role=false, op_name=false, op_pass=false, op_enable=false; // 일괄처리를 위한 플래그
+    string role_odata;
+    string input_username;
+    string input_password;
+    bool input_enabled;
 
-    // if(session->account->role->id == "Administrator")
-    // {
-    //     // 관리자만 role 변경가능하게 설계해봄
-    //     string role_id;
-    //     if(get_value_from_json_key(_jv, "RoleId", role_id))
-    //     {
-    //         role_odata = ODATA_ROLE_ID;
-    //         role_odata = role_odata + "/" + role_id;
+    if(session->account->role->id == "Administrator")
+    {
+        // 관리자만 role 변경가능하게 설계해봄
+        string role_id;
+        if(get_value_from_json_key(_jv, "RoleId", role_id))
+        {
+            role_odata = ODATA_ROLE_ID;
+            role_odata = role_odata + "/" + role_id;
 
-    //         if(!record_is_exist(role_odata))
-    //         {
-    //             // 해당 롤 없음
-    //             error_reply(_msg, get_error_json(role_id + " does not exist"), status_codes::BadRequest, _response);
-    //             return ;
-    //         }
-    //         op_role = true;
-    //     }
-    // }
+            if(!record_is_exist(role_odata))
+            {
+                // 해당 롤 없음
+                error_reply(_msg, get_error_json(role_id + " does not exist"), status_codes::BadRequest, _response);
+                return ;
+            }
+            op_role = true;
+        }
+    }
 
-    // if(session->account->role->id == "Administrator" || session->account->id == last)
-    // {
-    //     // username, password 변경
-    //     if(get_value_from_json_key(_jv, "UserName", input_username))
-    //     {
-    //         Collection *col = (Collection *)g_record[ODATA_ACCOUNT_ID];
-    //         std::vector<Resource *>::iterator iter;
-    //         for(iter=col->members.begin(); iter!=col->members.end(); iter++)
-    //         {
-    //             if(((Account *)(*iter))->id == last)
-    //                 continue;
+    if(session->account->role->id == "Administrator" || session->account->id == last)
+    {
+        // username, password 변경
+        if(get_value_from_json_key(_jv, "UserName", input_username))
+        {
+            Collection *col = (Collection *)g_record[ODATA_ACCOUNT_ID];
+            std::vector<Resource *>::iterator iter;
+            for(iter=col->members.begin(); iter!=col->members.end(); iter++)
+            {
+                if(((Account *)(*iter))->id == last)
+                    continue;
 
-    //             if(((Account *)(*iter))->user_name == input_username)
-    //             {
-    //                 error_reply(_msg, get_error_json("UserName is already in use"), status_codes::BadRequest, _response);
-    //                 return ;
-    //             }
+                if(((Account *)(*iter))->user_name == input_username)
+                {
+                    error_reply(_msg, get_error_json("UserName is already in use"), status_codes::BadRequest, _response);
+                    return ;
+                }
 
-    //         } // user_name 중복검사
+            } // user_name 중복검사
 
-    //         op_name = true;
-    //     }
+            op_name = true;
+        }
 
-    //     if(get_value_from_json_key(_jv, "Password", input_password))
-    //     {
-    //         unsigned int min = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->min_password_length;
-    //         unsigned int max = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->max_password_length;
-    //         if(input_password.length() < min || input_password.length() > max)
-    //         {
-    //             log(warning) << "password length : " << input_password.length();
-    //             error_reply(_msg, get_error_json("Password Range is " + to_string(min) + " ~ " + to_string(max)), status_codes::BadRequest, _response);
-    //             return ;
-    //         } // password 길이 검사
-    //         op_pass = true;
-    //     }
+        if(get_value_from_json_key(_jv, "Password", input_password))
+        {
+            unsigned int min = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->min_password_length;
+            unsigned int max = ((AccountService *)g_record[ODATA_ACCOUNT_SERVICE_ID])->max_password_length;
+            if(input_password.length() < min || input_password.length() > max)
+            {
+                log(warning) << "password length : " << input_password.length();
+                error_reply(_msg, get_error_json("Password Range is " + to_string(min) + " ~ " + to_string(max)), status_codes::BadRequest, _response);
+                return ;
+            } // password 길이 검사
+            op_pass = true;
+        }
 
-    // }
-    // // role_id로 하기엔 role을 생성할 수도 있는 거여서 나중에 role안에 privileges에 권한 확인하는걸로 바꿔야 할 수도 있음
+        if(get_value_from_json_key(_jv, "Enabled", input_enabled))
+        {
+            op_enable = true;
+        }
 
-    // if(!op_role && !op_name && !op_pass) // 다 false면
-    // {
-    //     error_reply(_msg, get_error_json("Cannot Modify Account"), status_codes::BadRequest, _response);
-    //     return ;
-    // }
+    }
+    // role_id로 하기엔 role을 생성할 수도 있는 거여서 나중에 role안에 privileges에 권한 확인하는걸로 바꿔야 할 수도 있음
 
-    // if(op_role){
-    //     ((Account *)g_record[_uri])->role = ((Role *)g_record[role_odata]);
-    //     ((Account *)g_record[_uri])->role_id = ((Role *)g_record[role_odata])->odata.id;
-    // }
+    if(!op_role && !op_name && !op_pass && !op_enable) // 다 false면
+    {
+        error_reply(_msg, get_error_json("Cannot Modify Account"), status_codes::BadRequest, _response);
+        return ;
+    }
+
+    if(op_role){
+        ((Account *)g_record[_uri])->role = ((Role *)g_record[role_odata]);
+        ((Account *)g_record[_uri])->role_id = ((Role *)g_record[role_odata])->odata.id;
+    }
     
-    // if(op_name)
-    //     ((Account *)g_record[_uri])->user_name = input_username;
+    if(op_name)
+        ((Account *)g_record[_uri])->user_name = input_username;
 
-    // if(op_pass)
-    //     ((Account *)g_record[_uri])->password = input_password;
-    // // 검사중 error나면 적용안되고 error나지 않을때 변경일괄처리
+    if(op_pass)
+        ((Account *)g_record[_uri])->password = input_password;
 
-    // resource_save_json(g_record[_uri]);
+    if(op_enable)
+        ((Account *)g_record[_uri])->enabled = input_enabled;
+    // 검사중 error나면 적용안되고 error나지 않을때 변경일괄처리
+
+    resource_save_json(g_record[_uri]);
     
 
-    // // cout << "바꾼후~~ " << endl;
-    // // cout << record_get_json(_uri) << endl;
-    // // cout << "세션에 연결된 계정정보" << endl;
-    // // cout << record_get_json(session->account->odata.id) << endl;
+    // cout << "바꾼후~~ " << endl;
+    // cout << record_get_json(_uri) << endl;
+    // cout << "세션에 연결된 계정정보" << endl;
+    // cout << record_get_json(session->account->odata.id) << endl;
 
-    // success_reply(_msg, record_get_json(_uri), status_codes::OK, _response);
-    // return ;
-
-    // #오픈시스넷 반환용
     success_reply(_msg, record_get_json(_uri), status_codes::OK, _response);
     return ;
+
+    // #오픈시스넷 반환용
+    // success_reply(_msg, record_get_json(_uri), status_codes::OK, _response);
+    // return ;
 }
 
 
@@ -3329,7 +3515,7 @@ void remove_session(http_request _request, m_Request& _msg, http_response& _resp
         return ;
     }
 
-    // 아니근데 이거 x-auth-token가지고만 하면 a가 로그인한채로 b꺼 x토큰 보내서 로그아웃 시킬수도있는데??
+    // 헤더에 실려오는 X-Auth-Token으로 제거
     if(!(is_session_valid(_request.headers()["X-Auth-Token"])))
     {
         error_reply(_msg, get_error_json("Unvalid Session"), status_codes::BadRequest, _response);
@@ -3346,6 +3532,10 @@ void remove_session(http_request _request, m_Request& _msg, http_response& _resp
     session->_remain_expires_time = 0;
     // session->cts.cancel();
     log(info) << "Session Cancel Call~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+    
+    // sleep(1);
+    usleep(5000 * 100); // 0.5초
+    // 웹에서 세션종료 후 바로 GET할때 충돌이 일어날때가 가끔 나타나는 듯함. 타이머종료시간이 조금 남아있어서..
     success_reply(_msg, json::value::null(), status_codes::OK, _response);
     return ;
 }
@@ -3644,9 +3834,11 @@ bool patch_account_service(json::value _jv, string _record_uri)
                     if (get_value_from_json_key(auth, "Password", password)){
                         // password validation?
                         account_service->ldap.authentication.password = password;
-                    } else {
-                        return false;
                     }
+                    // else
+                    // {
+                    //     return false;
+                    // }
                 }
                 account_service->ldap.password_set = password_set;
             }
@@ -3684,6 +3876,10 @@ bool patch_account_service(json::value _jv, string _record_uri)
         if (get_value_from_json_key(_jv, "ActiveDirectory", ad)) {
             bool enable;
             if (get_value_from_json_key(ad, "ServiceEnabled", enable)) {
+                if (enable){
+                    account_service->ldap.service_enabled = false;
+                    // account_service->radius.service_enabled = false;
+                }
                 account_service->active_directory.service_enabled = enable;
                 // TODO : Actual Service Enable
             }
@@ -3706,7 +3902,7 @@ bool patch_account_service(json::value _jv, string _record_uri)
             json::value ad_auth;
             if (get_value_from_json_key(ad, "Authentication", ad_auth)) {
                 string ad_username;
-                if (get_value_from_json_key(ad, "Username", ad_username)){
+                if (get_value_from_json_key(ad_auth, "Username", ad_username)){
                     account_service->active_directory.authentication.username = ad_username;
                 }
             }
@@ -4827,14 +5023,20 @@ bool patch_logservice(json::value _jv, string _record_uri)
         if (get_value_from_json_key(_jv, "SyslogFilters", syslog_filters)) {
             json::value log_facilities;
             string lowest_severity;
-            SyslogFilter sf;
+            
+            // SyslogFilter sf;
+            vector<SyslogFilter> new_syslogFilters;
+            // 새로운 벡터로 갈아 치우는 방식
+            // *REM : 아직 중복되는 건 처리 x
 
             for (auto syslog_filter : syslog_filters.as_array()) {
+                SyslogFilter new_sf;
+                // 위에서 선언하면 계속 중첩됨 그래서 안에서 for돌때마다 생성했고
                 if (get_value_from_json_key(syslog_filter, "LogFacilities", log_facilities)) {
                     for (auto log_facility : log_facilities.as_array()) {
                         string s = log_facility.as_string();
                         if (validateLogFacility(s)) {
-                            sf.logFacilities.push_back(s);
+                            new_sf.logFacilities.push_back(s);
                         } else {
                             result = false;
                         }
@@ -4843,14 +5045,16 @@ bool patch_logservice(json::value _jv, string _record_uri)
 
                 if (get_value_from_json_key(syslog_filter, "LowestSeverity", lowest_severity)) {
                     if (validateSeverity(lowest_severity)) {
-                        sf.lowestSeverity = lowest_severity;
+                        new_sf.lowestSeverity = lowest_severity;
                     } else {
                         result = false;
                     }
                 }
 
                 if (result) {
-                    log->syslogFilters.push_back(sf);
+                    new_syslogFilters.push_back(new_sf);
+                    log->syslogFilters = new_syslogFilters;
+                    // log->syslogFilters.push_back(new_sf);
                 }
             }
  

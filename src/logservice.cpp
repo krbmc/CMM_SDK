@@ -1013,7 +1013,7 @@ void generate_log(string _position, string _facility, Event_Info _ev)
     LogService *service = new LogService(odata, _facility);
 
     // TODO 로그서비스 멤버변수 값 채워넣는 정보를 어디서 얻는지 처리 필요
-    // 현재는 임시값으로 넣음
+    // 현재는 임시값으로 넣음 // 이거 facility에 따라서 디폴트값 다르게 설정한다든가 하는방식도 있겠네
     service->max_number_of_records = 1000;
     service->log_entry_type = "Multiple";
     // service->overwrite_policy = "WrapsWhenFull";

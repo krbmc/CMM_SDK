@@ -1,5 +1,7 @@
 #include "stdafx.hpp"
 
+extern map<string, string> module_id_table;
+
 /**
  * @brief Split string to delimiter
  * 
@@ -307,31 +309,56 @@ bool validateIPv4(const string str)
 bool validateDatetimeLocalOffset(const string str)
 {
     vector<string> available{
-        "-12:00",
-        "-11:00",
-        "-10:00",
-        "-09:00",
-        "-08:00",
-        "-07:00",
-        "-06:00",
-        "-05:00",
-        "-04:00",
-        "-03:00",
-        "-02:00",
-        "-01:00",
-        "00:00",
-        "+01:00",
-        "+02:00",
-        "+03:00",
-        "+04:00",
-        "+05:00",
-        "+06:00",
-        "+07:00",
-        "+08:00",
-        "+09:00",
-        "+10:00",
-        "+11:00",
-        "+12:00",
+        "GMT-12",
+        "GMT-11",
+        "GMT-10",
+        "GMT-9",
+        "GMT-8",
+        "GMT-7",
+        "GMT-6",
+        "GMT-5",
+        "GMT-4",
+        "GMT-3",
+        "GMT-2",
+        "GMT-1",
+        "GMT+0",
+        "GMT+1",
+        "GMT+2",
+        "GMT+3",
+        "GMT+4",
+        "GMT+5",
+        "GMT+6",
+        "GMT+7",
+        "GMT+8",
+        "GMT+9",
+        "GMT+10",
+        "GMT+11",
+        "GMT+12",
+        // "-12:00",
+        // "-11:00",
+        // "-10:00",
+        // "-09:00",
+        // "-08:00",
+        // "-07:00",
+        // "-06:00",
+        // "-05:00",
+        // "-04:00",
+        // "-03:00",
+        // "-02:00",
+        // "-01:00",
+        // "00:00",
+        // "+01:00",
+        // "+02:00",
+        // "+03:00",
+        // "+04:00",
+        // "+05:00",
+        // "+06:00",
+        // "+07:00",
+        // "+08:00",
+        // "+09:00",
+        // "+10:00",
+        // "+11:00",
+        // "+12:00",
     };
 
     if (find(available.begin(), available.end(), str) == available.end()) {
@@ -421,6 +448,20 @@ bool validateDHCPv6OperatingMode(const string str)
     if (find(available.begin(), available.end(), str) == available.end()) {
         return false;
     }
+    return true;
+}
+
+/**
+ * @brief get string, check if it is valid Module ID
+ * 
+ * @param str 
+ * @return if string is valid Module ID, return true. else return false.
+ */
+bool validateModuleID(const string str)
+{
+    if(module_id_table.find(str) == module_id_table.end())
+        return false;
+
     return true;
 }
 
