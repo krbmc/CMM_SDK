@@ -3034,22 +3034,26 @@ bool Systems::Reset(json::value body)
     if (reset_type == "On"){
         this->power_state = "On";
         cout << "[RESET INFO] : On" << endl;
+        spread_system_reset_to_all_bmc("On");
         // todo: led 켜기
         return true;
     }
     if (reset_type == "ForceOff"){
         sprintf(cmds, "kill -9 %d", pid);
         cout << "[RESET INFO] : ForceOff" << endl;
+        spread_system_reset_to_all_bmc("ForceOff");
     }
     if (reset_type == "GracefulShutdown"){
         this->power_state = "Off";
         cout << "[RESET INFO] : GracefulShutdown" << endl;
+        spread_system_reset_to_all_bmc("GracefulShutdown");
         // todo: led 끄기
         return true;
     }
     if (reset_type == "GracefulRestart"){
         sprintf(cmds, "/etc/init.d/rcK && /etc/init.d/rcS");
         cout << "[RESET INFO] : GracefulRestart" << endl;
+        spread_system_reset_to_all_bmc("GracefulRestart");
     }
     if (reset_type == "ForceRestart"){
         sprintf(cmds, "reboot");

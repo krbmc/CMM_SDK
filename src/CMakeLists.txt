@@ -16,14 +16,15 @@ set(
     util.cpp
     record.cpp
     hwcontrol.cpp
-    task.cpp # @@@@ 추가
-    chassis_controller.cpp # @@@@ 추가
+    task.cpp
+    chassis_controller.cpp
     TaskServer.cpp
     init.cpp
     lssdp.cpp
     multipart_parser.cpp
     logservice.cpp
     eventservice.cpp
+    ethernetinterface.cpp
 )
 
 # # Directory setting

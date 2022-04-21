@@ -462,6 +462,7 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     // string eth_id = "eth" + _id;
     //#임시eth
     string eth_id = "eth1";
+    ethernet->id = "1";
     ethernet->description = "Manager Ethernet Interface";
     ethernet->link_status = "LinkDown";
     if (get_popen_string("cat /sys/class/net/" + eth_id + "/operstate") == "up")

@@ -155,6 +155,7 @@ bool validateLogFacility(const string str);
 bool validateDHCPv6OperatingMode(const string str);
 
 bool validateModuleID(const string str);
+bool validateMACAddress(const string str);
 
 string ltrim(string str);
 

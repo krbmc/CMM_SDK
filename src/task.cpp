@@ -2192,6 +2192,31 @@ void act_system(m_Request& _msg, json::value _jv, string _resource, string _what
     
 }
 
+void spread_system_reset_to_all_bmc(string _type)
+{
+    std::map<string, string>::iterator iter;
+    for(iter == module_id_table.begin(); iter != module_id_table.end(); iter++)
+    {
+        if((iter->first) == "CMM1")// CMM일 때 무시, 하드코딩된거 나중에 변경필요
+            continue;
+
+        string uri = "/redfish/v1/Systems/Actions/ComputerSystem.Reset";
+        string address = iter->second;
+        string m_id = iter->first;
+        json::value j_body;
+        j_body["ResetType"] = json::value::string(_type);
+        
+        http_request req;
+        req.set_method(methods::POST);
+        req.set_request_uri(uri);
+        req.set_body(j_body);
+
+        pass_request_to_bmc(req, m_id);
+
+    }
+
+}
+
 
 void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response)
 {
@@ -4369,98 +4394,136 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
     // cout << "바뀌기전~~ " << endl;
     // cout << record_get_json(_record_uri) << endl;
     // cout << " $$$$$$$ " << endl;
+    // 일괄처리 필요함
+    // 일괄처리는 앞선 변수들 다 바꿨는데 뒤에 변경하겠다고 들어온 변수들에 문제가 생겨서 오류 반환할때
+    // 일괄처리를 안하고 순차적으로 처리하면 앞선 변수들은 바뀐채로 오류 반환하게 되니깐
+    // 다 통과되면 한번에 바꾸는걸 적용하는 거임
 
     EthernetInterfaces *eth = (EthernetInterfaces *)g_record[_record_uri];
     bool result = true;
+    Ethernet_Patch_Info patch_info;
+
+    // 잠시 result true로..
 
     try
     {
         bool enable;
         if (get_value_from_json_key(_jv, "InterfaceEnabled", enable)){
-            eth->interfaceEnabled = enable;
+            patch_info.op_enabled = true;
+            patch_info.val_enabled = enable;
+            // eth->interfaceEnabled = enable;
         }
 
         string description;
         if(get_value_from_json_key(_jv, "Description", description))
         {
-            eth->description = description;
+            patch_info.op_description = true;
+            patch_info.val_description = description;
+            // eth->description = description;
         }
 
-        string fqdn;
-        if(get_value_from_json_key(_jv, "FQDN", fqdn))
-        {
-            // if(_flag == 1)
-            // {
-            //     string buf = "hostname ";
+        // string fqdn;
+        // if(get_value_from_json_key(_jv, "FQDN", fqdn))
+        // {
+        //     // if(_flag == 1)
+        //     // {
+        //     //     string buf = "hostname ";
 
-            // }
-            eth->fqdn = fqdn;
-        }
+        //     // }
+        //     // eth->fqdn = fqdn;
+        // }
 
         string hostname;
         if(get_value_from_json_key(_jv, "HostName", hostname))
         {
-            if(_flag == 1)
-            {
-                string buf = "hostname ";
-                buf = buf + hostname;
-                cout << "hostname buf : " << buf << endl;
-                // system(buf.c_str());
-            }
-            eth->hostname = hostname;
+            patch_info.op_hostname = true;
+            patch_info.val_hostname = hostname;
+            // if(_flag == 1)
+            // {
+            //     string buf = "hostname ";
+            //     buf = buf + hostname;
+            //     cout << "hostname buf : " << buf << endl;
+            //     // system(buf.c_str());
+            // }
+            // eth->hostname = hostname;
         }
 
         string mac;
         if(get_value_from_json_key(_jv, "MACAddress", mac))
         {
-            if(_flag == 1)
+            if(validateMACAddress(mac))
             {
-                string buf = "macchanger -m ";
-                buf = buf + mac + " eth" + eth->id;
-                cout << "macaddress buf : " << buf << endl;
-                // system(buf.c_str());
+                patch_info.op_mac_address = true;
+                patch_info.val_mac_address = mac;
             }
-            eth->mac_address = mac;
+            else
+            {
+                log(error) << "MAC Address format error";
+                return false;
+            }
+                
+            // if(_flag == 1)
+            // {
+            //     string buf = "macchanger -m ";
+            //     buf = buf + mac + " eth" + eth->id;
+            //     cout << "macaddress buf : " << buf << endl;
+            //     // system(buf.c_str());
+            // }
+            // eth->mac_address = mac;
         }
 
         int mtu;
         if(get_value_from_json_key(_jv, "MTUSize", mtu))
         {
-            if(_flag == 1)
-            {
-                string buf = "ip link set ";
-                buf = buf + "eth" + eth->id;
-                buf = buf + " mtu " + to_string(mtu);
-                cout << "mtusize buf : " << buf << endl;
-                // system(buf.c_str());
-            }
-            eth->mtu_size = mtu;
+            patch_info.op_mtu = true;
+            patch_info.val_mtu = mtu;
+            // if(_flag == 1)
+            // {
+            //     string buf = "ip link set ";
+            //     buf = buf + "eth" + eth->id;
+            //     buf = buf + " mtu " + to_string(mtu);
+            //     cout << "mtusize buf : " << buf << endl;
+            //     // system(buf.c_str());
+            // }
+            // eth->mtu_size = mtu;
         }
 
         // ipv4, ipv6 주소들은 array로 되어있는데 patch request body로는 일단 object하나라고 생각하고 구현
-        json::value ipv4;
-        if(get_value_from_json_key(_jv, "IPv4Addresses", ipv4))
+        // 현재 받는건 array로 받고 처리만 인덱스0 의 값으로 처리중
+        json::value ipv4_list;
+        string address;
+        string netmask;
+        string gateway;
+        if(get_value_from_json_key(_jv, "IPv4Addresses", ipv4_list))
         {
             int size = eth->v_ipv4.size();
-            string address;
-            string netmask;
-            string gateway;
+            if(size < 1)
+            {
+                log(error) << "IPv4 Address size error";
+                return false;
+            }
+            
             IPv4_Address v4;
+            json::value ipv4;
+            ipv4 = ipv4_list[0];
 
             if(get_value_from_json_key(ipv4, "Address", address))
             {
                 if (validateIPv4(address)){
-                    if(_flag == 1)
-                    {
-                        string buf = "ifconfig eth";
-                        buf = buf + eth->id + " " + address;
-                        cout << "ipv4 address buf : " << buf << endl;
-                        // system(buf.c_str());
-                    }
-                    if (size)
-                        eth->v_ipv4[0].address = address;
-                    else
-                        v4.address = address;
+                    patch_info.op_v4_address = true;
+                    patch_info.val_v4_address = address;
+                    // cout << "IP Address : " << address << endl;
+                    // if(_flag == 1)
+                    // {
+                    //     string buf = "ifconfig eth";
+                    //     buf = buf + eth->id + " " + address;
+                    //     cout << "ipv4 address buf : " << buf << endl;
+                    //     // system(buf.c_str());
+                    // }
+                    // if (size)
+                    //     eth->v_ipv4[0].address = address;
+                    // else
+                    //     v4.address = address;
                 } else {
                     log(error) << "IPv4 Address format error";
                     return false;
@@ -4470,17 +4533,20 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
             if(get_value_from_json_key(ipv4, "SubnetMask", netmask))
             {
                 if (validateIPv4(netmask)){
-                    if(_flag == 1)
-                    {
-                        string buf = "ifconfig eth";
-                        buf = buf + eth->id + " netmask " + netmask;
-                        cout << "ipv4 subnetmask buf : " << buf << endl;
-                        // system(buf.c_str());
-                    }
-                    if (size)
-                        eth->v_ipv4[0].subnet_mask = netmask;
-                    else
-                        v4.subnet_mask = netmask;
+                    patch_info.op_v4_netmask = true;
+                    patch_info.val_v4_netmask = netmask;
+                    // cout << "Netmask : " << netmask << endl;
+                    // if(_flag == 1)
+                    // {
+                    //     string buf = "ifconfig eth";
+                    //     buf = buf + eth->id + " netmask " + netmask;
+                    //     cout << "ipv4 subnetmask buf : " << buf << endl;
+                    //     // system(buf.c_str());
+                    // }
+                    // if (size)
+                    //     eth->v_ipv4[0].subnet_mask = netmask;
+                    // else
+                    //     v4.subnet_mask = netmask;
                 } else {
                     log(error) << "IPv4 Netmask format error";
                     return false;
@@ -4490,78 +4556,87 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
             if(get_value_from_json_key(ipv4, "Gateway", gateway))
             {
                 if (validateIPv4(gateway)) {
-                    if(_flag == 1)
-                    {
-                        string buf = "route add default gw ";
-                        buf = buf + gateway;
-                        cout << "ipv4 gateway buf : " << buf << endl;
-                        // system(buf.c_str());
-                    }
-                    if (size)
-                        eth->v_ipv4[0].gateway = gateway;
-                    else
-                        v4.gateway = gateway;
+                    patch_info.op_v4_gateway = true;
+                    patch_info.val_v4_gateway = gateway;
+                    // cout << "Gateway : " << gateway << endl;
+                    // if(_flag == 1)
+                    // {
+                    //     string buf = "route add default gw ";
+                    //     buf = buf + gateway;
+                    //     cout << "ipv4 gateway buf : " << buf << endl;
+                    //     // system(buf.c_str());
+                    // }
+                    // if (size)
+                    //     eth->v_ipv4[0].gateway = gateway;
+                    // else
+                    //     v4.gateway = gateway;
                 } else {
                     log(error) << "IPv4 Gateway format error";
                     return false;
                 }
             }
 
-            if (size == 0){
-                eth->v_ipv4.push_back(v4);
-            }
+            // if (size == 0){
+            //     eth->v_ipv4.push_back(v4);
+            // }
         }
 
-        json::value ipv6;
-        if(get_value_from_json_key(_jv, "IPv6Addresses", ipv6))
-        {
-            // ipv6는 추가하는식
-            int size = eth->v_ipv6.size();
-            if(size == 0)
-            {
-                return false;
-            }
+        apply_ethernet_patch(patch_info, eth, _flag);
 
-            string address;
-            if(get_value_from_json_key(ipv6, "Address", address))
-            {
-                IPv6_Address new_ipv6;
-                new_ipv6.address = address;
-                new_ipv6.address_origin = eth->v_ipv6[0].address_origin;
-                new_ipv6.prefix_length = eth->v_ipv6[0].prefix_length;
-                new_ipv6.address_state = eth->v_ipv6[0].address_state;
-                if(_flag == 1)
-                {
-                    string buf = "ifconfig eth";
-                    buf = buf + eth->id + " inet6 add " + address + "/" + to_string(new_ipv6.prefix_length);
-                    cout << "ipv6 address buf : " << buf << endl;
-                    // system(buf.c_str());
-                }
-                eth->v_ipv6.push_back(new_ipv6);
-            }
-        }
 
-        json::value dhcp_v4, dhcp_v6;
-        if (get_value_from_json_key(_jv, "DHCPv4", dhcp_v4)) {
-            bool enable;
-            if (get_value_from_json_key(dhcp_v4, "DHCPEnabled", enable)){
-                eth->dhcp_v4.dhcp_enabled = enable;
-                // todo : dhcp 사용
-            }   
-        }
 
-        if (get_value_from_json_key(_jv, "DHCPv6", dhcp_v6)) {
-            string op_mode;
-            if (get_value_from_json_key(dhcp_v6, "OperatingMode", op_mode)){
-                if (validateDHCPv6OperatingMode(op_mode)){
-                    eth->dhcp_v6.operating_mode = op_mode;
-                    // todo : dhcp 사용
-                } else {
-                    log(error) << "DHCPv6 is not provide Operating Mode : " << op_mode;
-                    return false;
-                }
-            }   
-        }
+
+
+        // json::value ipv6;
+        // if(get_value_from_json_key(_jv, "IPv6Addresses", ipv6))
+        // {
+        //     // ipv6는 추가하는식
+        //     int size = eth->v_ipv6.size();
+        //     if(size == 0)
+        //     {
+        //         return false;
+        //     }
+
+        //     string address;
+        //     if(get_value_from_json_key(ipv6, "Address", address))
+        //     {
+        //         IPv6_Address new_ipv6;
+        //         new_ipv6.address = address;
+        //         new_ipv6.address_origin = eth->v_ipv6[0].address_origin;
+        //         new_ipv6.prefix_length = eth->v_ipv6[0].prefix_length;
+        //         new_ipv6.address_state = eth->v_ipv6[0].address_state;
+        //         if(_flag == 1)
+        //         {
+        //             string buf = "ifconfig eth";
+        //             buf = buf + eth->id + " inet6 add " + address + "/" + to_string(new_ipv6.prefix_length);
+        //             cout << "ipv6 address buf : " << buf << endl;
+        //             // system(buf.c_str());
+        //         }
+        //         eth->v_ipv6.push_back(new_ipv6);
+        //     }
+        // }
+
+        // json::value dhcp_v4, dhcp_v6;
+        // if (get_value_from_json_key(_jv, "DHCPv4", dhcp_v4)) {
+        //     bool enable;
+        //     if (get_value_from_json_key(dhcp_v4, "DHCPEnabled", enable)){
+        //         eth->dhcp_v4.dhcp_enabled = enable;
+        //         // todo : dhcp 사용
+        //     }   
+        // }
+
+        // if (get_value_from_json_key(_jv, "DHCPv6", dhcp_v6)) {
+        //     string op_mode;
+        //     if (get_value_from_json_key(dhcp_v6, "OperatingMode", op_mode)){
+        //         if (validateDHCPv6OperatingMode(op_mode)){
+        //             eth->dhcp_v6.operating_mode = op_mode;
+        //             // todo : dhcp 사용
+        //         } else {
+        //             log(error) << "DHCPv6 is not provide Operating Mode : " << op_mode;
+        //             return false;
+        //         }
+        //     }   
+        // }
 
     }
     catch(const std::exception& e)
@@ -4575,6 +4650,125 @@ bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag)
 
     return result;
 }
+
+void apply_ethernet_patch(Ethernet_Patch_Info _info, EthernetInterfaces *_eth, int _flag)
+{
+    string dev = "eth" + _eth->id;
+    if(_info.op_enabled)
+    {
+        cout << "[Ethernet PATCH Flag On] : Enabled" << endl;
+        _eth->interfaceEnabled = _info.val_enabled;
+        // 이거 플래그 1일때 적용하는거 ip link set eth1 up/down 으로 구현해도 될거같음
+        // 얘는 걍 최상위로 쳐서 얘 들어가면 바로 down부터 시켜서 나머지 적용안되게해야될거같음
+    }
+
+    if(_info.op_description)
+    {
+        cout << "[Ethernet PATCH Flag On] : Description" << endl;
+        _eth->description = _info.val_description;
+    }
+
+
+    // hostname은 hostname 명령어 수행, hostname/hosts 파일 수정 동작
+    if(_info.op_hostname)
+    {
+        cout << "[Ethernet PATCH Flag On] : Hostname" << endl;
+        
+        string fqdn = get_popen_string("hostname -f");
+        if(_flag == 1)
+        {
+            string origin_hostname = get_popen_string("cat /etc/hostname");
+            change_hostname_file(_info.val_hostname);
+            change_hosts_file(origin_hostname, _info.val_hostname);
+            string cmd = "hostname " + _info.val_hostname;
+            system(cmd.c_str());
+
+            // fqdn 적용? hostname -f...
+            fqdn = get_popen_string("hostname -f");
+
+        }
+
+        _eth->hostname = _info.val_hostname;
+        _eth->fqdn = fqdn;
+    }
+
+    if(_info.op_mac_address)
+    {
+        cout << "[Ethernet PATCH Flag On] : Mac Address" << endl;
+
+        if(_flag == 1)
+        {
+            // interface 수정
+            change_interface_file(dev, "hwaddress ether", _info.val_mac_address);
+        }
+        _eth->mac_address = _info.val_mac_address;
+    }
+
+    if(_info.op_mtu)
+    {
+        cout << "[Ethernet PATCH Flag On] : MTU" << endl;
+
+        if(_flag == 1)
+        {
+            // interface 수정
+            change_interface_file(dev, "mtu", to_string(_info.val_mtu));
+        }
+        _eth->mtu_size = _info.val_mtu;
+    }
+
+    if(_info.op_v4_address)
+    {
+        cout << "[Ethernet PATCH Flag On] : Address" << endl;
+
+        if(_flag == 1)
+        {
+            // interface 수정
+            change_interface_file(dev, "address", _info.val_v4_address);
+
+            if(_eth->v_ipv4[0].address != _info.val_v4_address)
+                change_web_app_file(_eth->v_ipv4[0].address, _info.val_v4_address);
+        }
+        _eth->v_ipv4[0].address = _info.val_v4_address;
+    }
+
+    if(_info.op_v4_netmask)
+    {
+        cout << "[Ethernet PATCH Flag On] : Netmask" << endl;
+
+        if(_flag == 1)
+        {
+            // interface 수정
+            change_interface_file(dev, "netmask", _info.val_v4_netmask);
+        }
+        _eth->v_ipv4[0].subnet_mask = _info.val_v4_netmask;
+    }
+
+    if(_info.op_v4_gateway)
+    {
+        cout << "[Ethernet PATCH Flag On] : Gateway" << endl;
+
+        if(_flag == 1)
+        {
+            // interface 수정
+            change_interface_file(dev, "gateway", _info.val_v4_gateway);
+        }
+        _eth->v_ipv4[0].gateway = _info.val_v4_gateway;
+    }
+
+    string restart_cmd = "/etc/init.d/S40network restart";
+    system(restart_cmd.c_str());
+
+    // 네트워크 변경이니까 어쩔수없다 걍 여기서 restart하는걸로
+    // network restart 타이밍을 언제로 잡아야할지.. 
+    // 만약에 그냥 여기서 interface를 수정하는 5개 변수 플래그중 ok된거있으면 적용하는거라하면
+    // 웹에서 NIC통으로 긁어다 주는거때문에 항상 활성화될수있어서 json읽는데서 비교하는 로직 추가해야할수
+    // 있음
+    // 아니면 restart안하고 현재변경은 명령어로 처리하고 파일은 바꿔만 놓는 식으로 할수있음
+    // 명령어로 하려했더니 link down시켜야 하는 mtu mac이 있어서 안될듯
+
+}
+
+
 
 bool patch_syslog(json::value _jv, string _record_uri)
 {
