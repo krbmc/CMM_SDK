@@ -295,9 +295,46 @@ bool validateIPv4(const string str)
         return false;
     
     for (string num : ip_nums){
-        if (!isNumber(num) || stoi(num) > 255 || stoi(str) < 0)
+        if (!isNumber(num) || stoi(num) > 255 || stoi(num) < 0)
             return false;
     }
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate MAC address
+ * @author hjk
+ * @return if string is MAC address, return true. else return false.
+ */
+bool validateMACAddress(const string str)
+{
+    // 11:aa:22:bb:33:44 형태
+    vector<string> addr = string_split(str, ':');
+    if(addr.size() != 6)
+    {
+        cout << "INNER : part is not 6" << endl;
+        return false;
+    }
+
+    for(string part : addr)
+    {
+        if(part.length() != 2)
+        {
+            cout << "INNER : part length is not 2" << endl;
+            return false;
+        }
+            
+        for(int i=0; i<part.length(); i++)
+        {
+            if(!((part[0] >= '0' && part[0] <= '9') || (part[0] <= 'f' && part[0] >= 'a')))
+            {
+                cout << "one is unvalid" << endl;
+                return false;
+            }
+            
+        }
+    }
+
     return true;
 }
 

@@ -5,6 +5,7 @@
 #include "task.hpp"
 #include "chassis_controller.hpp"
 #include "logservice.hpp"
+#include "ethernetinterface.hpp"
 // #include <glib-2.0/glib.h>
 // #include <gssdp-1.2/libgssdp/gssdp.h>
 
@@ -183,7 +184,100 @@ int main(int _argc, char *_argv[])
     // therm->fans->add_member(fan_3);
     // resource_save_json(fan_3);
     // resource_save_json(therm->fans);
+
+    // mac 주소 유효 테스트
+    // if(validateMACAddress("11:22:33:44:55:66"))
+    //     cout << "11:22:33:44:55:66 : VALID" << endl;
+    // else
+    //     cout << "11:22:33:44:55:66 : NOP" << endl;
+
+    // if(validateMACAddress("1b:c2:a3:f4:5d:e6"))
+    //     cout << "1b:c2:a3:f4:5d:e6 : VALID" << endl;
+    // else
+    //     cout << "1b:c2:a3:f4:5d:e6 : NOP" << endl;
+
+    // if(validateMACAddress("1b:c2:a3"))
+    //     cout << "1b:c2:a3 : VALID" << endl;
+    // else
+    //     cout << "1b:c2:a3 : NOP" << endl;
+
+    // if(validateMACAddress("1b:c2:a355:f4:5d:e6"))
+    //     cout << "1b:c2:a355:f4:5d:e6 : VALID" << endl;
+    // else
+    //     cout << "1b:c2:a355:f4:5d:e6 : NOP" << endl;
+
+    // if(validateMACAddress("1b:c2:a355:f4:5d:e6:77"))
+    //     cout << "1b:c2:a355:f4:5d:e6:77 : VALID" << endl;
+    // else
+    //     cout << "1b:c2:a355:f4:5d:e6:77 : NOP" << endl;
+
+    // if(validateMACAddress("tb:c2:a3:f4:5d:e6"))
+    //     cout << "tb:c2:a3:f4:5d:e6 : VALID" << endl;
+    // else
+    //     cout << "tb:c2:a3:f4:5d:e6 : NOP" << endl;
+
+    // network 테스트
+    // get
+    // uint8_t idx=1;
+    // uint8_t *ip_addr = new uint8_t[4], *netmask = new uint8_t[4],
+    //         *gateway = new uint8_t[4], *mac_addr = new uint8_t[6];
+    // int mtu;
+    // get_ip_info(idx, ip_addr, netmask, gateway, mac_addr, &mtu);
+    // cout << "----------------- BEFORE eth1 -------------------" << endl;
+    // printf("IP : %d.%d.%d.%d\n", ip_addr[0], ip_addr[1], ip_addr[2], ip_addr[3]);
+    // printf("MASK : %d.%d.%d.%d\n", netmask[0], netmask[1], netmask[2], netmask[3]);
+    // printf("GATE : %d.%d.%d.%d\n", gateway[0], gateway[1], gateway[2], gateway[3]);
+    // printf("MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3]
+    // , mac_addr[4], mac_addr[5]);
+    // printf("MTU : %d\n", mtu);
     
+    // // set
+    // char dev[5] = {0};
+    // char str_ip[20] = {0};
+    // char str_net[20] = {0};
+    // char str_gw[20] = {0};
+    // char str_mtu[20] = {0};
+    // char str_mac[20] = {0};
+    // sprintf(dev, "eth1");
+    // sprintf(str_ip, "10.0.6.100");
+    // sprintf(str_net, "255.255.0.0");
+    // sprintf(str_gw, "10.0.0.5");
+    // sprintf(str_mtu, "1300");
+    // sprintf(str_mac, "00:00:00:00:00:01");
+    // set_ip(dev, str_ip, str_net, str_gw, str_mtu, str_mac);
+
+    // get_ip_info(idx, ip_addr, netmask, gateway, mac_addr, &mtu);
+    // cout << "----------------- BEFORE eth1 -------------------" << endl;
+    // printf("IP : %d.%d.%d.%d\n", ip_addr[0], ip_addr[1], ip_addr[2], ip_addr[3]);
+    // printf("MASK : %d.%d.%d.%d\n", netmask[0], netmask[1], netmask[2], netmask[3]);
+    // printf("GATE : %d.%d.%d.%d\n", gateway[0], gateway[1], gateway[2], gateway[3]);
+    // printf("MAC : %02x:%02x:%02x:%02x:%02x:%02x\n", mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3]
+    // , mac_addr[4], mac_addr[5]);
+    // printf("MTU : %d\n", mtu);
+
+    // 파일수정 테스트
+    // change_hosts_file("keti", "mymy");
+    // change_hostname_file("newhostname");
+    // change_interface_file("eth1", "address", "10.0.6.100");
+    // change_interface_file("eth2", "address", "10.0.6.10");
+    // change_interface_file("eth1", "netmask", "255.255.0.0");
+    // change_interface_file("eth1", "gateway", "this is gateway");
+    // change_interface_file("eth1", "mtu", "5000");
+    // change_interface_file("eth1", "hwaddress ether", "this is MAC");
+    // change_interface_file("eth2", "netmask", "mask is kf94");
+
+    // Add_Ethernet_Info eth_info;
+    // eth_info.address = "10.0.6.100";
+    // eth_info.netmask = "255.255.0.0";
+    // eth_info.gateway = "10.0.0.1";
+    // eth_info.mtu = "2000";
+
+    // add_ethernet_to_interface_file("eth2", eth_info);
+
+    // change_interface_file("eth1", "address", "10.0.6.106");
+    // change_web_app_file("10.0.6.100", "10.0.6.106");
+
+    // system("/etc/init.d/S40network restart");
     
 
     // ssdp discover (not working yet)

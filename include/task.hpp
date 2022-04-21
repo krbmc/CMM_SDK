@@ -4,6 +4,7 @@
 #include "stdafx.hpp"
 #include "resource.hpp"
 #include "eventservice.hpp"
+#include "ethernetinterface.hpp"
 
 enum TASK_TYPE
 {
@@ -67,6 +68,26 @@ extern vector<LCI> last_command_list;
 // 하나의 모듈을 last_command_list벡터에 저장하고 해당 벡터에서 index로 접근하기 위해
 // last_command_index_map에다가 (모듈id, last_command_list에서의 index) 로 관리
 
+typedef struct _Ethernet_Patch_Info
+{
+    bool op_enabled=false;
+    bool val_enabled;
+    bool op_description=false;
+    string val_description;
+    bool op_hostname=false;
+    string val_hostname;
+    bool op_mac_address=false;
+    string val_mac_address;
+    bool op_mtu=false;
+    int val_mtu;
+    bool op_v4_address=false;
+    string val_v4_address;
+    bool op_v4_netmask=false;
+    string val_v4_netmask;
+    bool op_v4_gateway=false;
+    string val_v4_gateway;
+} Ethernet_Patch_Info;
+
 class Task_Manager
 {
     public:
@@ -105,6 +126,7 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
 void act_certificate(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_certificate_service(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_system(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
+void spread_system_reset_to_all_bmc(string _type);
 
 
 void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
@@ -140,6 +162,8 @@ bool patch_syslog(json::value _jv, string _record_uri);
 bool patch_network_protocol(json::value _jv, string _record_uri);
 void patch_fan_mode(string _mode, string _record_uri);
 bool patch_ethernet_interface(json::value _jv, string _record_uri, int _flag);
+void apply_ethernet_patch(Ethernet_Patch_Info _info, EthernetInterfaces *_eth, int _flag);
+
 bool patch_system(json::value _jv, string _record_uri);
 bool patch_chassis(json::value _jv, string _record_uri);
 bool patch_power_control(json::value _jv, string _record_uri);
