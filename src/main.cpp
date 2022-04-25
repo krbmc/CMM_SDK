@@ -262,6 +262,7 @@ int main(int _argc, char *_argv[])
     // change_interface_file("eth2", "address", "10.0.6.10");
     // change_interface_file("eth1", "netmask", "255.255.0.0");
     // change_interface_file("eth1", "gateway", "this is gateway");
+    // change_interface_file("eth1", "gateway", "10.0.0.1");
     // change_interface_file("eth1", "mtu", "5000");
     // change_interface_file("eth1", "hwaddress ether", "this is MAC");
     // change_interface_file("eth2", "netmask", "mask is kf94");

@@ -37,9 +37,9 @@ typedef struct _Add_Ethernet_Info
 } Add_Ethernet_Info;
 
 // 파일변경
-void read_file_line_by_line(string _filename, vector<string> &_lines);
-void write_file_line_by_line(string _filename, vector<string> _lines);
-void append_newline_and_push_back(string _str, vector<string> &_vec);
+// void read_file_line_by_line(string _filename, vector<string> &_lines);
+// void write_file_line_by_line(string _filename, vector<string> _lines);
+// void append_newline_and_push_back(string _str, vector<string> &_vec);
 void change_hosts_file(string _target, string _new);
 void change_hostname_file(string _new);
 void change_interface_file(string _dev, string _keyword, string _value);
