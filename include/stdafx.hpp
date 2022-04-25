@@ -207,4 +207,11 @@ bool get_value_from_json_key(json::value body, string key, string& value);
 bool get_value_from_json_key(json::value body, string key, json::value& value);
 bool get_value_from_json_key(json::value body, string key, double& value);
 bool get_value_from_json_key(json::value body, string key, bool& value);
+
+
+void read_file_line_by_line(string _filename, vector<string> &_lines);
+void write_file_line_by_line(string _filename, vector<string> _lines);
+void append_newline_and_push_back(string _str, vector<string> &_vec);
+
+
 #endif

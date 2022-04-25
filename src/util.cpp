@@ -346,56 +346,56 @@ bool validateMACAddress(const string str)
 bool validateDatetimeLocalOffset(const string str)
 {
     vector<string> available{
-        "GMT-12",
-        "GMT-11",
-        "GMT-10",
-        "GMT-9",
-        "GMT-8",
-        "GMT-7",
-        "GMT-6",
-        "GMT-5",
-        "GMT-4",
-        "GMT-3",
-        "GMT-2",
-        "GMT-1",
-        "GMT+0",
-        "GMT+1",
-        "GMT+2",
-        "GMT+3",
-        "GMT+4",
-        "GMT+5",
-        "GMT+6",
-        "GMT+7",
-        "GMT+8",
-        "GMT+9",
-        "GMT+10",
-        "GMT+11",
-        "GMT+12",
-        // "-12:00",
-        // "-11:00",
-        // "-10:00",
-        // "-09:00",
-        // "-08:00",
-        // "-07:00",
-        // "-06:00",
-        // "-05:00",
-        // "-04:00",
-        // "-03:00",
-        // "-02:00",
-        // "-01:00",
-        // "00:00",
-        // "+01:00",
-        // "+02:00",
-        // "+03:00",
-        // "+04:00",
-        // "+05:00",
-        // "+06:00",
-        // "+07:00",
-        // "+08:00",
-        // "+09:00",
-        // "+10:00",
-        // "+11:00",
-        // "+12:00",
+        // "GMT-12",
+        // "GMT-11",
+        // "GMT-10",
+        // "GMT-9",
+        // "GMT-8",
+        // "GMT-7",
+        // "GMT-6",
+        // "GMT-5",
+        // "GMT-4",
+        // "GMT-3",
+        // "GMT-2",
+        // "GMT-1",
+        // "GMT+0",
+        // "GMT+1",
+        // "GMT+2",
+        // "GMT+3",
+        // "GMT+4",
+        // "GMT+5",
+        // "GMT+6",
+        // "GMT+7",
+        // "GMT+8",
+        // "GMT+9",
+        // "GMT+10",
+        // "GMT+11",
+        // "GMT+12",
+        "-12:00",
+        "-11:00",
+        "-10:00",
+        "-09:00",
+        "-08:00",
+        "-07:00",
+        "-06:00",
+        "-05:00",
+        "-04:00",
+        "-03:00",
+        "-02:00",
+        "-01:00",
+        "00:00",
+        "+01:00",
+        "+02:00",
+        "+03:00",
+        "+04:00",
+        "+05:00",
+        "+06:00",
+        "+07:00",
+        "+08:00",
+        "+09:00",
+        "+10:00",
+        "+11:00",
+        "+12:00",
     };
 
     if (find(available.begin(), available.end(), str) == available.end()) {
@@ -798,4 +798,79 @@ void make_time_with_tm(tm _tm, char *_output)
 		sprintf(sec, "%d", t_sec);
 
 	sprintf(_output, "%d-%s-%s %s:%s:%s", t_year+1900, month, days, hour, min, sec);
+}
+
+/**
+ * @brief file을 한 줄씩 읽어서 lines에 반환
+ * 
+ * @param _filename 읽을 파일 이름
+ * @param _lines 한 줄씩 읽은 결과 벡터
+ */
+void read_file_line_by_line(string _filename, vector<string> &_lines)
+{
+  ifstream read_file(_filename);
+  if(read_file.is_open())
+  {
+    while(!read_file.eof())
+    {
+        string tmp;
+        getline(read_file, tmp);
+        // if(tmp[0] == '\0')
+        //   cout << "null" << endl;
+        // if(tmp[0] == ' ')
+        //   cout << "space" << endl;
+        // if(tmp[0] == '\n')
+        //   cout << "enter" << endl;
+
+        // if(tmp[0] == '\0' && tmp.length() == 0)
+        //   continue;
+        // cout << tmp << endl;
+        _lines.push_back(tmp);
+    }
+
+    _lines.pop_back(); // 마지막 빈줄추가되는거 방지
+    
+  }
+  else
+  {
+    cout << "ERROR : file is not open" << endl;
+    return ;
+  }
+
+  read_file.close();
+}
+
+/**
+ * @brief 벡터의 내용을 파일에 한줄씩 쓰기
+ * 
+ * @param _filename write할 파일이름
+ * @param _lines 쓸 내용 담긴 벡터
+ */
+void write_file_line_by_line(string _filename, vector<string> _lines)
+{
+  ofstream write_file(_filename);
+  if(write_file.is_open())
+  {
+    for(string w_line : _lines)
+    {
+      write_file << w_line;
+    }
+  }
+  else
+  {
+      cout << "ERROR : file is not open" << endl;
+      return ;
+  }
+  write_file.close();
+}
+
+/**
+ * @brief _str의 끝에 개행문자'\n'를 추가하고 _vec에 push_back하는 함수
+ */
+void append_newline_and_push_back(string _str, vector<string> &_vec)
+{
+  _str.append("\n");
+  _vec.push_back(_str);
+
+  return ;
 }
