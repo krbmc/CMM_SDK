@@ -3,6 +3,7 @@
 
 #include "stdafx.hpp"
 #include "hwcontrol.hpp"
+#include "ntp.hpp"
 // #include "chassis_controller.hpp"
 
 /**
@@ -469,7 +470,7 @@ typedef struct _CertContent
 
 /**
  * @brief Task Resource에 들어가는 Payload
- * @author 강
+ * @author hj
  * @details http_hearders에 들어온 요청의 헤더, http_operation에 요청의 종류(get,post..)
  * json_body에 json값, target_uri에 api list값
  */
@@ -682,17 +683,17 @@ typedef struct _SyslogFilter
     string lowestSeverity;
 } SyslogFilter;
 
-typedef struct _NTP
-{
-    bool protocol_enabled;
-    int port;
-    string primary_ntp_server;
-    string secondary_ntp_server;
-    vector<string> ntp_servers;
-    string date_str;
-    string time_str;
-    string timezone;
-} NTP;
+// typedef struct _NTP
+// {
+//     bool protocol_enabled;
+//     int port;
+//     string primary_ntp_server;
+//     string secondary_ntp_server;
+//     vector<string> ntp_servers;
+//     string date_str;
+//     string time_str;
+//     string timezone;
+// } NTP;
 
 typedef struct _SensorMake
 {
@@ -1601,7 +1602,7 @@ class CertificateService : public Resource
     
     json::value get_json(void);
     bool load_json(json::value &j);
-    json::value GenerateCSR(json::value body);
+    // json::value GenerateCSR(json::value body);
     bool ReplaceCertificate(json::value body);
 };
 

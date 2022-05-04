@@ -148,6 +148,7 @@ void delete_numset_num(int _index, unsigned int num);
 string get_current_object_name(string _uri, string delimiter);
 string get_parent_object_uri(string _uri, string delimiter);
 bool isNumber(const string str);
+bool isNumber(const char c);
 bool validateIPv4(const string str);
 bool validateDatetimeLocalOffset(const string str);
 bool validateSeverity(const string str);
@@ -156,6 +157,14 @@ bool validateDHCPv6OperatingMode(const string str);
 
 bool validateModuleID(const string str);
 bool validateMACAddress(const string str);
+
+bool validateDate(const string str);
+bool validateYear(const string str);
+bool validateMonth(const string str);
+bool validateDay(const string str);
+bool validateTime(const string str);
+bool validateHour(const string str);
+bool validateMinute(const string str); // second는 같은걸 사용
 
 string ltrim(string str);
 
