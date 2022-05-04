@@ -5,6 +5,7 @@
 #include "resource.hpp"
 #include "eventservice.hpp"
 #include "ethernetinterface.hpp"
+#include "certificate.hpp"
 
 enum TASK_TYPE
 {

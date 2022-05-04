@@ -118,7 +118,20 @@ void do_task_cmm_get(http_request _request)
         get_value_from_json_key(jj, "type", acc_type_str);
         acc_type = stoi(acc_type_str);
         
-        // cout << "acc_type : " << acc_type << endl;
+        // get에서 처리하는부분 현재 ntp에서 date,time 갱신해주고있음
+        cout << "acc_type : " << acc_type << endl;
+        if(acc_type == NETWORK_PROTOCOL_TYPE)
+        {
+            // NTP 의 Date, Time을 갱신
+            NetworkProtocol *np = (NetworkProtocol *)g_record[uri];
+            get_current_date_info(np->ntp.date_str);
+            get_current_time_info(np->ntp.time_str);
+            resource_save_json(np);
+
+            // jj.clear();
+            jj = record_get_json(uri);
+            
+        }
         // if(acc_type == ACCOUNT_SERVICE_TYPE)
         // {
         //     // json추가하고 
@@ -1469,7 +1482,7 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 NetworkProtocol *net = (NetworkProtocol *)g_record[uri];
                 resource_save_json(g_record[uri]);
                 success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
-                patch_iptable(net);
+                // patch_iptable(net);
                 return ;
             }
             else
@@ -2143,8 +2156,15 @@ void act_certificate_service(m_Request& _msg, json::value _jv, string _resource,
     {
         // json받아서 json으로 나옴
         json::value result;
-        cert_service->GenerateCSR(_jv);
+        result = generateCSR(_jv);
+        // result = cert_service->GenerateCSR(_jv);
         json::value check;
+        if(result == json::value::null())
+        {
+            error_reply(_msg, get_error_json("Generate CSR Request Body Required Error"), status_codes::BadRequest, _response);
+            return ;
+        }
+
         if(get_value_from_json_key(result, "Failed", check))
         {
             error_reply(_msg, result, status_codes::BadRequest, _response);
@@ -4264,46 +4284,135 @@ bool patch_network_protocol(json::value _jv, string _record_uri)
             "TimeZone" : string
         }
         */
+       // 로직을 좀 바꿔야할거같음 enabled에 따라서 동작방식이 달라지기때문에
+       // enabled가 변경인자로 들어왔을때 해당 값에 따라 처리
+       // enabled가 변경인자로 들어오지 않았을때 기존 enabled 값에 따라 처리
+       // 4가지 나와야함
+        // 수정 데이터로 enabled가 들어오면 그 값을 따르고 들어오지 않으면 기존의 enabled값 따름
         bool enabled;
         if(get_value_from_json_key(ntp, "ProtocolEnabled", enabled))
         {
-            network->ntp.protocol_enabled = enabled;
             
-            if (enabled){
-                int port;
-                string primary_ntp_server, secondary_ntp_server;
-                if (get_value_from_json_key(ntp, "Port", port)){
-                    if (isNumber(to_string(port))){
-                        network->ntp.port = port;
-                    } else {
-                        result = false;
-                    }
-                }
-                if (get_value_from_json_key(ntp, "PrimaryNTPServer", primary_ntp_server))
-                    network->ntp.primary_ntp_server = primary_ntp_server;
+        }
+        else
+        {
+            enabled = network->ntp.protocol_enabled;
+        }
+            
+        if(enabled){
+            int port;
+            string primary_ntp_server, secondary_ntp_server;
+            // if (get_value_from_json_key(ntp, "Port", port)){
+            //     if (isNumber(to_string(port))){
+            //         network->ntp.port = port;
+            //     } else {
+            //         result = false;
+            //     }
+            // }
+            int prime_ret_value;
+            if (get_value_from_json_key(ntp, "PrimaryNTPServer", primary_ntp_server))
+            {
+                network->ntp.primary_ntp_server = primary_ntp_server;
+                prime_ret_value = set_time_by_ntp_server(primary_ntp_server);
+
                 if (get_value_from_json_key(ntp, "SecondaryNTPServer", secondary_ntp_server))
+                {
                     network->ntp.secondary_ntp_server = secondary_ntp_server;
-                // ntp 설정을 바꾼 후 서버 시간 동기화 작업 필요
-            } else {
-                string date_str, time_str, timezone;
-                if (get_value_from_json_key(ntp, "Date", date_str))
-                    network->ntp.date_str = date_str;
-                
-                if (get_value_from_json_key(ntp, "Time", time_str)){
-                    network->ntp.time_str = time_str;
+                    if(prime_ret_value != 0)
+                        set_time_by_ntp_server(secondary_ntp_server);
                 }
-                
-                if (get_value_from_json_key(ntp, "TimeZone", timezone)){
-                    if (validateDatetimeLocalOffset(timezone)){
+            }
+            // ntp 설정을 바꾼 후 서버 시간 동기화 작업 필요
+        }
+        else{
+            // enabled가 false인 경우 -> timezone하고 date,time 수동변경 2가지
+            // timezone 변경하고 date,time변경은 별개로
+            // 두가지 다 입력이 주어졌다면 timezone에 우선순위를 둠
+
+            string date_str="", time_str="", timezone="";
+            bool flag_tz = false;
+            if (get_value_from_json_key(ntp, "TimeZone", timezone)){
+
+                if(timezone != "")
+                {
+                    if (validateDatetimeLocalOffset(timezone))
+                    {
+                        string origin_tz = network->ntp.timezone;
                         network->ntp.timezone = timezone;
-                    } else {
+                        flag_tz = true;
+                        if(origin_tz == "")
+                            set_time_by_userTimezone(timezone);
+                        else
+                        {
+                            if(origin_tz == timezone)
+                            // 기존 타임존하고 똑같이 들어오면 타임존으로 다시 시간변경할 필요x + date,time 무시x
+                                flag_tz = false;
+                            else
+                                set_time_by_userTimezone(timezone, origin_tz);
+                        }
+                            
+                        // set_time_by_userTimezone(origin_tz, timezone);
+                    }
+                    else 
+                    {
+                        cout << " TimeZone is Unvalid " << endl;
                         return false;
                     }
                 }
-                // ubuntu date 명령어를 통해 서버 시간 동기화
             }
-            result = true;
+
+            // timezone 정보 안들어왔을때만 date, time수정 On
+            if(!flag_tz)
+            {
+                bool f_date=false, f_time=false;
+                if (get_value_from_json_key(ntp, "Date", date_str))
+                {
+                    if(date_str != "")
+                    {
+                        if(validateDate(date_str))
+                        {
+                            f_date = true;
+                        }
+                        else
+                        {
+                            cout << " Date is Unvalid " << endl;
+                            return false;
+                        }
+                    }
+                }
+                
+                if (get_value_from_json_key(ntp, "Time", time_str))
+                {
+                    if(time_str != "")
+                    {
+                        if(validateTime(time_str))
+                        {
+                            f_time = true;
+                        }
+                        else
+                        {
+                            cout << " Time is Unvalid " << endl;
+                            return false;
+                        }
+                    }
+                }
+
+
+                if(f_date || f_time)
+                {
+                    set_time_by_userDate(date_str, time_str);
+                    get_current_date_info(date_str);
+                    get_current_time_info(time_str);
+                    network->ntp.date_str = date_str;
+                    network->ntp.time_str = time_str;
+                }
+            }
+        
+            // ubuntu date 명령어를 통해 서버 시간 동기화
         }
+        network->ntp.protocol_enabled = enabled;
+        result = true;
+        
     }
     // dyk  
     // client 에서 NTP Servers 배열을 받아 Primary Server, Secondary Server를 선택할 수 있음. NTP Servers를 추가하거나

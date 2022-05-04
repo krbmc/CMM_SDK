@@ -284,6 +284,14 @@ bool isNumber(const string str)
 }
 
 /**
+ * @brief isNumber character ver
+ */
+bool isNumber(const char c)
+{
+    return (c >= '0') && (c <= '9');
+}
+
+/**
  * @brief get string, check if it is validate ipv4 address
  * @author dyk
  * @return if string is ipv4 addr, retrun 1. else return 0. 
@@ -326,13 +334,231 @@ bool validateMACAddress(const string str)
             
         for(int i=0; i<part.length(); i++)
         {
-            if(!((part[0] >= '0' && part[0] <= '9') || (part[0] <= 'f' && part[0] >= 'a')))
+            if(!((part[i] >= '0' && part[i] <= '9') || (part[i] <= 'f' && part[i] >= 'a')))
             {
                 cout << "one is unvalid" << endl;
                 return false;
             }
-            
         }
+    }
+
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate Date Format(YYYY-MM-DD)
+ * @author hjk
+ * @return if string is available date format, retrun 1. else return 0. 
+ */
+bool validateDate(const string str)
+{
+    vector<string> date = string_split(str, '-');
+    if(date.size() != 3)
+    {
+        cout << "INNER : Date part is not 3" << endl;
+        return false;
+    }
+
+    if(!validateYear(date[0]))
+        return false;
+
+    if(!validateMonth(date[1]))
+        return false;
+    
+    if(!validateDay(date[2]))
+        return false;
+
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate Year Format(YYYY)
+ */
+bool validateYear(const string str)
+{
+    if(str.length() != 4)
+    {
+        cout << "INNER : Year length is not 4" << endl;
+        return false;
+    }
+
+    for(int i=0; i<4; i++)
+    {
+        if(!isNumber(str[i]))
+        {
+            cout << "INNER : Year is not a number" << endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate Month Format(MM)
+ */
+bool validateMonth(const string str)
+{
+    if(str.length() != 2)
+    {
+        cout << "INNER : Month length is not 2" << endl;
+        return false;
+    }
+
+    if(!(str[0] == '0' || str[0] == '1'))
+    {
+        cout << "INNER : First Month letter is unvalid" << endl;
+        return false;
+    }
+
+    if(str[0] == '0')
+    {
+        if(!(str[1] >= '1' && str[1] <= '9'))
+        {
+            cout << "INNER : Second Month letter is unvalid" << endl;
+            return false;
+        }
+    }
+    else if(str[0] == '1')
+    {
+        if(!(str[1] >= '0' && str[1] <= '2'))
+        {
+            cout << "INNER : Second Month letter is unvalid" << endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate Day Format(DD)
+ */
+bool validateDay(const string str)
+{
+    if(str.length() != 2)
+    {
+        cout << "INNER : Day length is not 2" << endl;
+        return false;
+    }
+
+    if(!(str[0] >= '0' && str[0] <= '3'))
+    {
+        cout << "INNER : First Day letter is unvalid" << endl;
+        return false;
+    }
+
+    // 0인경우 1~9 / 1,2인경우 0~9 / 3인경우 0~1
+    if(str[0] == '0')
+    {
+        if(!(str[1] >= '1' && str[1] <= '9'))
+        {
+            cout << "INNER : Second Day letter is unvalid" << endl;
+            return false;
+        }
+    }
+    else if(str[0] == '1' || str[0] == '2')
+    {
+        if(!(str[1] >= '0' && str[1] <= '9'))
+        {
+            cout << "INNER : Second Day letter is unvalid" << endl;
+            return false;
+        }
+    }
+    else if(str[0] == '3')
+    {
+        if(!(str[1] == '0' || str[1] == '1'))
+        {
+            cout << "INNER : Second Day letter is unvalid" << endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+/**
+ * @brief get string, check if it is validate Time Format(hh:mm:ss)
+ * @author hjk 
+ * @return if string is available time format, retrun 1. else return 0. 
+ */
+bool validateTime(const string str)
+{
+    vector<string> time = string_split(str, ':');
+    if(time.size() != 3)
+    {
+        cout << "INNER : Time part is not 3" << endl;
+        return false;
+    }
+
+    if(!validateHour(time[0]))
+        return false;
+
+    if(!validateMinute(time[1]))
+        return false;
+
+    if(!validateMinute(time[2]))
+        return false;
+
+    return true;
+}
+
+/**
+ * @brief get string, check if it is validate Hour Format(hh)
+ */
+bool validateHour(const string str)
+{
+    if(str.length() != 2)
+    {
+        cout << "INNER : Hour length is not 2" << endl;
+        return false;
+    }
+
+    if(!(str[0] >= '0' && str[0] <= '2'))
+    {
+        cout << "INNER : First Hour letter is unvalid" << endl;
+        return false;
+    }
+
+    if(str[0] == '0' || str[0] == '1')
+    {
+        if(!(str[1] >= '0' && str[1] <= '9'))
+        {
+            cout << "INNER : Second Hour letter is unvalid" << endl;
+            return false;
+        }
+    }
+    else if(str[0] == '2')
+    {
+        if(!(str[1] >= '0' && str[1] <= '3'))
+        {
+            cout << "INNER : Second Hour letter is unvalid" << endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+bool validateMinute(const string str)
+{
+    // 00분,초부터 01 02 ... 59 까지
+    if(str.length() != 2)
+    {
+        cout << "INNER : Minute/Second length is not 2" << endl;
+        return false;
+    }
+
+    if(!(str[0] >= '0' && str[0] <= '5'))
+    {
+        cout << "INNER : First Minute/Second letter is unvalid" << endl;
+        return false;
+    }
+
+    if(!(str[1] >= '0' && str[1] <= '9'))
+    {
+        cout << "INNER : Second Minute/Second letter is unvalid" << endl;
+        return false;
     }
 
     return true;

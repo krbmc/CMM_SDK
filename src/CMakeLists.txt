@@ -25,6 +25,8 @@ set(
     logservice.cpp
     eventservice.cpp
     ethernetinterface.cpp
+    ntp.cpp
+    certificate.cpp
 )
 
 # # Directory setting

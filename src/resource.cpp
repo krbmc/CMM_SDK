@@ -3960,147 +3960,207 @@ bool CertificateService::load_json(json::value &j)
     return true;
 }
 
-json::value CertificateService::GenerateCSR(json::value body)
-{
-    string cmds;
-    json::value rsp;
-    // required
-    string certificate_odata_id;
-    string country;
-    string city;
-    string common_name;
-    string state;
-    string organization;
-    string organization_unit;
+// json::value CertificateService::GenerateCSR(json::value body)
+// {
+//     string cmds;
+//     json::value rsp;
+//     // required
+//     string certificate_odata_id;
+//     string country;
+//     string city;
+//     string common_name;
+//     string state;
+//     string organization;
+//     string organization_unit;
     
-    // optional
+//     // optional
 
-    // optional (not implemented..)
-    vector<string> alternative_names;
-    vector<string> key_usage;
-    string challenge_password; // pass phrase
-    string contact_person;
-    string email;
-    string given_name;
-    string initials;
-    string key_curve_id; // ahffk
-    string key_pair_algorithm; // rsa only!
-    string surname;
-    string unstructured_name;
+//     // optional (not implemented..)
+//     vector<string> alternative_names;
+//     vector<string> key_usage;
+//     string challenge_password; // pass phrase
+//     string contact_person;
+//     string email;
+//     string given_name;
+//     string initials;
+//     string key_curve_id; // ahffk
+//     string key_pair_algorithm; // rsa only!
+//     string surname;
+//     string unstructured_name;
 
-    log(info) << "[...]generateCSR start";
-    certificate_odata_id = body.at("CertificateCollection").at("@odata.id").as_string();
-    get_value_from_json_key(body, "Country", country);
-    get_value_from_json_key(body, "City", city);
-    get_value_from_json_key(body, "CommonName", common_name);
-    get_value_from_json_key(body, "State", state);
-    get_value_from_json_key(body, "Organization", organization);
-    get_value_from_json_key(body, "OrganizationalUnit", organization_unit);
+//     log(info) << "[...]generateCSR start";
+//     try
+//     {
+//         /* code */
+//         certificate_odata_id = body.at("CertificateCollection").at("@odata.id").as_string();
+//         // 여기에 certificate_odata_id 가
+//         // 앞에서 4 개로 끊었을때 /redfish/v1/Managers/NetworkProtocol/HTTPS/Certificates
+//         // /redfish/v1/AccountService/Accounts 인가 2개를 체크하셈
+//         // vector<string> parts = string_split(certificate_odata_id, '/');
+//         // for(int i=0; i<parts.size(); i++)
+//         // {
+
+//         // }
+//     }
+//     catch(const std::exception& e)
+//     {
+//         std::cerr << e.what() << '\n';
+//         log(error) << "[In Generate CSR] : Certificate Collection Extract Error";
+//         return json::value::null();
+//     }
     
-    // #1 key, conf(inform), csr path declare 
-    fs::path key("/conf/ssl/cert.key");
-    fs::path conf("/conf/ssl/cert.cnf");
-    fs::path csr("/conf/ssl/cert.csr");
-    string key_length = "1024";
+//     // #1 required 처리하고 -- o
+//     // #2 우선 임시 폴더 tmp 하나 경로 정해서 거기다가 fs 지정하고
+//     // #3 openssl관련 crt생성한다음에
+//     // #4 certificate 리소스 생성하고 해당 디렉토리 밑에 파일 옮기기
+//     // certificatecollection 에 해당 cert가 들어갈 컬렉션 경로가 들어올건데
+//     // 이게 들어갈수있는게 일단은 networkprotocol에 https로 들어오는거랑 account에 들어오는거임 그거 외엔
+//     // 무시해줘야함
+//     // 그렇게 하고 패스랑 키 생성은 임시 폴더에다가 만들거야 만들고나서 그걸 나중에 컬렉션 생성하고 그 폴더에다가
+//     // 넣는식으로 하자
+//     if(!get_value_from_json_key(body, "Country", country))
+//     {
+//         log(error) << "[In Generate CSR] : Country Field is Required";
+//         return json::value::null();
+//     }
 
-    // #2 이미 존재한다면, 삭제
-    remove_if_exists(conf);
-    remove_if_exists(key);
+//     if(!get_value_from_json_key(body, "City", city))
+//     {
+//         log(error) << "[In Generate CSR] : City Field is Required";
+//         return json::value::null();
+//     }
+
+//     if(!get_value_from_json_key(body, "CommonName", common_name))
+//     {
+//         log(error) << "[In Generate CSR] : CommonName Field is Required";
+//         return json::value::null();
+//     }
+
+//     if(!get_value_from_json_key(body, "State", state))
+//     {
+//         log(error) << "[In Generate CSR] : State Field is Required";
+//         return json::value::null();
+//     }
+
+//     if(!get_value_from_json_key(body, "Organization", organization))
+//     {
+//         log(error) << "[In Generate CSR] : Organization Field is Required";
+//         return json::value::null();
+//     }
+
+//     if(!get_value_from_json_key(body, "OrganizationalUnit", organization_unit))
+//     {
+//         log(error) << "[In Generate CSR] : OrganizationalUnit Field is Required";
+//         return json::value::null();
+//     }
     
-    // #3 ssl key (개인키) 생성
-    generate_ssl_private_key(key, key_length);
+//     // #1 key, conf(inform), csr path declare 
+//     fs::path key("/conf/ssl/tmp/cert.key");
+//     fs::path conf("/conf/ssl/tmp/cert.cnf");
+//     fs::path csr("/conf/ssl/tmp/cert.csr");
+//     // fs::path key("/conf/ssl/cert.key");
+//     // fs::path conf("/conf/ssl/cert.cnf");
+//     // fs::path csr("/conf/ssl/cert.csr");
+//     string key_length = "1024";
+
+//     // #2 이미 존재한다면, 삭제
+//     remove_if_exists(conf);
+//     remove_if_exists(key);
     
-    // #4 ssl config file 생성
-    log(info) << "[...]ssl config save";
-    char cert_text[14][200];
-
-    sprintf(cert_text[0], "[ req ]\n");	
-    sprintf(cert_text[1], "default_bits\t= %s\n", key_length.c_str());
-    sprintf(cert_text[2], "default_md\t= sha256\n");	
-    sprintf(cert_text[3], "default_keyfile\t=%s\n", key.c_str());
-    sprintf(cert_text[4], "prompt\t = no\n");
-    sprintf(cert_text[5], "encrypt_key\t= no\n\n");
-    sprintf(cert_text[6], "# base request\ndistinguished_name = req_distinguished_name\n");
-    sprintf(cert_text[7], "\n# distinguished_name\n[ req_distinguished_name ]\n");	
-    sprintf(cert_text[8], "countryName\t= \"%s\"\n", country.c_str());
-    sprintf(cert_text[9], "stateOrProvinceName\t= \"%s\"\n", state.c_str());
-    sprintf(cert_text[10], "localityName\t=\"%s\"\n", city.c_str());
-    sprintf(cert_text[11], "organizationName\t=\"%s\"\n", organization.c_str());	
-    sprintf(cert_text[12], "organizationalUnitName\t=\"%s\"\n", organization_unit.c_str());	
-    sprintf(cert_text[13], "commonName\t=\"%s\"\n", common_name.c_str());
+//     // #3 ssl key (개인키) 생성
+//     generate_ssl_private_key(key, key_length);
     
-    ofstream cert_conf(conf);
-    for (int i = 0; i < 14; i++)
-        cert_conf << cert_text[i];
-    cert_conf.close();
+//     // #4 ssl config file 생성
+//     log(info) << "[...]ssl config save";
+//     char cert_text[14][200];
 
-    // #5 CSR 생성 && return request
-    rsp = generate_CSR_return_result(conf, key, csr, certificate_odata_id);
-    resource_save_json(this);// ??
-
-    return rsp;
-}
-
-/**
- * @brief generate new ssl private key
- * @author dyk
- */
-void generate_ssl_private_key(fs::path key, string key_length)
-{
-    string cmds = "openssl genrsa -out " + key.string() + " " + key_length;
-    system(cmds.c_str());
-    log(info) << "[###]generate private key";
-}
-
-/**
- * @brief generate Certificate Signing Request with absolute path of conf, key, csr 
- * @author dyk
- * @return json information about this request // can be changed 
- */
-json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id)
-{
-    json::value rsp;
-    string cmds = "openssl req -config " + conf.string() + " -new -key " + key.string() + " -out " + csr.string() + " -verbose";
+//     sprintf(cert_text[0], "[ req ]\n");	
+//     sprintf(cert_text[1], "default_bits\t= %s\n", key_length.c_str());
+//     sprintf(cert_text[2], "default_md\t= sha256\n");	
+//     sprintf(cert_text[3], "default_keyfile\t=%s\n", key.c_str());
+//     sprintf(cert_text[4], "prompt\t = no\n");
+//     sprintf(cert_text[5], "encrypt_key\t= no\n\n");
+//     sprintf(cert_text[6], "# base request\ndistinguished_name = req_distinguished_name\n");
+//     sprintf(cert_text[7], "\n# distinguished_name\n[ req_distinguished_name ]\n");	
+//     sprintf(cert_text[8], "countryName\t= \"%s\"\n", country.c_str());
+//     sprintf(cert_text[9], "stateOrProvinceName\t= \"%s\"\n", state.c_str());
+//     sprintf(cert_text[10], "localityName\t=\"%s\"\n", city.c_str());
+//     sprintf(cert_text[11], "organizationName\t=\"%s\"\n", organization.c_str());	
+//     sprintf(cert_text[12], "organizationalUnitName\t=\"%s\"\n", organization_unit.c_str());	
+//     sprintf(cert_text[13], "commonName\t=\"%s\"\n", common_name.c_str());
     
-    if (!std::system(cmds.c_str())){
-        if (fs::exists(csr) && fs::exists(key) && fs::exists(conf)){
-            log(info) << "[###]CSR is generated";
+//     ofstream cert_conf(conf);
+//     for (int i = 0; i < 14; i++)
+//         cert_conf << cert_text[i];
+//     cert_conf.close();
+
+//     // #5 CSR 생성 && return request
+//     rsp = generate_CSR_return_result(conf, key, csr, certificate_odata_id);
+//     resource_save_json(this);// ??
+
+//     return rsp;
+// }
+
+// /**
+//  * @brief generate new ssl private key
+//  * @author dyk
+//  */
+// void generate_ssl_private_key(fs::path key, string key_length)
+// {
+//     string cmds = "openssl genrsa -out " + key.string() + " " + key_length;
+//     system(cmds.c_str());
+//     log(info) << "[###]generate private key";
+// }
+
+// /**
+//  * @brief generate Certificate Signing Request with absolute path of conf, key, csr 
+//  * @author dyk
+//  * @return json information about this request // can be changed 
+//  */
+// json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id)
+// {
+//     json::value rsp;
+//     string cmds = "openssl req -config " + conf.string() + " -new -key " + key.string() + " -out " + csr.string() + " -verbose";
+    
+//     if (!std::system(cmds.c_str())){
+//         if (fs::exists(csr) && fs::exists(key) && fs::exists(conf)){
+//             log(info) << "[###]CSR is generated";
         
-            json::value odata_id;
+//             json::value odata_id;
             
-            odata_id["@odata.id"] = json::value::string(target_id);
-            rsp["CertificateCollection"] = odata_id;
+//             odata_id["@odata.id"] = json::value::string(target_id);
+//             rsp["CertificateCollection"] = odata_id;
             
-            rsp["CSRString"] = json::value::string(file2str(csr.string()));
-        }
-    }else{
-        log(warning) << "[Error] Failed to Generate CSR";
-        json::value msg;
-        msg["Message"] = json::value::string("Request Failed.");
-        rsp["Failed"] = msg;
-    }
+//             rsp["CSRString"] = json::value::string(file2str(csr.string()));
+//         }
+//     }else{
+//         log(warning) << "[Error] Failed to Generate CSR";
+//         json::value msg;
+//         msg["Message"] = json::value::string("Request Failed.");
+//         rsp["Failed"] = msg;
+//     }
 
-    return rsp;
-}
+//     return rsp;
+// }
 
-/**
- * @brief read .csr, .pem file and get CSRString
- * @author dyk
- * @return CSRString 
- */
-string file2str(string file_path)
-{
-    auto csr_str = ostringstream{};
-    ifstream read_csr(file_path);
-    if (!read_csr.is_open()){
-        log(warning) << "Could not open the file : " << file_path;
-        return "";
-    }
-    csr_str << read_csr.rdbuf();
-    read_csr.close();
+// /**
+//  * @brief read .csr, .pem file and get CSRString
+//  * @author dyk
+//  * @return CSRString 
+//  */
+// string file2str(string file_path)
+// {
+//     auto csr_str = ostringstream{};
+//     ifstream read_csr(file_path);
+//     if (!read_csr.is_open()){
+//         log(warning) << "Could not open the file : " << file_path;
+//         return "";
+//     }
+//     csr_str << read_csr.rdbuf();
+//     read_csr.close();
 
-    return csr_str.str();
-}
+//     return csr_str.str();
+// }
 
 bool CertificateService::ReplaceCertificate(json::value body)
 {

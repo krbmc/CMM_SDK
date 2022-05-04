@@ -46,6 +46,21 @@ bool init_resource(void)
     if (!record_is_exist(ODATA_SERVICE_ROOT_ID))
         g_service_root = new ServiceRoot();
 
+
+    // // 리소스 로드든 이닛이든 올라온다음에
+    // // 지금 동작중인 CMM에서의 ntp껄로만 timezone업데이트
+    // string odata_network = ODATA_MANAGER_ID;
+    // odata_network = odata_network + "/" + CMM_ID + "/NetworkProtocol";
+    // NetworkProtocol *np = (NetworkProtocol *)g_record[odata_network];
+    // cout << "1" << endl;
+
+    // if(np->ntp.timezone != "+09:00" && np->ntp.timezone != "")
+    // {
+    //     cout << "2" << endl;
+    //     set_time_by_userTimezone(np->ntp.timezone);
+    //     cout << "3" << endl;
+    // }
+    
     init_message_registry();
 
     // generate_test();

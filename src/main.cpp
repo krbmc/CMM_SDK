@@ -6,6 +6,7 @@
 #include "chassis_controller.hpp"
 #include "logservice.hpp"
 #include "ethernetinterface.hpp"
+#include "ntp.hpp"
 // #include <glib-2.0/glib.h>
 // #include <gssdp-1.2/libgssdp/gssdp.h>
 
@@ -279,6 +280,43 @@ int main(int _argc, char *_argv[])
     // change_web_app_file("10.0.6.100", "10.0.6.106");
 
     // system("/etc/init.d/S40network restart");
+
+    // NTP 관련 테스트
+    // system("date");
+    // string a, b, c;
+    // get_current_fulltime_info(a,b,c);
+    // cout << "abc >>>>> " << endl;
+    // cout << a << " / " << b << " / " << c << endl;
+
+    // sleep(1);
+    // string aa, bb, cc;
+    // get_current_date_info(aa);
+    // get_current_time_info(bb);
+    // get_current_utc_info(cc);
+    // cout << "aabbcc >>>>> " << endl;
+    // cout << aa << " / " << bb << " / " << cc << endl;
+
+    // string op, hour;
+    // set_time_by_userTimezone("+09:00", "+03:00");
+    // cout << " FIRST! << " << endl;
+    // system("date");
+    // sleep(1);
+    // set_time_by_userTimezone("+10:00", "+03:00");
+    // set_time_by_userTimezone("+08:00");
+    // set_time_by_userTimezone("+03:00", "+10:00");
+    // cout << " SECOND! << " << endl;
+    // system("date");
+    // calculate_diff_time_from_utc("+03:00", op, hour);
+    // calculate_diff_time_from_utc("-05:00", op, hour);
+
+    // set_time_by_userDate("", "08:00:00");
+    // cout << "dddd :  " << currentDateTime() << endl;
+
+    // set_time_by_ntp_server("time.bora.net");
+    // set_time_by_ntp_server("0.pool.ntp.org");
+
+    
+
     
 
     // ssdp discover (not working yet)
