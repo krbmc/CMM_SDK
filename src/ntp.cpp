@@ -95,11 +95,18 @@ void get_current_utc_info(string& _utc)
  * 
  * @param _date 날짜정보
  * @param _time 시간정보
+ * * param date,time 둘중에 하나는 반드시 validate를 통과함, 하나는 ""공백일 수 있음
  */
 void set_time_by_userDate(string _date, string _time)
 {
     string cmd = "date -s \"";
-    cmd += _date + " " + _time + "\"";
+
+    if(_date == "")
+        cmd += _time + "\"";
+    else if(_time == "")
+        cmd += _date + "\"";
+    else
+        cmd += _date + " " + _time + "\"";
 
     system(cmd.c_str());
     return ;
@@ -117,6 +124,7 @@ void set_time_by_userTimezone(string _new_tz, string _origin_tz="+09:00")
 {
     // timezone이 +09:00 형태로 들어올거임
 
+// CMM 적용코드
     // 계산해서 주는 함수 
     // 계산을 해서 시간단위로 +인지 -인지랑 해서만 구하면됨 date -s "x hours (ago)" 로 변경가능함
     // _origin_tz 에 빈거 들어오면 디폴트로 +09:00로 처리할게
@@ -136,6 +144,9 @@ void set_time_by_userTimezone(string _new_tz, string _origin_tz="+09:00")
     // cout << "CMD : " << cmd << endl;
 
     system(cmd.c_str());
+
+// BMC 적용코드
+    // set_localtime_by_userTimezone(_new_tz);
 
     return ;
 }
@@ -177,6 +188,81 @@ void calculate_diff_time(string _origin_tz, string _new_tz, string& _op, string&
     // cout << "Result : " << _op << " / " << result << endl;
 
     _hours = result;
+}
+
+/**
+ * @brief Set the localtime by userTimezone
+ * 
+ * @param _time timezone
+ */
+void set_localtime_by_userTimezone(string _time)
+{
+    string cmd;
+    if(_time == "-12:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+12 /etc/localtime";
+    else if(_time == "-11:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+11 /etc/localtime";
+    else if(_time == "-10:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+10 /etc/localtime";
+    else if(_time == "-09:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+9 /etc/localtime";
+    else if(_time == "-08:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+8 /etc/localtime";
+    else if(_time == "-07:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+7 /etc/localtime";
+    else if(_time == "-06:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+6 /etc/localtime";
+    else if(_time == "-05:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+5 /etc/localtime";
+    else if(_time == "-04:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+4 /etc/localtime";
+    else if(_time == "-03:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+3 /etc/localtime";
+    else if(_time == "-02:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+2 /etc/localtime";
+    else if(_time == "-01:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT+1 /etc/localtime";
+    else if(_time == "+00:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime";
+    else if(_time == "+01:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-1 /etc/localtime";
+    else if(_time == "+02:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-2 /etc/localtime";
+    else if(_time == "+03:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-3 /etc/localtime";
+    else if(_time == "+04:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-4 /etc/localtime";
+    else if(_time == "+05:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-5 /etc/localtime";
+    else if(_time == "+06:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-6 /etc/localtime";
+    else if(_time == "+07:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-7 /etc/localtime";
+    else if(_time == "+08:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-8 /etc/localtime";
+    else if(_time == "+09:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-9 /etc/localtime";
+    else if(_time == "+10:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-10 /etc/localtime";
+    else if(_time == "+11:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-11 /etc/localtime";
+    else if(_time == "+12:00")
+        cmd = "ln -sf /usr/share/zoneinfo/Etc/GMT-12 /etc/localtime";
+
+
+    cout << "[LOCALTIME CMD] : " << cmd << endl;
+    try
+    {
+        /* code */
+        system(cmd.c_str());
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        log(error) << "Set LocalTime FAIL";
+    }
+    
+    return ;
 }
 
 /**

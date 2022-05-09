@@ -34,6 +34,8 @@ void calculate_diff_time(string _origin_tz, string _new_tz, string& _op, string&
 // 이거 받는 date, time, utc같은거 validate검사 필요함 --> util에 만듬
 // 
 
+void set_localtime_by_userTimezone(string _time);
+
 // set time using ntp server
 int set_time_by_ntp_server(string _server);
 
