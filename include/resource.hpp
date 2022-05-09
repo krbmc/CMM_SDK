@@ -2971,6 +2971,7 @@ void init_power_control(List *power_control_list, string _id);
 void init_voltage(List *voltages_list, string _id);
 void init_power_supply(List *power_supplies_list, string _id);
 void snmp_config_init(Snmp *snmp);
+void ntp_config_init(NTP *ntp);
 void init_manager(Collection *manager_collection, string _id);
 void init_update_service(UpdateService *update_service);
 SoftwareInventory* init_software_inventory(Collection *software_inventory_collection, string _id);
