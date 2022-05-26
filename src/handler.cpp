@@ -87,8 +87,8 @@ void Handler::handle_get(http_request _request)
             if(uri_tokens[0] == "asdfasdf")
             {
                 json::value j;
-                // j["Version"] = json::value::string("OLD Version");
-                j["Version"] = json::value::string("NEW Version");
+                j["Version"] = json::value::string("OLD Version");
+                // j["Version"] = json::value::string("NEW Version");
                 response.set_status_code(status_codes::OK);
                 response.set_body(j);
                 _request.reply(response);
@@ -2323,6 +2323,13 @@ void reading_operation(http_request _request, http_response &_response)
         return ;
     }
     param_module = uri_tokens[2];
+
+    // BMC모듈 PASS 처리
+    if(param_module != "CMM1")
+    {
+        pass_request_to_bmc(_request, param_module, _response);
+        return ;
+    }
     
 
     // [type] 처리

@@ -235,6 +235,32 @@ void add_chassis(string _uri, string _host)
     record_save_json();
 }
 
+// void add_update_service(string _uri, string _host)
+// {
+//     // _uri로 /redfish/v1/UpdateService 들어오고
+//     // 여기먼저 json가져오고 firmware inventory 있으면 bring firm
+//     log(trace) << "!@#$ ADD UpdateService";
+
+//     json::value updateservice_info;
+//     updateservice_info = get_json_info(_uri, _host);
+
+//     log(trace) << "!@#$ UpdateService INFO START" << endl;
+//     cout << updateservice_info << endl;
+//     log(trace) << "!@#$ UpdateService INFO END" << endl;
+
+//     if(updateservice_info == json::value::null())
+//     {
+//         log(warning) << "UpdateService INFO is Null in Add UpdateService";
+//         return ;
+//     }
+
+//     UpdateService *update_service = (UpdateService *)g_record[ODATA_UPDATE_SERVICE_ID];
+
+//     bring_updateservice(update_service, updateservice_info, _host);
+
+//     record_save_json();
+// }
+
 
 void bring_system(Systems *_system, json::value _info, string _addr)
 {
@@ -1391,6 +1417,22 @@ void bring_sensors(Collection *_collection, json::value _info, string _addr)
         }
     }
 }
+
+
+// void bring_updateservice(UpdateService *_update, json::value _info, string _addr)
+// {
+//     json::value firmware_inventory_odata_info;
+//     if(get_value_from_json_key(_info, "FirmwareInventory", firmware_inventory_odata_info))
+//     {
+//         string firmware_inventory_uri;
+//         if(read_odata_id(firmware_inventory_odata_info, firmware_inventory_uri))
+//         {
+//             json::value firmware_inventory_info;
+//             firmware_inventory_info = get_json_info(firmware_inventory_uri, _addr);
+            
+//         }
+//     }
+// }
 
 
 // json::value get_json_info(string _uri, string _host, string _auth_token)

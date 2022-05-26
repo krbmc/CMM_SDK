@@ -7,6 +7,17 @@
 #include "ethernetinterface.hpp"
 #include "certificate.hpp"
 
+//UpdateService
+#define UPDATE_SOFTWARE_REDFISH_BASE_NAME "new_version_redfish"
+#define UPDATE_SOFTWARE_REDFISH_SH_FILE "/firmware/update_redfish.sh"
+#define UPDATE_SOFTWARE_DB_BASE_NAME "new_version_db"
+#define UPDATE_SOFTWARE_DB_SH_FILE "/firmware/update_log_db.sh"
+
+#define RESOURCE_BACKUP_FILE "/redfish/redfish_backup.tar"
+#define RESOURCE_BACKUP_FILE_OLD "/redfish/redfish_backup_old.tar"
+#define RESOURCE_RESTORE_FILE "/redfish/resource_restore.tar"
+#define RESOURCE_RESTORE_FILE_OLD "/redfish/resource_restore_old.tar"
+
 enum TASK_TYPE
 {
     WAIT = 0,
@@ -133,13 +144,14 @@ void spread_system_reset_to_all_bmc(string _type);
 void act_eventservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_logservice(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void act_update_service(http_request _request, m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
-void update_firmware(http_request _request, m_Request& _msg, string _firm_id, http_response& _response);
-void update_software(http_request _request, m_Request& _msg, string _firm_id, http_response& _response);
+void update_firmware(http_request _request, m_Request& _msg, string _resource, string _firm_id, http_response& _response);
+void update_software(http_request _request, m_Request& _msg, string _resource, string _firm_id, http_response& _response);
 void update_resource_backup(m_Request& _msg, http_response& _response);
 void update_resource_restore(http_request& _request, m_Request& _msg, http_response& _response);
 void get_software_category(string _str, string& _front, string& _end);
 void save_file_from_request(http_request _request, string _path);
 bool pass_request_to_bmc(http_request _request, string _module);
+bool pass_request_to_bmc(http_request _request, string _module, http_response& _response);
 
 void act_virtualmedia(m_Request& _msg, json::value _jv, string _resource, string _what, http_response& _response);
 void make_account(m_Request& _msg, json::value _jv, http_response& _response);
