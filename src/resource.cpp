@@ -1222,6 +1222,8 @@ json::value UpdateService::get_json(void)
     j["FirmwareInventory"] = get_resource_odata_id_json(this->firmware_inventory, this->odata.id);
     j["SoftwareInventory"] = get_resource_odata_id_json(this->software_inventory, this->odata.id);
 
+    j["Actions"] = get_action_info(this->actions);
+
     return j;
 }
 

@@ -106,7 +106,7 @@ json::value generateCSR(json::value _body)
     fs::path key(TMP_KEY_FILE);
     fs::path conf(TMP_CNF_FILE);
     fs::path csr(TMP_CSR_FILE);
-    fs::path cert(TMP_CRT_FILE):
+    fs::path cert(TMP_CRT_FILE);
     // fs::path key("/conf/ssl/tmp/cert.key");
     // fs::path conf("/conf/ssl/tmp/cert.cnf");
     // fs::path csr("/conf/ssl/tmp/cert.csr");

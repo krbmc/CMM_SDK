@@ -267,201 +267,8 @@ void do_task_bmc_get(http_request _request)
     cout << "BMC_jv = " << jv << endl;
     // cout << "taskmap size : " << task_map.size() << endl;
 
-    // #오픈시스넷 json파일읽어서 반환 CM1 쪽
-    http_response response;
-    response.headers().add("Access-Control-Allow-Origin", "*");
-    response.headers().add("Access-Control-Allow-Credentials", "true");
-    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
-    response.headers().add("Access-Control-Max-Age", "3600");
-    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
-    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
-
-    log(info) << "BMC not connected PART";
-    if(!fs::exists(uri+".json"))
-    {
-        json::value tmp_jv;
-        log(warning) << "not found json file named : " << uri;
-        tmp_jv[U("Error")] = json::value::string(U("No Json File named : " + uri));
-        response.set_status_code(status_codes::BadRequest);
-        response.set_body(tmp_jv);
-        _request.reply(response);
-        // _request.reply(status_codes::BadRequest, tmp_jv);
-        return ;
-    }
-
-    ifstream json_file(uri+".json");
-    stringstream string_stream;
-
-    string_stream << json_file.rdbuf();
-    json_file.close();
-
-    json::value j = json::value::parse(string_stream);
-
-    save_last_command(new_uri, uri_tokens[3]);
-
-    // //// BMC 모듈id 추가 부분
-    // string original_string = j.serialize();
-    // int whole_length = original_string.length();
-    // int cur_index=0;
-    // string result_string = "";
-    // cout << " << [Serialize] >>  : " << whole_length << endl;
-    // cout << original_string << endl;
-
-    // // cout << " TEST INDEX PRINT " << endl;
-    // // for(int i=0; i<20; i++)
-    // // {
-    // //     cout << "[" << i << "] : " << original_string.at(i) << endl;
-    // // }
-
-    // /* #1 copy_string : original string(BMC 반환 json을 string화)을 작업용으로 카피
-    // /* cur_index : 현재까지 result_string에 들어간 문자열 이후의 index를 가리킴
-    // /* move_index : cur_index 부터해서 copy_string에서 해당하는 uri를 찾아서 그 다음 index를 가리킴
-    // /* #2 copy_string에서 뒷부분 모듈id를 추가해야할 uri를 찾고
-    // /* 모듈id를 입력하기 전 부분을 result_string에 담고 모듈id를 추가함
-    // /* #3 그 작업스트링녀석을가지고 odata.id를 찾아서 뒤에 /redfish/v1/샤시,매니저,시스템 까지 맞는 인덱스를 찾고
-    // /* 찾았으면 그때까지 string을 result에 추가해주고 그 뒤에 모듈추가하고 인덱스 갱신하고 돌리면될듯?
-    // */
-    // while(cur_index < whole_length)
-    // {
-    //     // cout << "[INFO] : 1 Cycle Start >>>>>>> " << endl;
-    //     int find_man=0, find_cha=0, find_sys=0;
-    //     int find_index=0;
-    //     int move_index=0;
-    //     string copy_string = original_string;
-
-    //     // cout << " AFTER SUBSTR " << endl;
-    //     // cout << "[COPY] : " << copy_string << endl;
-
-    //     // string만 define으로 선언하고 밑에 move_index 20,19부분 length로만 수정하면될듯
-    //     string str_man = ODATA_MANAGER_ID;
-    //     string str_cha = ODATA_CHASSIS_ID;
-    //     string str_sys = ODATA_SYSTEM_ID;
-
-    //     find_man = copy_string.find(str_man, cur_index);
-    //     find_cha = copy_string.find(str_cha, cur_index);
-    //     find_sys = copy_string.find(str_sys, cur_index);
-    //     // find_man = copy_string.find("/redfish/v1/Managers", cur_index);
-    //     // find_cha = copy_string.find("/redfish/v1/Chassis", cur_index);
-    //     // find_sys = copy_string.find("/redfish/v1/Systems", cur_index);
-
-    //     if(find_man != string::npos)
-    //     {
-    //         // cout << "Managers FIND ! " << endl;
-    //         find_index = find_man;
-    //         move_index = str_man.length() + find_man;
-    //         // move_index = 20 + find_man;
-    //     }
-    //     else if(find_cha != string::npos)
-    //     {
-    //         // cout << "Chassis FIND ! " << endl;
-    //         find_index = find_cha;
-    //         move_index = str_cha.length() + find_cha;
-    //         // move_index = 19 + find_cha;
-    //     }
-    //     else if(find_sys != string::npos)
-    //     {
-    //         // cout << "Systems FIND ! " << endl;
-    //         find_index = find_sys;
-    //         move_index = str_sys.length() + find_sys;
-    //         // move_index = 19 + find_sys;
-    //     }
-    //     else
-    //     {
-    //         // cout << "Not Found ! " << endl;
-    //         move_index = whole_length;
-    //         // cout << " Fin : " << copy_string.substr(cur_index) << endl;
-    //         result_string.append(copy_string.substr(cur_index));
-    //         // cout << "[RESULT] : " << result_string << endl;
-    //         cur_index = whole_length;
-    //         // cout << "[INFO] : 1 Cycle End >>>>>>> " << endl;
-    //         continue;
-    //     }
-
-    //     // cout << "FIND INDEX : " << find_index << endl;
-    //     // cout << "MOVE INDEX : " << move_index << endl;
-
-    //     // 앞에꺼 붙이는거는 cur_index부터 move_index까지를 하면됨 근데 이건 copy기준이라서
-    //     result_string.append(copy_string.substr(cur_index, move_index-cur_index));
-    //     result_string.append("/!@#$" + uri_tokens[3]);
-
-    //     // cout << "[RESULT] : " << result_string << endl;
-    //     // cout << " Cut : " << copy_string.substr(move_index) << endl;
-
-    //     cur_index = move_index;
-    //     // cout << "[INFO] : 1 Cycle End >>>>>>> " << endl;
-
-
-    // }
-
-    // json::value modified_json = json::value::parse(result_string);
-    // response.set_body(modified_json);
-    // // 여기까지가 모듈id추가 구현부 , 주석풀고 밑에 response.set_body(j)만 주석하면됨
-    
-
-    response.set_status_code(status_codes::OK);
-    response.set_body(j);
-    _request.reply(response);
-    return ;
-    // #오픈시스넷 json파일읽어서 반환 부분 끝
-
-    // // #오픈시스넷 딜레이문제발생하여 do_task_bmc_get 함수 원래기능 다 주석하고
-    // // redfish 폴더에 들어있는 CM1 부분 json파일 읽어서 반환하게 함
-    // Task_Manager *t_manager; // 작업 매니저
-    // Task_Manager *c_manager; // 컴플리트 매니저
-
-    // // try
-    // // {
-    //     /* code */
-    //     t_manager = category(uri_tokens);
-    //     if(t_manager)
-    //     {
-    //         // cout << "있으면 넘어가고 진행하고" << endl;
-    //     }
-    //     else
-    //     {
-    //         // cout << "없으면 바로 리턴시켜야겠다" << endl;
-    //         json::value rp;
-    //         rp[U("Error")] = json::value::string(U("Wrong Task Category. Please Check the URI."));
-    //         _request.reply(status_codes::BadRequest, rp);
-    //         return ;
-    //     }
-        
-    // // }
-    // // catch(const std::exception& e)
-    // // {
-    // //     std::cerr << e.what() << '\n';
-    // //     return ;
-    // // }
-    // // 이거 왜 try-catch에는 안잡히지?
-
-    // // Make m_Request
-    // m_Request msg;
-    // string module_address = module_id_table[uri_tokens[3]];
-    // // string module_address = make_module_address(uri_tokens[3]);
-    // msg = work_before_request_process("GET", module_address, uri, jv, _request.headers());
-    // // msg = work_before_request_process("GET", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
-
-    // // connect to Task_manager
-    // t_manager->list_request.push_back(msg);
-    
-    // http_client client(msg.host);
-    // http_request req(methods::GET);
-    // // req.set_request_uri(msg.uri);
-    // req.set_request_uri(new_uri);
-    // req.set_body(jv);
-    
-    // // if(_request.headers().find("X-Auth-Token") != _request.headers().end())
-    // //     req.headers().add(_request.headers().find("X-Auth-Token")->first, _request.headers().find("X-Auth-Token")->second);
-    // // req.headers().add(U("TEST_HEADER"), U("VALUE!!"));
-    // // 나중에는 이 헤더붙이는게 이런식이 아니라 현재 이 cmm을 이용할수있게 하는 세션session에 접근해서 거기에 저장되어있는
-    // // bmc_id에 맞는 토큰이 있으면 그걸로 여기서 헤더에 추가를 해주면 bmc토큰인증이 되는식으로 바뀌어야함
-    // // 만약없다면 로그인하라고 해야하고 아 여기가 아니고 응답오는 위치에서 response status가 인증을 못뚫는 status면 그때
-    // // 해야할듯
-    // // >> cmm이 보내는건 bmc로그인 필요없게끔해야되는것이 아닌가 (cmm만 로그인)
+    // // #오픈시스넷 json파일읽어서 반환 CM1 쪽
     // http_response response;
-    // json::value response_json;
-    // m_Response msg_res;
-
     // response.headers().add("Access-Control-Allow-Origin", "*");
     // response.headers().add("Access-Control-Allow-Credentials", "true");
     // response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
@@ -469,163 +276,357 @@ void do_task_bmc_get(http_request _request)
     // response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
     // response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
-    // // Send Request
+    // log(info) << "BMC not connected PART";
+    // if(!fs::exists(uri+".json"))
+    // {
+    //     json::value tmp_jv;
+    //     log(warning) << "not found json file named : " << uri;
+    //     tmp_jv[U("Error")] = json::value::string(U("No Json File named : " + uri));
+    //     response.set_status_code(status_codes::BadRequest);
+    //     response.set_body(tmp_jv);
+    //     _request.reply(response);
+    //     // _request.reply(status_codes::BadRequest, tmp_jv);
+    //     return ;
+    // }
+
+    // ifstream json_file(uri+".json");
+    // stringstream string_stream;
+
+    // string_stream << json_file.rdbuf();
+    // json_file.close();
+
+    // json::value j = json::value::parse(string_stream);
+
+    // save_last_command(new_uri, uri_tokens[3]);
+
+    // // //// BMC 모듈id 추가 부분
+    // // string original_string = j.serialize();
+    // // int whole_length = original_string.length();
+    // // int cur_index=0;
+    // // string result_string = "";
+    // // cout << " << [Serialize] >>  : " << whole_length << endl;
+    // // cout << original_string << endl;
+
+    // // // cout << " TEST INDEX PRINT " << endl;
+    // // // for(int i=0; i<20; i++)
+    // // // {
+    // // //     cout << "[" << i << "] : " << original_string.at(i) << endl;
+    // // // }
+
+    // // /* #1 copy_string : original string(BMC 반환 json을 string화)을 작업용으로 카피
+    // // /* cur_index : 현재까지 result_string에 들어간 문자열 이후의 index를 가리킴
+    // // /* move_index : cur_index 부터해서 copy_string에서 해당하는 uri를 찾아서 그 다음 index를 가리킴
+    // // /* #2 copy_string에서 뒷부분 모듈id를 추가해야할 uri를 찾고
+    // // /* 모듈id를 입력하기 전 부분을 result_string에 담고 모듈id를 추가함
+    // // /* #3 그 작업스트링녀석을가지고 odata.id를 찾아서 뒤에 /redfish/v1/샤시,매니저,시스템 까지 맞는 인덱스를 찾고
+    // // /* 찾았으면 그때까지 string을 result에 추가해주고 그 뒤에 모듈추가하고 인덱스 갱신하고 돌리면될듯?
+    // // */
+    // // while(cur_index < whole_length)
+    // // {
+    // //     // cout << "[INFO] : 1 Cycle Start >>>>>>> " << endl;
+    // //     int find_man=0, find_cha=0, find_sys=0;
+    // //     int find_index=0;
+    // //     int move_index=0;
+    // //     string copy_string = original_string;
+
+    // //     // cout << " AFTER SUBSTR " << endl;
+    // //     // cout << "[COPY] : " << copy_string << endl;
+
+    // //     // string만 define으로 선언하고 밑에 move_index 20,19부분 length로만 수정하면될듯
+    // //     string str_man = ODATA_MANAGER_ID;
+    // //     string str_cha = ODATA_CHASSIS_ID;
+    // //     string str_sys = ODATA_SYSTEM_ID;
+
+    // //     find_man = copy_string.find(str_man, cur_index);
+    // //     find_cha = copy_string.find(str_cha, cur_index);
+    // //     find_sys = copy_string.find(str_sys, cur_index);
+    // //     // find_man = copy_string.find("/redfish/v1/Managers", cur_index);
+    // //     // find_cha = copy_string.find("/redfish/v1/Chassis", cur_index);
+    // //     // find_sys = copy_string.find("/redfish/v1/Systems", cur_index);
+
+    // //     if(find_man != string::npos)
+    // //     {
+    // //         // cout << "Managers FIND ! " << endl;
+    // //         find_index = find_man;
+    // //         move_index = str_man.length() + find_man;
+    // //         // move_index = 20 + find_man;
+    // //     }
+    // //     else if(find_cha != string::npos)
+    // //     {
+    // //         // cout << "Chassis FIND ! " << endl;
+    // //         find_index = find_cha;
+    // //         move_index = str_cha.length() + find_cha;
+    // //         // move_index = 19 + find_cha;
+    // //     }
+    // //     else if(find_sys != string::npos)
+    // //     {
+    // //         // cout << "Systems FIND ! " << endl;
+    // //         find_index = find_sys;
+    // //         move_index = str_sys.length() + find_sys;
+    // //         // move_index = 19 + find_sys;
+    // //     }
+    // //     else
+    // //     {
+    // //         // cout << "Not Found ! " << endl;
+    // //         move_index = whole_length;
+    // //         // cout << " Fin : " << copy_string.substr(cur_index) << endl;
+    // //         result_string.append(copy_string.substr(cur_index));
+    // //         // cout << "[RESULT] : " << result_string << endl;
+    // //         cur_index = whole_length;
+    // //         // cout << "[INFO] : 1 Cycle End >>>>>>> " << endl;
+    // //         continue;
+    // //     }
+
+    // //     // cout << "FIND INDEX : " << find_index << endl;
+    // //     // cout << "MOVE INDEX : " << move_index << endl;
+
+    // //     // 앞에꺼 붙이는거는 cur_index부터 move_index까지를 하면됨 근데 이건 copy기준이라서
+    // //     result_string.append(copy_string.substr(cur_index, move_index-cur_index));
+    // //     result_string.append("/!@#$" + uri_tokens[3]);
+
+    // //     // cout << "[RESULT] : " << result_string << endl;
+    // //     // cout << " Cut : " << copy_string.substr(move_index) << endl;
+
+    // //     cur_index = move_index;
+    // //     // cout << "[INFO] : 1 Cycle End >>>>>>> " << endl;
+
+
+    // // }
+
+    // // json::value modified_json = json::value::parse(result_string);
+    // // response.set_body(modified_json);
+    // // // 여기까지가 모듈id추가 구현부 , 주석풀고 밑에 response.set_body(j)만 주석하면됨
+    
+
+    // response.set_status_code(status_codes::OK);
+    // response.set_body(j);
+    // _request.reply(response);
+    // return ;
+    // // #오픈시스넷 json파일읽어서 반환 부분 끝
+
+    // #오픈시스넷 딜레이문제발생하여 do_task_bmc_get 함수 원래기능 다 주석하고
+    // redfish 폴더에 들어있는 CM1 부분 json파일 읽어서 반환하게 함
+    Task_Manager *t_manager; // 작업 매니저
+    Task_Manager *c_manager; // 컴플리트 매니저
+
     // try
     // {
-    //     /* code */
-        
-    //     pplx::task<http_response> responseTask = client.request(req);
-    //     response = responseTask.get();
-    //     cout << "bmc get reply status : " << response.status_code() << endl;
-
-    //     // 여기서 응답온거 이거 get이니까 ok or 아닌거 해서 ok면 성공 아니면 실패로해서 나눠 리플라이
-
-    //     if(response.status_code() == status_codes::OK)
-    //         msg.result.result_status = WORK_SUCCESS;
-    //     else
-    //         msg.result.result_status = WORK_FAIL;
-
-    //     response_json = response.extract_json().get();
-
-    //     // // odata module_id 추가하기
-    //     // cout << " << [Serialize] >> " << endl;
-    //     // cout << response_json.serialize() << endl;
-
-    //     // string whole_original = response_json
-
-
-
-
-    //     msg.result.response_json = response_json;
-    //     response.set_body(response_json);
-    //     msg.result.result_datetime = currentDateTime();
-    //     msg.result.result_response = response;
+        /* code */
+        t_manager = category(uri_tokens);
+        if(t_manager)
+        {
+            // cout << "있으면 넘어가고 진행하고" << endl;
+        }
+        else
+        {
+            // cout << "없으면 바로 리턴시켜야겠다" << endl;
+            json::value rp;
+            rp[U("Error")] = json::value::string(U("Wrong Task Category. Please Check the URI."));
+            _request.reply(status_codes::BadRequest, rp);
+            return ;
+        }
         
     // }
     // catch(const std::exception& e)
     // {
-    //     // uri.json에 해당하는 파일로 내용 바로 리턴때린다   @@@@ 제출용임시추가
-    //     // log(info) << "BMC not connected PART";
-    //     // if(!fs::exists(uri+".json"))
-    //     // {
-    //     //     json::value tmp_jv;
-    //     //     log(warning) << "not found json file named : " << uri;
-    //     //     tmp_jv[U("Error")] = json::value::string(U("No Json File named : " + uri));
-    //     //     _request.reply(status_codes::BadRequest, tmp_jv);
-    //     //     return ;
-    //     // }
-
-    //     // ifstream json_file(uri+".json");
-    //     // stringstream string_stream;
-
-    //     // string_stream << json_file.rdbuf();
-    //     // json_file.close();
-
-    //     // json::value j = json::value::parse(string_stream);
-    //     // http_response temporary_res;
-
-    //     // temporary_res.headers().add("Access-Control-Allow-Origin", "*");
-    //     // temporary_res.headers().add("Access-Control-Allow-Credentials", "true");
-    //     // temporary_res.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
-    //     // temporary_res.headers().add("Access-Control-Max-Age", "3600");
-    //     // temporary_res.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
-    //     // temporary_res.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
-
-    //     // temporary_res.set_status_code(status_codes::OK);
-    //     // temporary_res.set_body(j);
-    //     // _request.reply(temporary_res);
-    //     // return ;
-
-    //     // _---------------------------------------------------- @@@@
     //     std::cerr << e.what() << '\n';
-    //     cout << "BMC 서버 닫혀있을거임~~" << endl;
+    //     return ;
+    // }
+    // 이거 왜 try-catch에는 안잡히지?
 
-    //     error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+    // Make m_Request
+    m_Request msg;
+    string module_address = module_id_table[uri_tokens[3]];
+    // string module_address = make_module_address(uri_tokens[3]);
+    msg = work_before_request_process("GET", module_address, uri, jv, _request.headers());
+    // msg = work_before_request_process("GET", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
+
+    // connect to Task_manager
+    t_manager->list_request.push_back(msg);
+    
+    http_client client(msg.host);
+    http_request req(methods::GET);
+    // req.set_request_uri(msg.uri);
+    req.set_request_uri(new_uri);
+    req.set_body(jv);
+    
+    // if(_request.headers().find("X-Auth-Token") != _request.headers().end())
+    //     req.headers().add(_request.headers().find("X-Auth-Token")->first, _request.headers().find("X-Auth-Token")->second);
+    // req.headers().add(U("TEST_HEADER"), U("VALUE!!"));
+    // 나중에는 이 헤더붙이는게 이런식이 아니라 현재 이 cmm을 이용할수있게 하는 세션session에 접근해서 거기에 저장되어있는
+    // bmc_id에 맞는 토큰이 있으면 그걸로 여기서 헤더에 추가를 해주면 bmc토큰인증이 되는식으로 바뀌어야함
+    // 만약없다면 로그인하라고 해야하고 아 여기가 아니고 응답오는 위치에서 response status가 인증을 못뚫는 status면 그때
+    // 해야할듯
+    // >> cmm이 보내는건 bmc로그인 필요없게끔해야되는것이 아닌가 (cmm만 로그인)
+    http_response response;
+    json::value response_json;
+    m_Response msg_res;
+
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
+    // Send Request
+    try
+    {
+        /* code */
+        
+        pplx::task<http_response> responseTask = client.request(req);
+        response = responseTask.get();
+        cout << "bmc get reply status : " << response.status_code() << endl;
+
+        // 여기서 응답온거 이거 get이니까 ok or 아닌거 해서 ok면 성공 아니면 실패로해서 나눠 리플라이
+
+        if(response.status_code() == status_codes::OK)
+            msg.result.result_status = WORK_SUCCESS;
+        else
+            msg.result.result_status = WORK_FAIL;
+
+        response_json = response.extract_json().get();
+
+        // // odata module_id 추가하기
+        // cout << " << [Serialize] >> " << endl;
+        // cout << response_json.serialize() << endl;
+
+        // string whole_original = response_json
+
+
+
+
+        msg.result.response_json = response_json;
+        response.set_body(response_json);
+        msg.result.result_datetime = currentDateTime();
+        msg.result.result_response = response;
+        
+    }
+    catch(const std::exception& e)
+    {
+        // uri.json에 해당하는 파일로 내용 바로 리턴때린다   @@@@ 제출용임시추가
+        // log(info) << "BMC not connected PART";
+        // if(!fs::exists(uri+".json"))
+        // {
+        //     json::value tmp_jv;
+        //     log(warning) << "not found json file named : " << uri;
+        //     tmp_jv[U("Error")] = json::value::string(U("No Json File named : " + uri));
+        //     _request.reply(status_codes::BadRequest, tmp_jv);
+        //     return ;
+        // }
+
+        // ifstream json_file(uri+".json");
+        // stringstream string_stream;
+
+        // string_stream << json_file.rdbuf();
+        // json_file.close();
+
+        // json::value j = json::value::parse(string_stream);
+        // http_response temporary_res;
+
+        // temporary_res.headers().add("Access-Control-Allow-Origin", "*");
+        // temporary_res.headers().add("Access-Control-Allow-Credentials", "true");
+        // temporary_res.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+        // temporary_res.headers().add("Access-Control-Max-Age", "3600");
+        // temporary_res.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+        // temporary_res.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
+        // temporary_res.set_status_code(status_codes::OK);
+        // temporary_res.set_body(j);
+        // _request.reply(temporary_res);
+        // return ;
+
+        // _---------------------------------------------------- @@@@
+        std::cerr << e.what() << '\n';
+        cout << "BMC 서버 닫혀있을거임~~" << endl;
+
+        error_reply(msg, get_error_json("BMC Server Connection Error"), status_codes::InternalError, response);
+    }
+    
+
+    // http_headers::iterator it_header;
+    // for(it_header = req.headers().begin(); it_header != req.headers().end(); it_header++)
+    // {
+    //     cout << "REQEUST Headers : " << it_header->first << " / " << it_header->second << endl;
     // }
     
 
-    // // http_headers::iterator it_header;
-    // // for(it_header = req.headers().begin(); it_header != req.headers().end(); it_header++)
-    // // {
-    // //     cout << "REQEUST Headers : " << it_header->first << " / " << it_header->second << endl;
-    // // }
+    
+    // 확인용
+    // response_json = response.extract_json().get();
+    // cout << "********************* In pplx Task **********************" << endl;
+    // cout << response_json << endl;
+    // cout << "********************* Out pplx Task **********************" << endl;
+
+    // Make m_Response
+    // m_Response msg_res;
+    msg_res.result_datetime = currentDateTime();
+    msg_res.result_response = response;
+    msg_res.res_number = msg.task_number;
+    // msg_res.result_status = WORK_SUCCESS; // 응답 response의 상태에 따라 다르게 해야할텐데
+    msg.result = msg_res;
+    /// 왜 여기서 다시 만들어줬지??????????????????
+
+
+    /*Before Move 테스트용 출력 */
+    // cout << "taskmap size : " << task_map.size() << endl;
+    // cout << "list size : " << t_manager->list_request.size() << endl;
+    // // 옮기기전 acc맵 하나 그거에 리스트 하나 있던거 1,1 에서  옮기면 acc맵 complete맵 2개 acc맵에 리스트는 0 해서 2,0
+    // // 하고 comple에 리스트 1 나와야지
+
+    // cout << " ------------  Info -----------------" << endl;
+    // cout << "t_list tasknum : " << t_manager->list_request.front().task_number << endl;
+    // cout << "t_list host : " << t_manager->list_request.front().host << endl;
+    // cout << "t_list uri : " << t_manager->list_request.front().uri << endl;
+    // cout << "t_list method : " << t_manager->list_request.front().method << endl;
+    // cout << "t_list datetime : " << t_manager->list_request.front().request_datetime << endl;
+    // cout << "t_list result->resnum : " << t_manager->list_request.front().result.res_number << endl;
+    // cout << "t_list result->datetime : " << t_manager->list_request.front().result.result_datetime << endl;
     
 
-    
-    // // 확인용
-    // // response_json = response.extract_json().get();
-    // // cout << "********************* In pplx Task **********************" << endl;
-    // // cout << response_json << endl;
-    // // cout << "********************* Out pplx Task **********************" << endl;
-
-    // // Make m_Response
-    // // m_Response msg_res;
-    // msg_res.result_datetime = currentDateTime();
-    // msg_res.result_response = response;
-    // msg_res.res_number = msg.task_number;
-    // // msg_res.result_status = WORK_SUCCESS; // 응답 response의 상태에 따라 다르게 해야할텐데
-    // msg.result = msg_res;
+    // work_after_request_process(t_manager, c_manager, msg);
+    c_manager = work_after_request_process(t_manager, msg);
 
 
-    // /*Before Move 테스트용 출력 */
-    // // cout << "taskmap size : " << task_map.size() << endl;
-    // // cout << "list size : " << t_manager->list_request.size() << endl;
-    // // // 옮기기전 acc맵 하나 그거에 리스트 하나 있던거 1,1 에서  옮기면 acc맵 complete맵 2개 acc맵에 리스트는 0 해서 2,0
-    // // // 하고 comple에 리스트 1 나와야지
-
-    // // cout << " ------------  Info -----------------" << endl;
-    // // cout << "t_list tasknum : " << t_manager->list_request.front().task_number << endl;
-    // // cout << "t_list host : " << t_manager->list_request.front().host << endl;
-    // // cout << "t_list uri : " << t_manager->list_request.front().uri << endl;
-    // // cout << "t_list method : " << t_manager->list_request.front().method << endl;
-    // // cout << "t_list datetime : " << t_manager->list_request.front().request_datetime << endl;
-    // // cout << "t_list result->resnum : " << t_manager->list_request.front().result.res_number << endl;
-    // // cout << "t_list result->datetime : " << t_manager->list_request.front().result.result_datetime << endl;
-    
-
-    // // work_after_request_process(t_manager, c_manager, msg);
-    // c_manager = work_after_request_process(t_manager, msg);
-
-
-    // // completed로 연결
-    // // c_manager->list_request.push_back(msg);
-    // // 아직 status같은건 처리안해줌
-    // // + m_Request에 m_Response는  t_manager에는 연결안되어있음 
-    // // c_manager로 넘어가야 비로소 연결되어있음
+    // completed로 연결
+    // c_manager->list_request.push_back(msg);
+    // 아직 status같은건 처리안해줌
+    // + m_Request에 m_Response는  t_manager에는 연결안되어있음 
+    // c_manager로 넘어가야 비로소 연결되어있음
 
     
-    // /* After Move 테스트용 출력 */
-    // // cout << "After Move ----------------------------------------------" << endl;
-    // // cout << "taskmap size : " << task_map.size() << endl;
-    // // cout << "t_list size : " << t_manager->list_request.size() << endl;
-    // // cout << "c_list size : " << c_manager->list_request.size() << endl;
+    /* After Move 테스트용 출력 */
+    // cout << "After Move ----------------------------------------------" << endl;
+    // cout << "taskmap size : " << task_map.size() << endl;
+    // cout << "t_list size : " << t_manager->list_request.size() << endl;
+    // cout << "c_list size : " << c_manager->list_request.size() << endl;
 
 
-    // // std::list<m_Request>::iterator iter; //이미 위에 생성햇네
-    // // m_Request completed_msg;
-    // // for(iter=c_manager->list_request.begin(); iter!=c_manager->list_request.end(); iter++)
-    // // {
-    // //     if(iter->task_number == msg.task_number)
-    // //     {
-    // //         completed_msg = *iter;
-    // //         break;
-    // //     }
-    // // }
-    // // cout << " ------------  Info -----------------" << endl;
-    // // cout << "c_list tasknum : " << completed_msg.task_number << endl;
-    // // cout << "c_list host : " << completed_msg.host << endl;
-    // // cout << "c_list uri : " << completed_msg.uri << endl;
-    // // cout << "c_list method : " << completed_msg.method << endl;
-    // // cout << "c_list datetime : " << completed_msg.request_datetime << endl;
-    // // cout << "c_list result->resnum : " << completed_msg.result.res_number << endl;
-    // // cout << "c_list result->datetime : " << completed_msg.result.result_datetime << endl;
-    // // cout << "c_list result->status : " << completed_msg.result.result_status << endl;
+    // std::list<m_Request>::iterator iter; //이미 위에 생성햇네
+    // m_Request completed_msg;
+    // for(iter=c_manager->list_request.begin(); iter!=c_manager->list_request.end(); iter++)
+    // {
+    //     if(iter->task_number == msg.task_number)
+    //     {
+    //         completed_msg = *iter;
+    //         break;
+    //     }
+    // }
+    // cout << " ------------  Info -----------------" << endl;
+    // cout << "c_list tasknum : " << completed_msg.task_number << endl;
+    // cout << "c_list host : " << completed_msg.host << endl;
+    // cout << "c_list uri : " << completed_msg.uri << endl;
+    // cout << "c_list method : " << completed_msg.method << endl;
+    // cout << "c_list datetime : " << completed_msg.request_datetime << endl;
+    // cout << "c_list result->resnum : " << completed_msg.result.res_number << endl;
+    // cout << "c_list result->datetime : " << completed_msg.result.result_datetime << endl;
+    // cout << "c_list result->status : " << completed_msg.result.result_status << endl;
 
 
-    // // _request.reply(U(response.status_code()), response_json);
-    // _request.reply(response);
-    // return ;
-    // // #오픈시스넷 여기까지 원본 주석
+    // _request.reply(U(response.status_code()), response_json);
+    _request.reply(response);
+    return ;
+    // #오픈시스넷 여기까지 원본 주석
 }
 
 void do_task_cmm_post(http_request _request)
@@ -1588,6 +1589,7 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             else
             {
                 // error_reply
+                error_reply(_msg, get_error_json("Error Occur in LogService PATCH"), status_codes::BadRequest, _response);
                 return ;
             }
         }
@@ -1629,6 +1631,7 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             else
             {
                 // error_reply
+                error_reply(_msg, get_error_json("Error Occur in LogService PATCH"), status_codes::BadRequest, _response);
                 return ;
             }
         }
@@ -1686,6 +1689,7 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             else
             {
                 // error_reply
+                error_reply(_msg, get_error_json("Error Occur in LogService PATCH"), status_codes::BadRequest, _response);
                 return ;
             }
         }
@@ -1980,11 +1984,11 @@ void do_actions(http_request _request, m_Request& _msg, json::value _jv, http_re
     //     }
     // }
 
-    // if(!record_is_exist(resource_uri))
-    // {
-    //     error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
-    //     return ;
-    // } // 이게 원본
+    if(!record_is_exist(resource_uri))
+    {
+        error_reply(_msg, get_error_json("URI Input Error in Resource part"), status_codes::BadRequest, _response);
+        return ;
+    } // 이게 원본
 
     
 
@@ -2215,7 +2219,7 @@ void act_system(m_Request& _msg, json::value _jv, string _resource, string _what
 void spread_system_reset_to_all_bmc(string _type)
 {
     std::map<string, string>::iterator iter;
-    for(iter == module_id_table.begin(); iter != module_id_table.end(); iter++)
+    for(iter = module_id_table.begin(); iter != module_id_table.end(); iter++)
     {
         if((iter->first) == "CMM1")// CMM일 때 무시, 하드코딩된거 나중에 변경필요
             continue;
@@ -2228,6 +2232,8 @@ void spread_system_reset_to_all_bmc(string _type)
         
         http_request req;
         req.set_method(methods::POST);
+        // req.headers().add("X-Auth-Token", _auth_token);
+        req.headers().add("Content-Type", "application/json");
         req.set_request_uri(uri);
         req.set_body(j_body);
 
@@ -2314,6 +2320,7 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
     // }
 
     // 액션종류에따라서 리소스 uri 깊이가 달라져서 먼저 _what부터 검사
+    // 위의 주석코드처럼 하나로 특정할 수 없음
     if(!(_what == "FirmwareUpdate" || _what == "SoftwareUpdate" 
     || _what == "ResourceBackUp" || _what == "ResourceRestore"))
     {
@@ -2323,8 +2330,17 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
 
     if(_what == "FirmwareUpdate" || _what == "SoftwareUpdate")
     {
+        // 리소스 매칭 검사
+        Resource *reso = g_record[_resource];
+        if(reso->type != SOFTWARE_INVENTORY_TYPE)
+        {
+            error_reply(_msg, get_error_json("Firmware/Software Update is supported in SoftwareInventory Type"), status_codes::BadRequest, _response);
+            return ;
+        }
+
         string file_path = _resource;
         // string file_path = inventory->odata.id;
+        string inventory = get_current_object_name(get_parent_object_uri(file_path, "/"), "/");
         string firm_id = get_current_object_name(file_path, "/");
         // cout << "FIRMFIRM!! :: " << firm_id << endl;
         if(!fs::exists(file_path))
@@ -2336,10 +2352,24 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
         // #3 펌웨어는 현재 블락상태, 소프트웨어는 CMM이면 2개 자체처리 / BMC이면 전달
 
         if(_what == "FirmwareUpdate")
-            update_firmware(_request, _msg, firm_id, _response);
+        {
+            if(inventory != "FirmwareInventory")
+            {
+                error_reply(_msg, get_error_json("Action(FirmwareUpdate) - Inventory(" + inventory + ") Wrong Matching"), status_codes::BadRequest, _response);
+                return ;
+            }
+            update_firmware(_request, _msg, _resource, firm_id, _response);
+        }
         
         if(_what == "SoftwareUpdate")
-            update_software(_request, _msg, firm_id, _response);
+        {
+            if(inventory != "SoftwareInventory")
+            {
+                error_reply(_msg, get_error_json("Action(SoftwareUpdate) - Inventory(" + inventory + ") Wrong Matching"), status_codes::BadRequest, _response);
+                return ;
+            }
+            update_software(_request, _msg, _resource, firm_id, _response);
+        }
 
         
         // 각 종류의 ID마다 처리해주면 됨
@@ -2354,17 +2384,29 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
         return ;
     }
 
-    if(_what == "ResourceBackUp")
+    if(_what == "ResourceBackUp" || _what == "ResourceRestore")
     {
-        update_resource_backup(_msg, _response);
-        return ;
+        Resource *reso = g_record[_resource];
+        if(reso->type != UPDATE_SERVICE_TYPE)
+        {
+            error_reply(_msg, get_error_json("Resource BackUp/Restore is supported in UpdateService Type"), status_codes::BadRequest, _response);
+            return ;
+        }
+
+        if(_what == "ResourceBackUp")
+        {
+            update_resource_backup(_msg, _response);
+            return ;
+        }
+
+        if(_what == "ResourceRestore")
+        {
+            update_resource_restore(_request, _msg, _response);
+            return ;
+        }
     }
 
-    if(_what == "ResourceRestore")
-    {
-        update_resource_restore(_request, _msg, _response);
-        return ;
-    }
+    
 
     
 
@@ -2413,7 +2455,7 @@ void act_update_service(http_request _request, m_Request& _msg, json::value _jv,
     
 }
 
-void update_firmware(http_request _request, m_Request& _msg, string _firm_id, http_response& _response)
+void update_firmware(http_request _request, m_Request& _msg, string _resource, string _firm_id, http_response& _response)
 {
     // 현재 펌웨어 블락
     error_reply(_msg, get_error_json("Not Supported FirmwareUpdate yet"), status_codes::BadRequest, _response);
@@ -2428,7 +2470,7 @@ void update_firmware(http_request _request, m_Request& _msg, string _firm_id, ht
 
 }
 
-void update_software(http_request _request, m_Request& _msg, string _firm_id, http_response& _response)
+void update_software(http_request _request, m_Request& _msg, string _resource, string _firm_id, http_response& _response)
 {
     string front="", end=""; // CMM1-READING일때 CMM1이 front, READING이 end
     get_software_category(_firm_id, front, end);
@@ -2464,17 +2506,29 @@ void update_software(http_request _request, m_Request& _msg, string _firm_id, ht
         // }
 
         // return ;
+
+        // 리소스가 CM꺼지만 CMM에 등록이 되어있는걸 검사하고 보내기때문에 여기선 바로
+        // 그 리소스 경로 밑에 펌/솦웨어 파일 저장처리하고 요청전달
     }
 
     // CMM Part
     string update_cmd;
     string optical_cmd;
     string save_file_path;
+    string date, time;
+    get_current_date_info(date);
+    get_current_time_info(time);
 
     if(end == "") // keti-redfish
     {
-        save_file_path = "/firmware/new_version_redfish";
-        update_cmd = "/firmware/update_redfish.sh";
+        save_file_path = _resource;
+        save_file_path.append("/").append(UPDATE_SOFTWARE_REDFISH_BASE_NAME).append("_")
+        .append(date).append("_").append(time);
+        // save_file_path = _resource + "/" + date + 
+        // save_file_path = "/firmware/new_version_redfish";
+        update_cmd = UPDATE_SOFTWARE_REDFISH_SH_FILE;
+        update_cmd.append(" -n ").append(save_file_path);
+        // update_cmd = "/firmware/update_redfish.sh";
         optical_cmd = "chmod +x " + save_file_path;
     }
     // else if(end == "REST") // CMM은없음
@@ -2487,8 +2541,13 @@ void update_software(http_request _request, m_Request& _msg, string _firm_id, ht
     // }
     else if(end == "READING") // 센서로그 디비파일
     {
-        save_file_path = "/firmware/new_version_db";
-        update_cmd = "/firmware/update_log_db.sh";
+        save_file_path = _resource;
+        save_file_path.append("/").append(UPDATE_SOFTWARE_DB_BASE_NAME).append("_")
+        .append(date).append("_").append(time);
+        // save_file_path = "/firmware/new_version_db";
+        update_cmd = UPDATE_SOFTWARE_DB_SH_FILE;
+        update_cmd.append(" -n ").append(save_file_path);
+        // update_cmd = "/firmware/update_log_db.sh";
         optical_cmd = "";
     }
     else
@@ -2522,12 +2581,26 @@ void update_software(http_request _request, m_Request& _msg, string _firm_id, ht
 
 void update_resource_backup(m_Request& _msg, http_response& _response)
 {
+    if(fs::exists(RESOURCE_BACKUP_FILE))
+    {
+        string cmd = "mv -f ";
+        // cmd.append(RESOURCE_BACKUP_FILE + " " + RESOURCE_BACKUP_FILE_OLD);
+        cmd.append(RESOURCE_BACKUP_FILE).append(" ").append(RESOURCE_BACKUP_FILE_OLD);
+
+        system(cmd.c_str());
+    }
+
+    string backup_cmd = "tar -cvf ";
+    backup_cmd.append(RESOURCE_BACKUP_FILE).append(" /redfish/v1 /redfish/v1.json");
+
+    system(backup_cmd.c_str());
     // string path_redfish = "/redfish";
-    char tar_buf[100];
-    // sprintf(tar_buf, "tar -cvf /redfish_backup.tar %s", path_redfish.c_str());
-    sprintf(tar_buf, "tar -cvf /redfish_backup.tar /redfish/v1 /redfish/v1.json");//%s", path_redfish.c_str());
-    system(tar_buf);
-    auto filestream = concurrency::streams::fstream::open_istream("/redfish_backup.tar").get();
+    // char tar_buf[100];
+    // // sprintf(tar_buf, "tar -cvf /redfish_backup.tar %s", path_redfish.c_str());
+    // sprintf(tar_buf, "tar -cvf /redfish_backup.tar /redfish/v1 /redfish/v1.json");//%s", path_redfish.c_str());
+    // system(tar_buf);
+    auto filestream = concurrency::streams::fstream::open_istream(RESOURCE_BACKUP_FILE).get();
+    // auto filestream = concurrency::streams::fstream::open_istream("/redfish_backup.tar").get();
     
 
     _response.set_body(filestream);
@@ -2541,9 +2614,17 @@ void update_resource_backup(m_Request& _msg, http_response& _response)
 
 void update_resource_restore(http_request& _request, m_Request& _msg, http_response& _response)
 {
-    string file_path = "/redfish/resource_restore.tar";
+    // string file_path = "/redfish/resource_restore.tar";
+    string file_path = RESOURCE_RESTORE_FILE;
     string firm_id = get_current_object_name(file_path, "/");
     // mkdir(file_path.c_str(), 0755);
+    if(fs::exists(file_path))
+    {
+        string cmd = "mv -f ";
+        cmd.append(RESOURCE_RESTORE_FILE).append(" ").append(RESOURCE_RESTORE_FILE_OLD);
+
+        system(cmd.c_str());
+    }
 
     // file_path = file_path + "/KETI-UPDATEFILE";
     save_file_from_request(_request, file_path);
@@ -2573,10 +2654,15 @@ void get_software_category(string _str, string& _front, string& _end)
         _front = _str;
         _end = "";
     }
+
+    return ;
 }
 
 void save_file_from_request(http_request _request, string _path)
 {
+    fs::path file_path(_path);
+    if(fs::exists(file_path))
+        fs::remove(file_path);
     auto body_stream = _request.body();
     auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(_path), std::ios::out | std::ios::binary).get();
     file_stream.flush();
@@ -2585,6 +2671,8 @@ void save_file_from_request(http_request _request, string _path)
 
     body_stream.read_to_end(file_stream.streambuf()).wait();
     file_stream.close().wait();
+
+    return ;
 }
 
 bool pass_request_to_bmc(http_request _request, string _module)
@@ -2593,12 +2681,6 @@ bool pass_request_to_bmc(http_request _request, string _module)
 
     cout << "ADDRESS : " << address << endl;
     http_client client(address);
-    http_request req;
-    req.set_method(_request.method());
-    req.set_request_uri(_request.request_uri().to_string());
-    req.set_body(_request.body());
-    // BMC연동할때 body잘 담겨서 전달되는지 확인필요함 
-    // uri랑 method 전달되는건 확인함
 
     http_response response;
 
@@ -2612,7 +2694,8 @@ bool pass_request_to_bmc(http_request _request, string _module)
     try
     {
         /* code */
-        pplx::task<http_response> responseTask = client.request(req);
+        pplx::task<http_response> responseTask = client.request(_request);
+        // pplx::task<http_response> responseTask = client.request(req);
         response = responseTask.get();
     }
     catch(const std::exception& e)
@@ -2628,6 +2711,44 @@ bool pass_request_to_bmc(http_request _request, string _module)
         return false;
     
     
+}
+
+bool pass_request_to_bmc(http_request _request, string _module, http_response& _response)
+{
+    string address = module_id_table[_module];
+
+    cout << "ADDRESS : " << address << endl;
+    http_client client(address);
+
+    http_response response;
+
+    response.headers().add("Access-Control-Allow-Origin", "*");
+    response.headers().add("Access-Control-Allow-Credentials", "true");
+    response.headers().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH");
+    response.headers().add("Access-Control-Max-Age", "3600");
+    response.headers().add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, remember-me, X-Auth-Token");
+    response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
+
+    try
+    {
+        /* code */
+        pplx::task<http_response> responseTask = client.request(_request);
+        // pplx::task<http_response> responseTask = client.request(req);
+        response = responseTask.get();
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
+    _response = response;
+    cout << "STATUS CODE : " << response.status_code() << endl;
+    // cout << "BODY JSON : " << response.extract_json().get() << endl;
+    if(response.status_code() == status_codes::OK)
+        return true;
+    else
+        return false;
+
 }
 
 
@@ -4769,6 +4890,7 @@ void apply_ethernet_patch(Ethernet_Patch_Info _info, EthernetInterfaces *_eth, i
         _eth->interfaceEnabled = _info.val_enabled;
         // 이거 플래그 1일때 적용하는거 ip link set eth1 up/down 으로 구현해도 될거같음
         // 얘는 걍 최상위로 쳐서 얘 들어가면 바로 down부터 시켜서 나머지 적용안되게해야될거같음
+        // 근데 down을 하면 어떻게 up 시키지?
     }
 
     if(_info.op_description)
@@ -4867,14 +4989,7 @@ void apply_ethernet_patch(Ethernet_Patch_Info _info, EthernetInterfaces *_eth, i
     string restart_cmd = "/etc/init.d/S40network restart";
     system(restart_cmd.c_str());
 
-    // 네트워크 변경이니까 어쩔수없다 걍 여기서 restart하는걸로
-    // network restart 타이밍을 언제로 잡아야할지.. 
-    // 만약에 그냥 여기서 interface를 수정하는 5개 변수 플래그중 ok된거있으면 적용하는거라하면
-    // 웹에서 NIC통으로 긁어다 주는거때문에 항상 활성화될수있어서 json읽는데서 비교하는 로직 추가해야할수
-    // 있음
-    // 아니면 restart안하고 현재변경은 명령어로 처리하고 파일은 바꿔만 놓는 식으로 할수있음
-    // 명령어로 하려했더니 link down시켜야 하는 mtu mac이 있어서 안될듯
-
+    // 네트워크 변경 적용은 restart해서 적용하는 방식으로..
 }
 
 

@@ -266,6 +266,9 @@ enum ACTION_NAME
     SUBMIT_TEST_EVENT,
     SIMPLE_UPDATE,
     FIRMWARE_UPDATE,
+    SOFTWARE_UPDATE,
+    RESOURCE_BACKUP,
+    RESOURCE_RESTORE,
     INSERT_MEDIA,
     EJECT_MEDIA
 };
@@ -1382,6 +1385,13 @@ class SoftwareInventory : public Resource
 
         this->actions["FirmwareUpdate"] = firmware_update;
 
+        Actions software_update;
+        software_update.type = SOFTWARE_UPDATE;
+        software_update.name = "#UpdateService.SoftwareUpdate";
+        software_update.target = this->odata.id + "/Actions/UpdateService.SoftwareUpdate";
+
+        this->actions["SoftwareUpdate"] = software_update;
+
         g_record[_odata_id] = this;
     }
     SoftwareInventory(const string _odata_id, const string _soft_id) : SoftwareInventory(_odata_id)
@@ -1416,25 +1426,39 @@ class UpdateService : public Resource
         this->firmware_inventory = nullptr;
         this->software_inventory = nullptr;
 
-        Actions simple_update;
-        simple_update.type = SIMPLE_UPDATE;
-        simple_update.name = "#UpdateService.SimpleUpdate";
-        simple_update.target = this->odata.id + "/Actions/UpdateService.SimpleUpdate";
+        // Actions simple_update;
+        // simple_update.type = SIMPLE_UPDATE;
+        // simple_update.name = "#UpdateService.SimpleUpdate";
+        // simple_update.target = this->odata.id + "/Actions/UpdateService.SimpleUpdate";
 
-        Parameter transfer_protocol;
-        transfer_protocol.name = "TransferProtocol";
-        transfer_protocol.allowable_values.push_back("TFTP");
-        transfer_protocol.allowable_values.push_back("SFTP");
+        // Parameter transfer_protocol;
+        // transfer_protocol.name = "TransferProtocol";
+        // transfer_protocol.allowable_values.push_back("TFTP");
+        // transfer_protocol.allowable_values.push_back("SFTP");
 
-        //target 변경 가능
-        Parameter targets;
-        targets.name = "Targets";
-        targets.allowable_values.push_back("/redfish/v1/UpdateService/FirmwareInventory/BMC-Backup");
+        // //target 변경 가능
+        // Parameter targets;
+        // targets.name = "Targets";
+        // targets.allowable_values.push_back("/redfish/v1/UpdateService/FirmwareInventory/BMC-Backup");
 
-        simple_update.parameters.push_back(transfer_protocol);
-        simple_update.parameters.push_back(targets);
+        // simple_update.parameters.push_back(transfer_protocol);
+        // simple_update.parameters.push_back(targets);
 
-        this->actions["SimpleUpdate"] = simple_update;
+        // this->actions["SimpleUpdate"] = simple_update;
+
+        Actions resource_backup, resource_restore;
+
+        resource_backup.type = RESOURCE_BACKUP;
+        resource_backup.name = "#UpdateService.ResourceBackUp";
+        resource_backup.target = this->odata.id + "/Actions/UpdateService.ResourceBackUp";
+
+        resource_restore.type = RESOURCE_RESTORE;
+        resource_restore.name = "#UpdateService.ResourceRestore";
+        resource_restore.target = this->odata.id + "/Actions/UpdateService.ResourceRestore";
+
+        this->actions["ResourceBackUp"] = resource_backup;
+        this->actions["ResourceRestore"] = resource_restore;
+
         g_record[_odata_id] = this;
     };
     ~UpdateService()

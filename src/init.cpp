@@ -1364,62 +1364,62 @@ void init_update_service(UpdateService *update_service)
         
         SoftwareInventory* cmm = init_software_inventory(update_service->firmware_inventory, "CMM");
         cmm->version = "v1.0";
-        cmm->manufacturer = "KETI";
+        cmm->manufacturer = "KETI_CMM";
         cmm->release_date = currentDateTime();
         cmm->lowest_supported_version = "v1.0";
 
         SoftwareInventory* web = init_software_inventory(update_service->firmware_inventory, "WEB");
         web->version = "v1.0";
-        web->manufacturer = "KETI";
+        web->manufacturer = "KETI_WEB";
         web->release_date = currentDateTime();
         web->lowest_supported_version = "v1.0";
         
         SoftwareInventory* ha = init_software_inventory(update_service->firmware_inventory, "HA");
         ha->version = "v1.0";
-        ha->manufacturer = "KETI";
+        ha->manufacturer = "KETI_HA";
         ha->release_date = currentDateTime();
         ha->lowest_supported_version = "v1.0";
 
         SoftwareInventory* bmc = init_software_inventory(update_service->firmware_inventory, "BMC");
         bmc->version = "v1.0";
-        bmc->manufacturer = "KETI";
+        bmc->manufacturer = "KETI_BMC";
         bmc->release_date = currentDateTime();
         bmc->lowest_supported_version = "v1.0";
 
         // CMM & BMC 분리
         SoftwareInventory* cmm1 = init_software_inventory(update_service->firmware_inventory, "CMM1");
         cmm1->version = "v1.0";
-        cmm1->manufacturer = "KETI";
+        cmm1->manufacturer = "KETI_CMM1";
         cmm1->release_date = currentDateTime();
         cmm1->lowest_supported_version = "v1.0";
 
         SoftwareInventory* cmm2 = init_software_inventory(update_service->firmware_inventory, "CMM2");
         cmm2->version = "v1.0";
-        cmm2->manufacturer = "KETI";
+        cmm2->manufacturer = "KETI_CMM2";
         cmm2->release_date = currentDateTime();
         cmm2->lowest_supported_version = "v1.0";
 
         SoftwareInventory* cm1 = init_software_inventory(update_service->firmware_inventory, "CM1");
         cm1->version = "v1.0";
-        cm1->manufacturer = "KETI";
+        cm1->manufacturer = "KETI_CM1";
         cm1->release_date = currentDateTime();
         cm1->lowest_supported_version = "v1.0";
 
         SoftwareInventory* cm2 = init_software_inventory(update_service->firmware_inventory, "CM2");
         cm2->version = "v1.0";
-        cm2->manufacturer = "KETI";
+        cm2->manufacturer = "KETI_CM2";
         cm2->release_date = currentDateTime();
         cm2->lowest_supported_version = "v1.0";
 
         SoftwareInventory* sm1 = init_software_inventory(update_service->firmware_inventory, "SM1");
         sm1->version = "v1.0";
-        sm1->manufacturer = "KETI";
+        sm1->manufacturer = "KETI_SM1";
         sm1->release_date = currentDateTime();
         sm1->lowest_supported_version = "v1.0";
 
         SoftwareInventory* sm2 = init_software_inventory(update_service->firmware_inventory, "SM2");
         sm2->version = "v1.0";
-        sm2->manufacturer = "KETI";
+        sm2->manufacturer = "KETI_SM2";
         sm2->release_date = currentDateTime();
         sm2->lowest_supported_version = "v1.0";
     }
@@ -1429,6 +1429,17 @@ void init_update_service(UpdateService *update_service)
         update_service->software_inventory->name = "Software Inventory Collection";
     
         // init_software_inventory(update_service->software_inventory, "CMM");
+        SoftwareInventory* cmm1 = init_software_inventory(update_service->software_inventory, "CMM1");
+        cmm1->version = "v1.0";
+        cmm1->manufacturer = "KETI_CMM1_REDFISH";
+        cmm1->release_date = currentDateTime();
+        cmm1->lowest_supported_version = "v1.0";
+
+        SoftwareInventory* cmm1_reading = init_software_inventory(update_service->software_inventory, "CMM1-READING");
+        cmm1_reading->version = "v1.0";
+        cmm1_reading->manufacturer = "KETI_CMM1_READING";
+        cmm1_reading->release_date = currentDateTime();
+        cmm1_reading->lowest_supported_version = "v1.0";
     }
     return;
 }

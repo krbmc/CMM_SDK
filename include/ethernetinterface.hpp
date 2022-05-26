@@ -43,8 +43,13 @@ typedef struct _Add_Ethernet_Info
 void change_hosts_file(string _target, string _new);
 void change_hostname_file(string _new);
 void change_interface_file(string _dev, string _keyword, string _value);
+bool find_ethernet_dev_block(string _line, string _search_type);
+bool find_ethernet_keyword(string _line, string _keyword, int &pos);
+
 void change_web_app_file(string _origin, string _new);
 
+void add_keyword_part_to_interface_file(string _keyword, string _value, vector<string> &_write);
+void add_keyword_whole_to_interface_file(string _dev, string _keyword, string _value, vector<string> &_write);
 void add_ethernet_to_interface_file(string _dev, Add_Ethernet_Info _info);
 
 
