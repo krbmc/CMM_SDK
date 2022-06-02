@@ -2482,97 +2482,101 @@ void update_software(http_request _request, m_Request& _msg, string _resource, s
         return ;
     }
 
-    // CMM요청이면 처리하고 BMC이면 전달 .. 인데 나중에 CMM1,2구분처리 필요
-    if(!(front == CMM_ID))
-    {
-        // BMC 요청전달
-        cout << "[BMC PASS CASE] ------------------ ####################" << endl;
-        cout << " URI : " << _request.request_uri().to_string() << endl;
-        cout << " METHOD : " << _request.method() << endl;
-
-        success_reply(_msg, json::value::null(), status_codes::OK, _response);
-        return ;
-
-        // BMC전달 부분, 연동 때 BMC에 처리구현하고 활성화 시키기
-        // if(pass_request_to_bmc(_request, front))
-        // {
-        //     success_reply(_msg, json::value::null(), status_codes::OK, _response);
-        //     return ;
-        // }
-        // else
-        // {
-        //     error_reply(_msg, get_error_json("BMC PASS Fail"), status_codes::BadRequest, _response);
-        //     return ;
-        // }
-
-        // return ;
-
-        // 리소스가 CM꺼지만 CMM에 등록이 되어있는걸 검사하고 보내기때문에 여기선 바로
-        // 그 리소스 경로 밑에 펌/솦웨어 파일 저장처리하고 요청전달
-    }
-
-    // CMM Part
-    string update_cmd;
-    string optical_cmd;
     string save_file_path;
-    string date, time;
-    get_current_date_info(date);
-    get_current_time_info(time);
-
-    if(end == "") // keti-redfish
+    string optical_cmd;
+    string update_cmd; // cmm전용
+    
+    // File Path and Command Specifying
+    if(!(front == CMM_ID)) // BMC Case .. 인데 나중에 CMM1,2구분처리 필요
     {
-        save_file_path = _resource;
-        save_file_path.append("/").append(UPDATE_SOFTWARE_REDFISH_BASE_NAME).append("_")
-        .append(date).append("_").append(time);
-        // save_file_path = _resource + "/" + date + 
-        // save_file_path = "/firmware/new_version_redfish";
-        update_cmd = UPDATE_SOFTWARE_REDFISH_SH_FILE;
-        update_cmd.append(" -n ").append(save_file_path);
-        // update_cmd = "/firmware/update_redfish.sh";
-        optical_cmd = "chmod +x " + save_file_path;
+        if(end == "") // edge
+        {
+            save_file_path = make_name_for_updatefile(_resource, UPDATE_SOFTWARE_EDGE_BASE_NAME);
+            optical_cmd = "chmod +x " + save_file_path;
+        }
+        // else if(end == "REST")
+        // else if(end == "IPMI")
+        else if(end == "READING") // 센서로그 디비파일
+        {
+            save_file_path = make_name_for_updatefile(_resource, UPDATE_SOFTWARE_DB_BASE_NAME);
+            optical_cmd = "";
+        }
+        else
+        {
+            error_reply(_msg, get_error_json("Invalid Software ID"), status_codes::BadRequest, _response);
+            return ;
+        }
     }
-    // else if(end == "REST") // CMM은없음
-    // {
-
-    // }
-    // else if(end == "IPMI") // CMM은없음
-    // {
-
-    // }
-    else if(end == "READING") // 센서로그 디비파일
+    else // CMM Case
     {
-        save_file_path = _resource;
-        save_file_path.append("/").append(UPDATE_SOFTWARE_DB_BASE_NAME).append("_")
-        .append(date).append("_").append(time);
-        // save_file_path = "/firmware/new_version_db";
-        update_cmd = UPDATE_SOFTWARE_DB_SH_FILE;
-        update_cmd.append(" -n ").append(save_file_path);
-        // update_cmd = "/firmware/update_log_db.sh";
-        optical_cmd = "";
-    }
-    else
-    {
-        error_reply(_msg, get_error_json("Invalid Software ID"), status_codes::BadRequest, _response);
-        return ;
+        if(end == "") // keti-redfish
+        {
+            save_file_path = make_name_for_updatefile(_resource, UPDATE_SOFTWARE_REDFISH_BASE_NAME);
+            update_cmd = UPDATE_SOFTWARE_REDFISH_SH_FILE;
+            update_cmd.append(" -n ").append(save_file_path);
+            optical_cmd = "chmod +x " + save_file_path;
+        }
+        // else if(end == "REST") // CMM은없음
+        // else if(end == "IPMI") // CMM은없음
+        else if(end == "READING") // 센서로그 디비파일
+        {
+            save_file_path = make_name_for_updatefile(_resource, UPDATE_SOFTWARE_DB_BASE_NAME);
+            update_cmd = UPDATE_SOFTWARE_DB_SH_FILE;
+            update_cmd.append(" -n ").append(save_file_path);
+            optical_cmd = "";
+        }
+        else
+        {
+            error_reply(_msg, get_error_json("Invalid Software ID"), status_codes::BadRequest, _response);
+            return ;
+        }
     }
 
     try
     {
+        // File Save
         save_file_from_request(_request, save_file_path);
-
         system(optical_cmd.c_str());
         log(info) << "[Firmware & Software Update] : " << save_file_path;
         // 파일 수신완료
+        // *REM: _request를 통해서 body내용으로 파일 save를 진행하면 _request에 담긴
+        // body내용이 사라짐
         
         sleep(1);
 
-        system(update_cmd.c_str());
+        // Pass용 Request 생성
+        http_request req;
+        req.set_method(_request.method());
+        // req.set_body(_request.body());
+        auto file_stream = concurrency::streams::fstream::open_istream(save_file_path).get();
+        req.set_body(file_stream);
+        req.set_request_uri(_request.request_uri());
+
+        // BMC Pass Or Operate Command
+        if(!(front == CMM_ID))
+        {
+            if(pass_request_to_bmc(req, front))
+            // if(pass_request_to_bmc(_request, front, save_file_path))
+            {
+                success_reply(_msg, json::value::null(), status_codes::OK, _response);
+                return ;
+            }
+            else
+            {
+                error_reply(_msg, get_error_json("PASS FAIL"), status_codes::BadRequest, _response);
+                return ;
+            }
+        }
+        else
+            system(update_cmd.c_str());
     }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
         log(error) << "Software Update Error!!";
     }
+
+
 
     success_reply(_msg, json::value::null(), status_codes::OK, _response);
     return ;
@@ -2658,11 +2662,25 @@ void get_software_category(string _str, string& _front, string& _end)
     return ;
 }
 
+string make_name_for_updatefile(string _resource, string _basename)
+{
+    string date, time;
+    get_current_date_info(date);
+    get_current_time_info(time);
+
+    string name = _resource;
+    name.append("/").append(_basename).append("_").append(date)
+    .append("_").append(time);
+
+    return name;
+}
+
 void save_file_from_request(http_request _request, string _path)
 {
     fs::path file_path(_path);
     if(fs::exists(file_path))
         fs::remove(file_path);
+
     auto body_stream = _request.body();
     auto file_stream = concurrency::streams::fstream::open_ostream(utility::conversions::to_string_t(_path), std::ios::out | std::ios::binary).get();
     file_stream.flush();
@@ -2715,6 +2733,8 @@ bool pass_request_to_bmc(http_request _request, string _module)
 
 bool pass_request_to_bmc(http_request _request, string _module, http_response& _response)
 {
+    // bmc에서의 response를 고스란히 전달해야 할때 _response인자를 받아서 사용함
+
     string address = module_id_table[_module];
 
     cout << "ADDRESS : " << address << endl;

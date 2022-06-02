@@ -21,6 +21,7 @@ void add_new_bmc(string _bmc_id, string _address, string _username, string _pass
 // do_task_bmc 부분에서 요청 수행 후 실시간 갱신작업 추가 필요
 {
     string odata_chassis, odata_system, odata_manager;
+    string odata_update_service;
 
     // check exist
     odata_system = ODATA_SYSTEM_ID;
@@ -29,6 +30,7 @@ void add_new_bmc(string _bmc_id, string _address, string _username, string _pass
     odata_chassis = odata_chassis + "/" + _bmc_id;
     odata_manager = ODATA_MANAGER_ID;
     odata_manager = odata_manager + "/" + _bmc_id;
+    odata_update_service = ODATA_UPDATE_SERVICE_ID;
 
     // cout << " 잘 나오나? " << endl;
     // cout << "sys : " << odata_system << endl;
@@ -112,6 +114,9 @@ void add_new_bmc(string _bmc_id, string _address, string _username, string _pass
     add_manager(odata_manager, _address);
     // add_manager(odata_manager, host);
     // add_manager(odata_manager, host, auth_token);
+
+    //updateservice
+    add_update_service(odata_update_service, _address);
 
 }
 
@@ -235,31 +240,32 @@ void add_chassis(string _uri, string _host)
     record_save_json();
 }
 
-// void add_update_service(string _uri, string _host)
-// {
-//     // _uri로 /redfish/v1/UpdateService 들어오고
-//     // 여기먼저 json가져오고 firmware inventory 있으면 bring firm
-//     log(trace) << "!@#$ ADD UpdateService";
+void add_update_service(string _uri, string _host)
+{
+    // _uri로 /redfish/v1/UpdateService 들어오고
+    // 여기먼저 json가져오고 firmware inventory 있으면 bring firm
+    log(trace) << "!@#$ ADD UpdateService";
 
-//     json::value updateservice_info;
-//     updateservice_info = get_json_info(_uri, _host);
+    json::value updateservice_info;
+    updateservice_info = get_json_info(_uri, _host);
 
-//     log(trace) << "!@#$ UpdateService INFO START" << endl;
-//     cout << updateservice_info << endl;
-//     log(trace) << "!@#$ UpdateService INFO END" << endl;
+    log(trace) << "!@#$ UpdateService INFO START" << endl;
+    cout << updateservice_info << endl;
+    log(trace) << "!@#$ UpdateService INFO END" << endl;
 
-//     if(updateservice_info == json::value::null())
-//     {
-//         log(warning) << "UpdateService INFO is Null in Add UpdateService";
-//         return ;
-//     }
+    if(updateservice_info == json::value::null())
+    {
+        log(warning) << "UpdateService INFO is Null in Add UpdateService";
+        return ;
+    }
 
-//     UpdateService *update_service = (UpdateService *)g_record[ODATA_UPDATE_SERVICE_ID];
+    // UpdateService는 1개밖에 없기 때문에 CMM의 기존 생성되어있는 것을 사용해야함
+    UpdateService *update_service = (UpdateService *)g_record[ODATA_UPDATE_SERVICE_ID];
 
-//     bring_updateservice(update_service, updateservice_info, _host);
+    bring_updateservice(update_service, updateservice_info, _host);
 
-//     record_save_json();
-// }
+    record_save_json();
+}
 
 
 void bring_system(Systems *_system, json::value _info, string _addr)
@@ -963,10 +969,10 @@ void bring_manager(Manager *_manager, json::value _info, string _addr)
         }
     }
 
-    string account_service_uri = ODATA_ACCOUNT_SERVICE_ID;
-    json::value account_service_info;
-    account_service_info = get_json_info(account_service_uri, _addr);
-    bring_account_service(_manager, account_service_info, _addr);
+    // string account_service_uri = ODATA_ACCOUNT_SERVICE_ID;
+    // json::value account_service_info;
+    // account_service_info = get_json_info(account_service_uri, _addr);
+    // bring_account_service(_manager, account_service_info, _addr);
 
     json::value radius_odata_info;
     if(get_value_from_json_key(_info, "Radius", radius_odata_info))
@@ -1419,20 +1425,71 @@ void bring_sensors(Collection *_collection, json::value _info, string _addr)
 }
 
 
-// void bring_updateservice(UpdateService *_update, json::value _info, string _addr)
-// {
-//     json::value firmware_inventory_odata_info;
-//     if(get_value_from_json_key(_info, "FirmwareInventory", firmware_inventory_odata_info))
-//     {
-//         string firmware_inventory_uri;
-//         if(read_odata_id(firmware_inventory_odata_info, firmware_inventory_uri))
-//         {
-//             json::value firmware_inventory_info;
-//             firmware_inventory_info = get_json_info(firmware_inventory_uri, _addr);
+void bring_updateservice(UpdateService *_update, json::value _info, string _addr)
+{
+    json::value firmware_inventory_odata_info;
+    if(get_value_from_json_key(_info, "FirmwareInventory", firmware_inventory_odata_info))
+    {
+        string firmware_inventory_col_uri;
+        if(read_odata_id(firmware_inventory_odata_info, firmware_inventory_col_uri))
+        {
+            json::value firmware_inventory_col_info; //collection
+            firmware_inventory_col_info = get_json_info(firmware_inventory_col_uri, _addr);
+            bring_firmware_inventory(_update->firmware_inventory, firmware_inventory_col_info, _addr);
+        }
+    }
+
+    json::value software_inventory_odata_info;
+    if(get_value_from_json_key(_info, "SoftwareInventory", software_inventory_odata_info))
+    {
+        string software_inventory_col_uri;
+        if(read_odata_id(software_inventory_odata_info, software_inventory_col_uri))
+        {
+            json::value software_inventory_col_info;
+            software_inventory_col_info = get_json_info(software_inventory_col_uri, _addr);
+            // bring_software_inventory는 로직이 bring_firmware_inventory랑 같아서..
+            bring_firmware_inventory(_update->software_inventory, software_inventory_col_info, _addr);
+        }
+    }
+}
+
+void bring_firmware_inventory(Collection *_collection, json::value _info, string _addr)
+{
+    json::value array_member;
+    if(get_value_from_json_key(_info, "Members", array_member))
+    {
+        for(int i=0; i<array_member.size(); i++)
+        {
+            json::value firmware_info;
+            string member_uri;
+            if(read_odata_id(array_member[i], member_uri))
+            {
+                firmware_info = get_json_info(member_uri, _addr);
+            }
+            else
+                continue;
+
             
-//         }
-//     }
-// }
+            // resource 존재 시 content 업데이트만
+            if(record_is_exist(member_uri))
+            {
+                SoftwareInventory *firmware = (SoftwareInventory *)g_record[member_uri];
+
+                firmware->load_json(firmware_info);
+
+            }
+            else
+            {
+                // firmware info로 firmware inventory 만들기
+                string firm_id = get_current_object_name(member_uri, "/");
+                SoftwareInventory *firmware = new SoftwareInventory(member_uri, firm_id);
+
+                firmware->load_json(firmware_info);
+                _collection->add_member(firmware);
+            }
+        }
+    }
+}
 
 
 // json::value get_json_info(string _uri, string _host, string _auth_token)
