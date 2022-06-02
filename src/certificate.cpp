@@ -41,6 +41,29 @@ json::value generateCSR(json::value _body)
     {
         /* code */
         certificate_odata_id = _body.at("CertificateCollection").at("@odata.id").as_string();
+        // 리소스가... /redfish/v1/Managers/BMC/NetworkProtocol/HTTPS/Certificates
+        // 딱 여까지만 들어오니깐.. 자체로 리소스 있는지 파악하고 있다면 Collection인지도
+        // 봐야함
+        // https의경우 저렇고
+        // Account의 경우 /redfish/v1/AccountService/Accounts/1/Certificates
+        // 이렇게 들어오겠군 Account의 경우 바로 컬렉션만들면되는데
+        // NetworkProtocol의 경우 HTTPS의 리소스가없고 바로 컬렉션이라..
+        // 컬렉션이름만 추가적으로 HTTPS/Certificates라고 붙는셈임
+        // 그러면 리소스 검사는 어쨋든 odata는 동일하니깐 그대로하면되고
+        // 있으면 컬렉션 만들어져있는거니까 바로 그 안에 하나 생성하고 만들면되고
+        // 없으면 컬렉션을 만들어서 연결시켜줘야함
+        if(record_is_exist(certificate_odata_id))
+        {
+            // Certificate Collection 존재하는 경우
+        }
+        else
+        {
+            // Certificate Collection 존재하지 않는 경우
+        }
+        // 함수화 하고... act에서 오류안났을때 리소스 생성 수행해야할거같음
+        // 그러면 인자로 odata랑,, CertContent,,,
+        // odata랑 cert파일 path로 안에 내용물 정보 가져올 수 있으면 됨..
+
         // 여기에 certificate_odata_id 가
         // 앞에서 4 개로 끊었을때 /redfish/v1/Managers/NetworkProtocol/HTTPS/Certificates
         // /redfish/v1/AccountService/Accounts 인가 2개를 체크하셈

@@ -12,6 +12,9 @@
 #define UPDATE_SOFTWARE_REDFISH_SH_FILE "/firmware/update_redfish.sh"
 #define UPDATE_SOFTWARE_DB_BASE_NAME "new_version_db"
 #define UPDATE_SOFTWARE_DB_SH_FILE "/firmware/update_log_db.sh"
+#define UPDATE_SOFTWARE_EDGE_BASE_NAME "new_version_edge"
+// #define UPDATE_SOFTWARE_REST_BASE_NAME "new_version_rest"
+// #define UPDATE_SOFTWARE_IPMI_BASE_NAME "new_version_ipmi"
 
 #define RESOURCE_BACKUP_FILE "/redfish/redfish_backup.tar"
 #define RESOURCE_BACKUP_FILE_OLD "/redfish/redfish_backup_old.tar"
@@ -149,7 +152,9 @@ void update_software(http_request _request, m_Request& _msg, string _resource, s
 void update_resource_backup(m_Request& _msg, http_response& _response);
 void update_resource_restore(http_request& _request, m_Request& _msg, http_response& _response);
 void get_software_category(string _str, string& _front, string& _end);
+string make_name_for_updatefile(string _resource, string _basename);
 void save_file_from_request(http_request _request, string _path);
+
 bool pass_request_to_bmc(http_request _request, string _module);
 bool pass_request_to_bmc(http_request _request, string _module, http_response& _response);
 

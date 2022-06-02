@@ -10,7 +10,7 @@ void add_new_bmc(string _bmc_id, string _address, string _username, string _pass
 void add_system(string _uri, string _host);
 void add_manager(string _uri, string _host);
 void add_chassis(string _uri, string _host);
-// void add_update_service(string _uri, string _host);
+void add_update_service(string _uri, string _host);
 // void add_system(string _bmc_id, string _host, string _auth_token);
 // void add_manager(string _bmc_id, string _host, string _auth_token);
 // void add_chassis(string _bmc_id, string _host, string _auth_token);
@@ -43,8 +43,8 @@ void bring_voltages(List *_list, json::value _info, string _addr);
 void bring_power_supplies(List *_list, json::value _info, string _addr);
 void bring_sensors(Collection *_collection, json::value _info, string _addr);
 
-// void bring_updateservice(UpdateService *_update, json::value _info, string _addr);
-// void bring_firmware_inventory(Collection *_collection, json::value _info, string _addr);
+void bring_updateservice(UpdateService *_update, json::value _info, string _addr);
+void bring_firmware_inventory(Collection *_collection, json::value _info, string _addr);
 
 
 // void add_new_account_service(string _bmc_id);

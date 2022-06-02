@@ -21,6 +21,7 @@ void generate_ssl_private_key(fs::path _key_filename, string _key_length);
 void generate_ssl_config_file(fs::path _config_filename, fs::path _key_filename, CertContent _info);
 json::value generate_CSR_return_result(fs::path _conf, fs::path _key, fs::path _csr, string _target_id);
 void generate_certificate(fs::path _csr, fs::path _key);
+// void generate_certificate_resource
 string file2str(string _file_path);
 
 // 제너레이트한 CSR가지고 Cert파일 만드는거 함수 구현하고

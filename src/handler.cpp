@@ -2327,7 +2327,12 @@ void reading_operation(http_request _request, http_response &_response)
     // BMC모듈 PASS 처리
     if(param_module != "CMM1")
     {
-        pass_request_to_bmc(_request, param_module, _response);
+        http_request req;
+        req.set_method(_request.method());
+        req.set_request_uri(_request.request_uri());
+
+        pass_request_to_bmc(req, param_module, _response);
+        // pass_request_to_bmc(_request, param_module, _response);
         return ;
     }
     
