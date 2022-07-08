@@ -57,4 +57,9 @@ json::value get_json_info(string _uri, string _host);
 bool read_odata_id(json::value _jv, string &_uri);
 // json::value get_json_info(string _uri, string _host, string _auth_token);
 
+
+// bmc 모듈id 관련
+json::value insert_module_id(json::value response_json, string module_id);
+int compare_first_position(int manager, int system, int chassis, int &first_postion);
+
 #endif

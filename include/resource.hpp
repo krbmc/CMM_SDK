@@ -467,7 +467,7 @@ typedef struct _CertContent
     string country;
     string email;   
     string organization;   
-    string organizationUnit; 
+    string organizationalUnit; 
     string state;
 } CertContent; // dy : in certificate
 
@@ -1537,8 +1537,8 @@ class Certificate : public Resource
 
     json::value get_json(void);
     bool load_json(json::value &j);
-    json::value Rekey(json::value body);
-    json::value Renew(void);
+    // json::value Rekey(json::value body);
+    // json::value Renew(void);
 };
 
 class CertificateLocation : public Resource
@@ -1627,7 +1627,7 @@ class CertificateService : public Resource
     json::value get_json(void);
     bool load_json(json::value &j);
     // json::value GenerateCSR(json::value body);
-    bool ReplaceCertificate(json::value body);
+    // bool ReplaceCertificate(json::value body);
 };
 
 /**
@@ -3150,10 +3150,10 @@ json::value get_resource_odata_id_json(Resource *res, string loc);
 json::value get_action_info(unordered_map<string, Actions> act);
 
 //certificate action 
-void generate_ssl_private_key(fs::path key, string key_length);
-json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id);
-string file2str(string file_path);
-void update_cert_with_pem(fs::path cert, Certificate *certificate);
+// void generate_ssl_private_key(fs::path key, string key_length);
+// json::value generate_CSR_return_result(fs::path conf, fs::path key, fs::path csr, string target_id);
+// string file2str(string file_path);
+// void update_cert_with_pem(fs::path cert, Certificate *certificate);
 
 // virtual media
 static int umount();

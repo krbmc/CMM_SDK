@@ -842,7 +842,8 @@ void dependency_injection(Resource *res)
     string current_object_name = get_current_object_name(id, "/");
 
     // log(info) << id << " dependency injection start";
-    // log(info) << "parent : "<< parent_object_id<<endl;
+    // log(info) << "parent : " << parent_object_id;
+    // log(info) << "Type : " << (int)res->type;
 
     switch (res->type)
     {
@@ -888,7 +889,21 @@ void dependency_injection(Resource *res)
             update_service collection : software_inventory, frimware_inventory
             Storage collection : drive, volume 
         */
-            switch (g_record[parent_object_id]->type){
+            int p_type;
+
+            string minus_one = get_current_object_name(parent_object_id, "/");
+            string net_id = get_parent_object_uri(parent_object_id, "/");
+            if(minus_one == "HTTPS"){
+                p_type = g_record[net_id]->type;
+                // cout << " HTTPS!! " << endl;
+            }
+            else
+                p_type = g_record[parent_object_id]->type;
+
+            // cout << " p_type : " << p_type << endl;
+            // cout << " ID : " << id << endl;
+            // cout << " Parent : " << parent_object_id << endl;
+            switch (p_type){ //g_record[parent_object_id]->type){
                 case SERVICE_ROOT_TYPE:
                     if (res->odata.type == ODATA_SYSTEM_COLLECTION_TYPE){
                         ((ServiceRoot *)g_record[parent_object_id])->system_collection = (Collection *)res;
@@ -934,9 +949,9 @@ void dependency_injection(Resource *res)
                     if (res->odata.type == ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE){
                         ((Manager *)g_record[parent_object_id])->ethernet = (Collection *)res;
                     }else if (res->odata.type == ODATA_LOG_SERVICE_COLLECTION_TYPE){
-                        ((Manager *)g_record[parent_object_id])->log_service = (Collection *)res;
+                        ((Manager *)g_record[parent_object_id])->log_service = (Collection *)res;                        
                     }else if (res->odata.type == ODATA_VIRTUAL_MEDIA_COLLECTION_TYPE){
-                        ((Manager *)g_record[parent_object_id])->virtual_media = (Collection *)res;
+                        ((Manager *)g_record[parent_object_id])->virtual_media = (Collection *)res;                       
                     }else{
                         log(warning) << "\t\t dy : what is this in manager? : " << id << " type : " << res->odata.type;
                     }
@@ -980,7 +995,8 @@ void dependency_injection(Resource *res)
                     break;
                 case NETWORK_PROTOCOL_TYPE:
                     if (res->odata.type == ODATA_CERTIFICATE_COLLECTION_TYPE){
-                        ((NetworkProtocol *)g_record[parent_object_id])->certificates = (Collection *)res;
+                        ((NetworkProtocol *)g_record[net_id])->certificates = (Collection *)res;
+                        // ((NetworkProtocol *)g_record[parent_object_id])->certificates = (Collection *)res;
                     }else{
                         log(warning) << "\t\t dy : what is this in NetworkProtocol? : " << id << " type : " << res->odata.type;
                     }
