@@ -1,5 +1,6 @@
 #include "task.hpp"
 // #include "handler.hpp"
+#include "chassis_controller.hpp"
 
 extern unordered_map<uint8_t, Task_Manager *> task_map;
 // extern unique_ptr<Handler> g_listener, HA_listener;
@@ -344,6 +345,13 @@ void do_task_bmc_get(http_request _request)
     // //     // find_cha = copy_string.find("/redfish/v1/Chassis", cur_index);
     // //     // find_sys = copy_string.find("/redfish/v1/Systems", cur_index);
 
+    // // find_man, sys, cha가 동시에 발견된다면? 에 대한 처리는 없는거같은데
+    // // 내용이 시스템 ... 샤시 ... 매니저 이런식으로 매니저 앞에 존재하면 if문에선 매니저 먼저 검사하고
+    // // 잘라버리기 때문에 앞에 시스템 샤시 부분이 무시됨 그 부분 처리 필요함
+    // // /redfish/v1/[Component] 형태는 솔직히 거의다 uri부분이긴함 근데
+    //         // if()
+    
+
     // //     if(find_man != string::npos)
     // //     {
     // //         // cout << "Managers FIND ! " << endl;
@@ -487,17 +495,15 @@ void do_task_bmc_get(http_request _request)
 
         response_json = response.extract_json().get();
 
-        // // odata module_id 추가하기
-        // cout << " << [Serialize] >> " << endl;
-        // cout << response_json.serialize() << endl;
+        // 모듈id Insert
+        json::value new_json = insert_module_id(response_json, uri_tokens[3]);
 
-        // string whole_original = response_json
+        // Insert된 버전으로 넘겨주기
+        // msg.result.response_json = response_json;
+        // response.set_body(response_json);
+        msg.result.response_json = new_json;
+        response.set_body(new_json);
 
-
-
-
-        msg.result.response_json = response_json;
-        response.set_body(response_json);
         msg.result.result_datetime = currentDateTime();
         msg.result.result_response = response;
         
@@ -2094,7 +2100,8 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
     if(_what == "Rekey")
     {
         json::value result;
-        result = certi->Rekey(_jv);
+        result = certificateRekey(_jv, certi);
+        // result = certi->Rekey(_jv);
         if(result == json::value::null())
         {
             // 리퀘스트바디오류
@@ -2109,7 +2116,7 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
                 error_reply(_msg, result, status_codes::BadRequest, _response);
                 return ;
             }
-            else if(get_value_from_json_key(result, "CertificateCollection", check))
+            else if(get_value_from_json_key(result, "Certificate", check))
             {
 
                 success_reply(_msg, result, status_codes::OK, _response);
@@ -2122,7 +2129,8 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
     else if(_what == "Renew")
     {
         json::value result;
-        result = certi->Renew();
+        result = certificateRenew(certi);
+        // result = certi->Renew();
         if(result == json::value::null())
         {
             // 리퀘스트바디오류
@@ -2137,7 +2145,7 @@ void act_certificate(m_Request& _msg, json::value _jv, string _resource, string 
                 error_reply(_msg, result, status_codes::BadRequest, _response);
                 return ;
             }
-            else if(get_value_from_json_key(result, "CertificateCollection", check))
+            else if(get_value_from_json_key(result, "Certificate", check))
             {
                 success_reply(_msg, result, status_codes::OK, _response);
                 return ;
@@ -2183,7 +2191,8 @@ void act_certificate_service(m_Request& _msg, json::value _jv, string _resource,
     }
     else if(_what == "ReplaceCertificate")
     {
-        if(!cert_service->ReplaceCertificate(_jv))
+        if(!replaceCertificate(_jv))
+        // if(!cert_service->ReplaceCertificate(_jv))
         {
             error_reply(_msg, get_error_json("Problem occur in ReplaceCertificate()"), status_codes::BadRequest, _response);
             return ;

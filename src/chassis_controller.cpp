@@ -1538,3 +1538,148 @@ bool read_odata_id(json::value _jv, string &_uri)
 // 있었는데 없어진거 삭제.... post는 생성위주니까 생성 패치는 변경잉께 get이 문제겟구나
 // 근데 그렇다 해도 여기서 쭈욱 타고 내려가서 다읽고 갱신하는거까진 안해도 될ㄷ스 어차피 get같은거
 // 요청보내서 받아온정보를 사용하니깐 걍 갱신만 잘하면될듯 아니 근데 그러면 cmm이 bmc정보를 가지고있는 의미가 있나?
+
+
+/**
+ * @brief CM에서 받은 응답에 모듈id 추가하는 함수
+ * @details 
+    CMM에서 사용하는 URI는 CM들을 관리하기 위해 Systems, Managers, Chassis에 모듈id가
+    붙어있다. 반면에 CM에는 모듈id가 붙어있지 않은데 이 상황에서 사용자가 CMM에서 CM의 정보를
+    요청할 경우 CMM이 CM으로 요청을 주고 받은 응답을 전달해 주게 된다. 이 때 응답에 누락된 모듈id를
+    추가하기 위한 함수이다.
+ * @param response_json CM에서 받은 응답 json
+ * @param module_id 모듈id
+ * @return json::value 모듈 id가 추가된 json 반환
+ */
+json::value insert_module_id(json::value response_json, string module_id)
+{
+    string original_string = response_json.serialize();
+    int total_length = original_string.length();
+    string result_string;
+
+    // log(trace) << "[Serialize] >> : " << total_length;
+    // log(trace) << original_string;
+
+    int cur_index = 0;
+    string string_manager = ODATA_MANAGER_ID;
+    string string_system = ODATA_SYSTEM_ID;
+    string string_chassis = ODATA_CHASSIS_ID;
+
+    while(cur_index < total_length)
+    {
+        string copy_string = original_string;
+        int pos_manager = 0, pos_system = 0, pos_chassis = 0;
+        bool found_man = true, found_sys = true, found_cha = true;
+        int move_index = 0;
+        int component;
+
+        if((pos_manager = copy_string.find(string_manager, cur_index)) == string::npos)
+        {
+            pos_manager = INT_MAX;
+            found_man = false;
+        }
+        if((pos_system = copy_string.find(string_system, cur_index)) == string::npos)
+        {
+            pos_system = INT_MAX;
+            found_sys = false;
+        }
+        if((pos_chassis = copy_string.find(string_chassis, cur_index)) == string::npos)
+        {
+            pos_chassis = INT_MAX;
+            found_cha = false;
+        }
+
+        if(found_man || found_sys || found_cha)
+            component = compare_first_position(pos_manager, pos_system, pos_chassis, move_index);
+        else
+        {
+            // 못찾았음 작업끝내도 되는 부분
+            // log(trace) << "[NOT FOUND] None!";
+            move_index = total_length;
+            result_string.append(copy_string.substr(cur_index));
+
+            // log(trace) << "[FINISHED RESULT] >>> \n" << result_string;
+            cur_index = total_length;
+            continue;
+        }
+
+        if(component == 1)
+        {
+            // 매니저
+            // log(trace) << "[FOUND] Mananger!";
+            move_index += string_manager.length();
+        }
+        else if(component == 2)
+        {
+            // 시스템
+            // log(trace) << "[FOUND] System!";
+            move_index += string_system.length();
+        }
+        else if(component == 3)
+        {
+            // 샷시
+            // log(trace) << "[FOUND] Chassis!";
+            move_index += string_chassis.length();
+        }
+        else if(component == -1)
+        {
+            // 나오면 안됨
+            log(error) << "Why compare_first_position return -1?";
+            break;
+        }
+
+        // log(trace) << "[CUR INDEX] : " << cur_index;
+        // log(trace) << "[MOVE INDEX] : " << move_index;
+
+        result_string.append(copy_string.substr(cur_index, move_index-cur_index));
+        // result_string.append("/####" + module_id);
+        result_string.append("/" + module_id);
+
+        // log(trace) << "[RESULT] >>> \n" << result_string;
+        // log(trace) << "[CUT] : Remain String >>>";
+        // log(trace) << copy_string.substr(move_index);
+        
+        cur_index = move_index;
+
+    }
+
+    json::value inserted_json = json::value::parse(result_string);
+
+    return inserted_json;
+}
+
+int compare_first_position(int manager, int system, int chassis, int &first_postion)
+{
+    if(manager < system)
+    {
+        if(manager < chassis)
+        {
+            // 매니저 최소 =  매니저 젤먼저나옴
+            first_postion = manager;
+            return 1;
+        }
+        else
+        {
+            // 샷시 최소
+            first_postion = chassis;
+            return 3;
+        }
+    }
+    else
+    {
+        if(system < chassis)
+        {
+            // 시스템 최소
+            first_postion = system;
+            return 2;
+        }
+        else
+        {
+            // 샷시 최소
+            first_postion = chassis;
+            return 3;
+        }
+    }
+
+    return -1;
+}

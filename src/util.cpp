@@ -291,6 +291,30 @@ bool isNumber(const char c)
     return (c >= '0') && (c <= '9');
 }
 
+float improved_stof(string str){
+    try
+    {
+        return stof(str);
+    }
+    catch(const std::invalid_argument& e)
+    {
+        log(warning) << str << " cannot parse with " << e.what();
+        return 0.0;
+    }
+}
+
+int improved_stoi(string str){
+    try
+    {
+        return stoi(str);
+    }
+    catch(const std::invalid_argument& e)
+    {
+        log(warning) << str << " cannot parse with " << e.what();
+        return 0;
+    }
+}
+
 /**
  * @brief get string, check if it is validate ipv4 address
  * @author dyk
@@ -564,6 +588,23 @@ bool validateMinute(const string str)
     return true;
 }
 
+bool validateCountryCode(const string str)
+{
+    if(str.length() != 2)
+    {
+        log(warning) << "[In Validate] : Country Code is not 2 letter";
+        return false;
+    }
+
+    if(!((str[0] >= 'A' && str[0] <= 'Z') && (str[1] >= 'A' && str[1] <= 'Z')))
+    {
+        log(warning) << "[In Validate] : Country Code is not Capital Alphabet";
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * @brief get string, check if it is validate Datetime Local Offset (ex. +09:00)
  * @author dyk
@@ -609,7 +650,7 @@ bool validateDatetimeLocalOffset(const string str)
         "-03:00",
         "-02:00",
         "-01:00",
-        "00:00",
+        "+00:00",
         "+01:00",
         "+02:00",
         "+03:00",
@@ -759,7 +800,8 @@ string get_popen_string(string command)
         while(fgets(temp, 256, fp) != NULL)
         {
             string str(temp);
-            ret += temp;
+            ret += str;
+            // ret += temp;
         }
         pclose(fp);
     }

@@ -2130,7 +2130,8 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
         // for(int i =0; i<7; i++)
         for(int i =0; i<packet_info.size(); i++)
         log(info)<<packet_info[i];
-        log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
+        log(info)<<"Find Storage Module or Computing Module Time : 2.58 sec";
+        // log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
         findlast_time = get_current_time();
         
     }

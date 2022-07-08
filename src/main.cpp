@@ -7,6 +7,7 @@
 #include "logservice.hpp"
 #include "ethernetinterface.hpp"
 #include "ntp.hpp"
+#include "certificate.hpp"
 // #include <glib-2.0/glib.h>
 // #include <gssdp-1.2/libgssdp/gssdp.h>
 
@@ -315,6 +316,148 @@ int main(int _argc, char *_argv[])
     // set_time_by_ntp_server("time.bora.net");
     // set_time_by_ntp_server("0.pool.ntp.org");
 
+    // certificate 테스트
+    // fs::path crt(TMP_CRT_FILE);
+    // Collection *tmp_col;
+    // generate_certificate_resource(crt, tmp_col);
+
+    // parse_validate_info_string("notBefore=Jun  3 05:38:28 2022 GMT");
+    // Collection *cc_col = (Collection *)g_record["/redfish/v1/AccountService/Accounts/2/Certificates"];
+    
+    // Account *acc = (Account *)g_record["/redfish/v1/AccountService/Accounts/2"];
+    // generate_certificate_collection("/redfish/v1/AccountService/Accounts/2/Certificates", acc->certificates);
+    // // fs::path crt(TMP_CRT_FILE);
+    // fs::path crt("/conf/ssl/tmp/tttt.crt");
+    // generate_certificate_resource(crt, acc->certificates);
+
+    // NetworkProtocol *net = (NetworkProtocol *)g_record["/redfish/v1/Managers/CMM1/NetworkProtocol"];
+    // generate_certificate_collection("/redfish/v1/Managers/CMM1/NetworkProtocol/HTTPS/Certificates", net->certificates);
+    // fs::path crt("/conf/ssl/tmp/test.crt");
+    // generate_certificate_resource(crt, net->certificates);
+
+    // fs::path pri("/conf/ssl/tmp/myprivate.key");
+    // fs::path pub("/conf/ssl/tmp/mypublic.key");
+    // generate_ssl_public_key(pri, pub, "PEM");
+
+    // string old_key, new_key;
+    // fs::path oldcrt("/redfish/v1/AccountService/Accounts/2/Certificates/2/cert_old.crt");
+    // fs::path newcrt("/redfish/v1/AccountService/Accounts/2/Certificates/2/cert.crt");
+    // old_key = get_key_length_string(oldcrt);
+    // new_key = get_key_length_string(newcrt);
+    // parse_key_length_string(old_key);
+    // parse_key_length_string(new_key);
+
+    // 웹 캡쳐용 임시 CMM_HA 변수초기화
+    // ha_value.peer_primary_address = "10.0.6.106";
+    // ha_value.peer_primary_address = "10.0.6.98";
+    // ha_value.primary_port = 8000;
+    // ha_value.peer_secondary_address = "10.0.6.107";
+    // ha_value.second_port = 8000;
+    // ha_value.network_timeout = 500;
+    // ha_value.heartbeat = 50;
+    // ha_value.heartbeat_retry = 3;
+    // ha_value.enabled = true;
+    // ha_value.origin = true;
+
+//     // 로그엔트리 생성.. 웹연동 수정중..
+//     string tmp_logservice_odata = "/redfish/v1/Systems/CMM1/LogServices/webTestLog";
+//     string sys_odata = "/redfish/v1/Systems/CMM1";
+//     Systems *sys = (Systems *)g_record[sys_odata];
+//     LogService *service;
+//     if(!record_is_exist(tmp_logservice_odata))
+//     {
+//         Collection *col = sys->log_service;
+//         service = new LogService(tmp_logservice_odata);
+//         service->description = "This is Fire";
+//         service->log_entry_type = "Event";
+//         service->datetime_local_offset = "+09:00";
+//         col->add_member(service);
+//     }
+//     else
+//     {
+//         service = (LogService *)g_record[tmp_logservice_odata];
+//     }
+
+//     string entry_odata = "/redfish/v1/Systems/CMM1/LogServices/webTestLog/Entries";
+//     if(!record_is_exist(entry_odata))
+//     {
+//         service->entry = new Collection(entry_odata, ODATA_LOG_ENTRY_COLLECTION_TYPE);
+//     }
+//     unsigned int num = service->record_count + 1;
+//     entry_odata = entry_odata + "/" + to_string(num);
+//     service->record_count++;
+//     LogEntry *logEntry1 = new LogEntry(entry_odata, to_string(num));
+
+//     logEntry1->created = "2022-06-06 13:00:00";
+//     logEntry1->name = "NAME 1";
+//     logEntry1->entry_type = "Event 1";
+//     logEntry1->severity = "Very Critical";
+//     logEntry1->message.message = "Go Home!";
+//     logEntry1->message.id = "MSG YES";
+
+//     service->entry->add_member(logEntry1);
+// //
+//     entry_odata = "/redfish/v1/Systems/CMM1/LogServices/webTestLog/Entries";
+//     num = service->record_count + 1;
+//     entry_odata = entry_odata + "/" + to_string(num);
+//     service->record_count++;
+//     LogEntry *logEntry2 = new LogEntry(entry_odata, to_string(num));
+
+//     logEntry2->created = "2022-06-07 15:00:00";
+//     logEntry2->name = "NAME 2";
+//     logEntry2->entry_type = "Event 2";
+//     logEntry2->severity = "Very OK";
+//     logEntry2->message.message = "Ice Cream!";
+//     logEntry2->message.id = "MSG MANY MANY";
+
+//     service->entry->add_member(logEntry2);
+// //
+//     entry_odata = "/redfish/v1/Systems/CMM1/LogServices/webTestLog/Entries";
+//     num = service->record_count + 1;
+//     entry_odata = entry_odata + "/" + to_string(num);
+//     service->record_count++;
+//     LogEntry *logEntry3 = new LogEntry(entry_odata, to_string(num));
+
+//     logEntry3->created = "2022-06-04 09:00:00";
+//     logEntry3->name = "NAME 3";
+//     logEntry3->entry_type = "Event 3";
+//     logEntry3->severity = "Very Smooth";
+//     logEntry3->message.message = "Cookie!";
+//     logEntry3->message.id = "MSG NO NO";
+
+//     service->entry->add_member(logEntry3);
+// //
+//     entry_odata = "/redfish/v1/Systems/CMM1/LogServices/webTestLog/Entries";
+//     num = service->record_count + 1;
+//     entry_odata = entry_odata + "/" + to_string(num);
+//     service->record_count++;
+//     LogEntry *logEntry4 = new LogEntry(entry_odata, to_string(num));
+
+//     logEntry4->created = "2022-06-06 04:00:00";
+//     logEntry4->name = "NAME 4";
+//     logEntry4->entry_type = "Event 4";
+//     logEntry4->severity = "Very Danger";
+//     logEntry4->message.message = "Water!";
+//     logEntry4->message.id = "MSG NICE";
+
+//     service->entry->add_member(logEntry4);
+// //
+//     entry_odata = "/redfish/v1/Systems/CMM1/LogServices/webTestLog/Entries";
+//     num = service->record_count + 1;
+//     entry_odata = entry_odata + "/" + to_string(num);
+//     service->record_count++;
+//     LogEntry *logEntry5 = new LogEntry(entry_odata, to_string(num));
+
+//     logEntry5->created = "2022-06-05 23:00:00";
+//     logEntry5->name = "NAME 5";
+//     logEntry5->entry_type = "Event 5";
+//     logEntry5->severity = "Very Clean";
+//     logEntry5->message.message = "Bread!";
+//     logEntry5->message.id = "MSG Chawp Chawp";
+
+//     service->entry->add_member(logEntry5);
+
+//     record_save_json();
     
 
     

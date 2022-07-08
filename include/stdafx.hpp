@@ -166,7 +166,11 @@ bool validateTime(const string str);
 bool validateHour(const string str);
 bool validateMinute(const string str); // second는 같은걸 사용
 
+bool validateCountryCode(const string str);
+
 string ltrim(string str);
+float improved_stof(string str);
+int improved_stoi(string str);
 
 char *get_popen_string(char *command);
 string get_popen_string(string command);

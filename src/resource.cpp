@@ -3776,7 +3776,7 @@ json::value Certificate::get_json(void)
     Issuer["State"] = json::value::string(this->issuer.state);
     Issuer["City"] = json::value::string(this->issuer.city);
     Issuer["Organization"] = json::value::string(this->issuer.organization);
-    Issuer["OrganizationUnit"] = json::value::string(this->issuer.organizationUnit);
+    Issuer["OrganizationalUnit"] = json::value::string(this->issuer.organizationalUnit);
     Issuer["CommonName"] = json::value::string(this->issuer.commonName);
     j["Issuer"] = Issuer;
 
@@ -3785,7 +3785,7 @@ json::value Certificate::get_json(void)
     Subject["State"] = json::value::string(this->subject.state);
     Subject["City"] = json::value::string(this->subject.city);
     Subject["Organization"] = json::value::string(this->subject.organization);
-    Subject["OrganizationUnit"] = json::value::string(this->subject.organizationUnit);
+    Subject["OrganizationalUnit"] = json::value::string(this->subject.organizationalUnit);
     Subject["CommonName"] = json::value::string(this->subject.commonName);
     j["Subject"] = Subject;
 
@@ -3824,7 +3824,7 @@ bool Certificate::load_json(json::value &j)
         this->issuer.commonName = issuer.at("CommonName").as_string();
         this->issuer.country = issuer.at("Country").as_string();
         this->issuer.organization = issuer.at("Organization").as_string();
-        this->issuer.organizationUnit = issuer.at("OrganizationUnit").as_string();
+        this->issuer.organizationalUnit = issuer.at("OrganizationalUnit").as_string();
         this->issuer.state = issuer.at("State").as_string();
 
         subject = j.at("Subject");
@@ -3832,7 +3832,7 @@ bool Certificate::load_json(json::value &j)
         this->subject.commonName = subject.at("CommonName").as_string();
         this->subject.country = subject.at("Country").as_string();
         this->subject.organization = subject.at("Organization").as_string();
-        this->subject.organizationUnit = subject.at("OrganizationUnit").as_string();
+        this->subject.organizationalUnit = subject.at("OrganizationalUnit").as_string();
         this->subject.state = subject.at("State").as_string();
         
         get_value_from_json_key(j, "Email", this->email);
@@ -3847,65 +3847,65 @@ bool Certificate::load_json(json::value &j)
 }
 
 // Rekey와 Renew.. CSR갱신만 하고 Certificate replace는 하지 않는 것인가..?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-json::value Certificate::Rekey(json::value body)
-{
-    // #1 generateCSR with new key and return 
-    json::value rsp;
-    int key_bit_length;
-    fs::path key("/conf/ssl/cert.key");
-    fs::path conf("/conf/ssl/cert.cnf");
-    fs::path csr("/conf/ssl/cert.csr");
+// json::value Certificate::Rekey(json::value body)
+// {
+//     // #1 generateCSR with new key and return 
+//     json::value rsp;
+//     int key_bit_length;
+//     fs::path key("/conf/ssl/cert.key");
+//     fs::path conf("/conf/ssl/cert.cnf");
+//     fs::path csr("/conf/ssl/cert.csr");
     
-    //not implemented..
-    string key_curve_id;
-    string key_pair_algorithm;
-    string challenge_password;
+//     //not implemented..
+//     string key_curve_id;
+//     string key_pair_algorithm;
+//     string challenge_password;
        
-    if(!(get_value_from_json_key(body, "KeyBitLength", key_bit_length)))
-    {
-        rsp = json::value::null();
-        return rsp;
-    }
+//     if(!(get_value_from_json_key(body, "KeyBitLength", key_bit_length)))
+//     {
+//         rsp = json::value::null();
+//         return rsp;
+//     }
     
-    if (fs::exists(key))
-    {
-        fs::remove(key);
-        log(info) << "[...] remove old ssl key";
-    }
+//     if (fs::exists(key))
+//     {
+//         fs::remove(key);
+//         log(info) << "[...] remove old ssl key";
+//     }
 
-    generate_ssl_private_key(key, to_string(key_bit_length));
+//     generate_ssl_private_key(key, to_string(key_bit_length));
 
-    rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
-    resource_save_json(this); // ??
+//     rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+//     resource_save_json(this); // ??
 
-    return rsp;
-}
+//     return rsp;
+// }
 
-json::value Certificate::Renew(void)
-{
-    // #1 generateCSR with exists information 
-    json::value rsp;
-    fs::path key("/conf/ssl/cert.key");
-    fs::path conf("/conf/ssl/cert.cnf");
-    fs::path csr("/conf/ssl/cert.csr");
+// json::value Certificate::Renew(void)
+// {
+//     // #1 generateCSR with exists information 
+//     json::value rsp;
+//     fs::path key("/conf/ssl/cert.key");
+//     fs::path conf("/conf/ssl/cert.cnf");
+//     fs::path csr("/conf/ssl/cert.csr");
     
-    if (!(fs::exists(conf)))
-    {
-        log(warning) << "[...] ssl config file doesn't exists.. failed to renew";
-        return json::value::null();
-    }
+//     if (!(fs::exists(conf)))
+//     {
+//         log(warning) << "[...] ssl config file doesn't exists.. failed to renew";
+//         return json::value::null();
+//     }
 
-    if (!(fs::exists(key)))
-    {
-        log(warning) << "[...] ssl key file doesn't exists.. failed to renew";
-        return json::value::null();
-    }
+//     if (!(fs::exists(key)))
+//     {
+//         log(warning) << "[...] ssl key file doesn't exists.. failed to renew";
+//         return json::value::null();
+//     }
 
-    rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
-    resource_save_json(this); // ??
+//     rsp = generate_CSR_return_result(conf, key, csr, this->odata.id);
+//     resource_save_json(this); // ??
     
-    return rsp;
-}
+//     return rsp;
+// }
 
 json::value CertificateLocation::get_json(void)
 {
@@ -4164,107 +4164,107 @@ bool CertificateService::load_json(json::value &j)
 //     return csr_str.str();
 // }
 
-bool CertificateService::ReplaceCertificate(json::value body)
-{
-    // #1 body로부터 CSR string 및 CSR Type 입력받기.
-    log(info) << "[...]Replace Certificate Start";
-    string target_odata_id = body.at("CertificateUri").at("@odata.id").as_string();
-    Certificate *replacedCert = (Certificate *)g_record[target_odata_id];
+// bool CertificateService::ReplaceCertificate(json::value body)
+// {
+//     // #1 body로부터 CSR string 및 CSR Type 입력받기.
+//     log(info) << "[...]Replace Certificate Start";
+//     string target_odata_id = body.at("CertificateUri").at("@odata.id").as_string();
+//     Certificate *replacedCert = (Certificate *)g_record[target_odata_id];
 
-    get_value_from_json_key(body, "CertificateString", replacedCert->certificateString);
-    get_value_from_json_key(body, "CertificateType", replacedCert->certificateType);
+//     get_value_from_json_key(body, "CertificateString", replacedCert->certificateString);
+//     get_value_from_json_key(body, "CertificateType", replacedCert->certificateType);
     
-    // #2 pem 파일 입력받은 certificate로 교체
-    // 존재하면 교체. 존재하지 않는다면 생성.
-    fs::path cert_file(target_odata_id + ".pem");
-    if (fs::exists(cert_file)){
-        // backup 필요??
-        fs::remove(cert_file);
-        log(info) << "[...]Original Certificate is removed..";
-    }
+//     // #2 pem 파일 입력받은 certificate로 교체
+//     // 존재하면 교체. 존재하지 않는다면 생성.
+//     fs::path cert_file(target_odata_id + ".pem");
+//     if (fs::exists(cert_file)){
+//         // backup 필요??
+//         fs::remove(cert_file);
+//         log(info) << "[...]Original Certificate is removed..";
+//     }
     
-    ofstream cert(cert_file.string());
-    cert << replacedCert->certificateString;
-    cert.close();
+//     ofstream cert(cert_file.string());
+//     cert << replacedCert->certificateString;
+//     cert.close();
     
-    // #3 수정된 certificate 정보 읽어서 g_record 수정
-    update_cert_with_pem(cert_file, replacedCert);
-    log(info) << "[...]Certificate is replaced..";
-    resource_save_json(replacedCert);
+//     // #3 수정된 certificate 정보 읽어서 g_record 수정
+//     update_cert_with_pem(cert_file, replacedCert);
+//     log(info) << "[...]Certificate is replaced..";
+//     resource_save_json(replacedCert);
     
-    return true;
-}
+//     return true;
+// }
 
 // 다른 field도 읽어야함
-void update_cert_with_pem(fs::path cert, Certificate *certificate)
-{
-    string cmds;
-    // get dates
-    // log(info) << cert.string();
-    cmds = "openssl x509 -in " + cert.string() + " -noout -startdate";
-    string notbefore(get_popen_string(const_cast<char*>(cmds.c_str())));
-    notbefore.erase(0, 10);
-    // log(info) << "startdate : " << notbefore;
-    certificate->validNotBefore = notbefore;
+// void update_cert_with_pem(fs::path cert, Certificate *certificate)
+// {
+//     string cmds;
+//     // get dates
+//     // log(info) << cert.string();
+//     cmds = "openssl x509 -in " + cert.string() + " -noout -startdate";
+//     string notbefore(get_popen_string(const_cast<char*>(cmds.c_str())));
+//     notbefore.erase(0, 10);
+//     // log(info) << "startdate : " << notbefore;
+//     certificate->validNotBefore = notbefore;
 
-    cmds = "openssl x509 -in " + cert.string() + " -noout -enddate"; 
-    string notafter(get_popen_string(const_cast<char*>(cmds.c_str())));
-    notafter.erase(0, 9);
-    // log(info) << "enddate : " << notafter;
-    certificate->validNotAfter = notafter;
+//     cmds = "openssl x509 -in " + cert.string() + " -noout -enddate"; 
+//     string notafter(get_popen_string(const_cast<char*>(cmds.c_str())));
+//     notafter.erase(0, 9);
+//     // log(info) << "enddate : " << notafter;
+//     certificate->validNotAfter = notafter;
     
-    // get issuer
-    vector<string> issuerV;
-    cmds = "openssl x509 -in " + cert.string() + " -noout -issuer"; 
-    string issuer(get_popen_string(const_cast<char*>(cmds.c_str())));
-    issuer.erase(0, 7);
-    issuerV = string_split(issuer, ',');
-    for (auto item : issuerV){
-        vector<string> itemV;
-        itemV = string_split(item, ' ');
-        if (itemV[0] == "C")
-            certificate->issuer.country = itemV[2];
-        if (itemV[0] == "ST")
-            certificate->issuer.state = itemV[2];
-        if (itemV[0] == "L")
-            certificate->issuer.city = itemV[2];
-        if (itemV[0] == "O")
-            certificate->issuer.organization = itemV[2];
-        if (itemV[0] == "OU")
-            certificate->issuer.organizationUnit = itemV[2];
-        if (itemV[0] == "CN")
-            certificate->issuer.commonName = itemV[2];
-        if (itemV[0] == "emailAddress")
-            certificate->issuer.email = itemV[2];
-    }
+//     // get issuer
+//     vector<string> issuerV;
+//     cmds = "openssl x509 -in " + cert.string() + " -noout -issuer"; 
+//     string issuer(get_popen_string(const_cast<char*>(cmds.c_str())));
+//     issuer.erase(0, 7);
+//     issuerV = string_split(issuer, ',');
+//     for (auto item : issuerV){
+//         vector<string> itemV;
+//         itemV = string_split(item, ' ');
+//         if (itemV[0] == "C")
+//             certificate->issuer.country = itemV[2];
+//         if (itemV[0] == "ST")
+//             certificate->issuer.state = itemV[2];
+//         if (itemV[0] == "L")
+//             certificate->issuer.city = itemV[2];
+//         if (itemV[0] == "O")
+//             certificate->issuer.organization = itemV[2];
+//         if (itemV[0] == "OU")
+//             certificate->issuer.organizationalUnit = itemV[2];
+//         if (itemV[0] == "CN")
+//             certificate->issuer.commonName = itemV[2];
+//         if (itemV[0] == "emailAddress")
+//             certificate->issuer.email = itemV[2];
+//     }
         
-    // get subject
-    vector<string> subjectV;
-    cmds = "openssl x509 -in " + cert.string() + " -noout -subject"; 
-    string subject(get_popen_string(const_cast<char*>(cmds.c_str())));
-    subject.erase(0, 8);
-    subjectV = string_split(subject, ',');
-    for (auto item : subjectV){
-        vector<string> itemV;
-        itemV = string_split(item, ' ');
-        if (itemV[0] == "C")
-            certificate->subject.country = itemV[2];
-        if (itemV[0] == "ST")
-            certificate->subject.state = itemV[2];
-        if (itemV[0] == "L")
-            certificate->subject.city = itemV[2];
-        if (itemV[0] == "O")
-            certificate->subject.organization = itemV[2];
-        if (itemV[0] == "OU")
-            certificate->subject.organizationUnit = itemV[2];
-        if (itemV[0] == "CN")
-            certificate->subject.commonName = itemV[2];
-        if (itemV[0] == "emailAddress")
-            certificate->subject.email = itemV[2];
-    }return;
+//     // get subject
+//     vector<string> subjectV;
+//     cmds = "openssl x509 -in " + cert.string() + " -noout -subject"; 
+//     string subject(get_popen_string(const_cast<char*>(cmds.c_str())));
+//     subject.erase(0, 8);
+//     subjectV = string_split(subject, ',');
+//     for (auto item : subjectV){
+//         vector<string> itemV;
+//         itemV = string_split(item, ' ');
+//         if (itemV[0] == "C")
+//             certificate->subject.country = itemV[2];
+//         if (itemV[0] == "ST")
+//             certificate->subject.state = itemV[2];
+//         if (itemV[0] == "L")
+//             certificate->subject.city = itemV[2];
+//         if (itemV[0] == "O")
+//             certificate->subject.organization = itemV[2];
+//         if (itemV[0] == "OU")
+//             certificate->subject.organizationalUnit = itemV[2];
+//         if (itemV[0] == "CN")
+//             certificate->subject.commonName = itemV[2];
+//         if (itemV[0] == "emailAddress")
+//             certificate->subject.email = itemV[2];
+//     }return;
     
-}
-// dy : certificate end
+// }
+// // dy : certificate end
 
 // dy : virtual media start
 json::value VirtualMedia::get_json(void)
