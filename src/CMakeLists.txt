@@ -27,6 +27,8 @@ set(
     ethernetinterface.cpp
     ntp.cpp
     certificate.cpp
+    smbus.cpp
+    fan.cpp
 )
 
 # # Directory setting

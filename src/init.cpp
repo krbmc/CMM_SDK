@@ -192,6 +192,8 @@ void init_system(Collection *system_collection, string _id)
 
         init_memory(system->memory, "DIMM1");
     }
+
+
     if (!record_is_exist(odata_id + "/EthernetInterfaces")){
         system->ethernet = new Collection(odata_id + "/EthernetInterfaces", ODATA_ETHERNET_INTERFACE_COLLECTION_TYPE);
         system->ethernet->name = "Computer System Ethernet Interface Collection";
@@ -201,7 +203,7 @@ void init_system(Collection *system_collection, string _id)
         //#임시eth
         int eth_num = 1;
         for (int i = 0; i < eth_num; i++){
-            init_ethernet(system->ethernet, to_string(i));
+            // init_ethernet(system->ethernet, to_string(i));
         }
     }
 
@@ -476,8 +478,11 @@ void init_ethernet(Collection *ethernet_collection, string _id)
      */
     // string eth_id = "eth" + _id;
     //#임시eth
-    string eth_id = "eth1";
-    ethernet->id = "1";
+    // string eth_id = "eth1";
+    // ethernet->id = "1";
+    //#임시eth(0.43-eth0사용)
+    string eth_id = "eth0";
+    ethernet->id = "0";
     ethernet->description = "Manager Ethernet Interface";
     ethernet->link_status = "LinkDown";
     if (get_popen_string("cat /sys/class/net/" + eth_id + "/operstate") == "up")
@@ -485,7 +490,7 @@ void init_ethernet(Collection *ethernet_collection, string _id)
 
     ethernet->permanent_mac_address = get_popen_string("cat /sys/class/net/" + eth_id + "/address");
     ethernet->mac_address = ethernet->permanent_mac_address;
-    ethernet->speed_Mbps = stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/speed"));
+    ethernet->speed_Mbps = improved_stoi(get_popen_string("cat /sys/class/net/" + eth_id + "/speed"));
     ethernet->autoneg = true; // it can be set false. but not recommended. it sets speed and duplex automatically
     ethernet->full_duplex = false;
 
@@ -559,7 +564,9 @@ void init_ethernet(Collection *ethernet_collection, string _id)
     if (ethernet->link_status == "LinkUp"){
         // int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth0 | wc -l"));
         //#임시eth
-        int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth1 | wc -l"));
+        // int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth1 | wc -l"));
+        //#임시eth(0.43-eth0사용)
+        int ipv4_num = stoi(get_popen_string("ifconfig -a | grep eth0 | wc -l"));
         
         for (int i = 0; i < ipv4_num; i++){
             string ipv4_alias = eth_id;
@@ -865,7 +872,30 @@ void init_thermal(Thermal *thermal)
         thermal->fans = new List(odata_id + "/Fans", FAN_TYPE);
         thermal->fans->name = "Chassis Fans";
 
-        init_fan(thermal->fans, "0");
+        // init_fan(thermal->fans, "0");
+        for(int i=1; i<=9; i++)
+        {
+            string fan_id = "CHASSIS_FAN_";
+            fan_id.append(to_string(i));
+            init_fan(thermal->fans, fan_id);
+
+            string fan_odata = thermal->fans->odata.id + "/" + fan_id;
+            Fan *fan = (Fan *)g_record[fan_odata];
+
+            fan->reading = i * 10;
+            fan->status.state = STATUS_STATE_ENABLED;
+            fan->status.health = STATUS_HEALTH_OK;
+
+        }
+        
+        // init_fan(thermal->fans, "CHASSIS_FAN_2");
+        // init_fan(thermal->fans, "CHASSIS_FAN_3");
+        // init_fan(thermal->fans, "CHASSIS_FAN_4");
+        // init_fan(thermal->fans, "CHASSIS_FAN_5");
+        // init_fan(thermal->fans, "CHASSIS_FAN_6");
+        // init_fan(thermal->fans, "CHASSIS_FAN_7");
+        // init_fan(thermal->fans, "CHASSIS_FAN_8");
+        // init_fan(thermal->fans, "CHASSIS_FAN_9");
     }
     return;
 }
@@ -1094,10 +1124,9 @@ void init_manager(Collection *manager_collection, string _id)
         // int eth_num = stoi(get_popen_string("ifconfig -a | grep eth | wc -l"));
         int eth_num = 1;
         for (int i = 0; i < eth_num; i++){
-            init_ethernet(manager->ethernet, to_string(i));
+            // init_ethernet(manager->ethernet, to_string(i));
         }
     }
-
     if (!record_is_exist(odata_id + "/LogServices")){
         manager->log_service = new Collection(odata_id + "/LogServices", ODATA_LOG_SERVICE_COLLECTION_TYPE);
         manager->log_service->name = "Manager Log Service Collection";

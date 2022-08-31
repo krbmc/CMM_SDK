@@ -189,6 +189,7 @@ bool patch_event_service(json::value _jv, string _record_uri);
 bool patch_subscription(json::value _jv, string _record_uri);
 bool patch_logservice(json::value _jv, string _record_uri);
 bool patch_drive(json::value _jv, string _record_uri);
+bool patch_fan_speed(json::value _jv, string _record_uri);
 
 void treat_uri_cmm_delete(http_request _request, m_Request& _msg, json::value _jv, http_response& _response);
 void remove_account(m_Request& _msg, json::value _jv, string _uri, string _service_uri, http_response& _response);

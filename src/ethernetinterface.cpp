@@ -530,30 +530,31 @@ bool find_ethernet_keyword(string _line, string _keyword, int &pos)
   return true;
 }
 
-void change_web_app_file(string _origin, string _new)
-{
-  vector<string> lines_work, lines_write;
-  lines_work.clear();
-  lines_write.clear();
-  read_file_line_by_line("/web/www/html/js/app.js", lines_work);
+// 이 함수는 이제 안씀
+// void change_web_app_file(string _origin, string _new)
+// {
+//   vector<string> lines_work, lines_write;
+//   lines_work.clear();
+//   lines_write.clear();
+//   read_file_line_by_line("/web/www/html/js/app.js", lines_work);
 
-  string old_str = "var host = \'http://" + _origin + ":8000\';";
-  string new_str = "var host = \'http://" + _new + ":8000\';";
-  for(int i=0; i<lines_work.size(); i++)
-  {
-    string current_line = lines_work[i];
-    if(current_line.find(old_str) == string::npos)
-    {
-      append_newline_and_push_back(current_line, lines_write);
-      continue;
-    }
+//   string old_str = "var host = \'http://" + _origin + ":8000\';";
+//   string new_str = "var host = \'http://" + _new + ":8000\';";
+//   for(int i=0; i<lines_work.size(); i++)
+//   {
+//     string current_line = lines_work[i];
+//     if(current_line.find(old_str) == string::npos)
+//     {
+//       append_newline_and_push_back(current_line, lines_write);
+//       continue;
+//     }
 
-    append_newline_and_push_back(new_str, lines_write);
-  }
+//     append_newline_and_push_back(new_str, lines_write);
+//   }
 
-  write_file_line_by_line("/web/www/html/js/app.js", lines_write);
+//   write_file_line_by_line("/web/www/html/js/app.js", lines_write);
   
-}
+// }
 
 
 /**

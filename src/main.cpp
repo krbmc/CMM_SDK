@@ -8,6 +8,7 @@
 #include "ethernetinterface.hpp"
 #include "ntp.hpp"
 #include "certificate.hpp"
+#include "fan.hpp"
 // #include <glib-2.0/glib.h>
 // #include <gssdp-1.2/libgssdp/gssdp.h>
 
@@ -349,15 +350,30 @@ int main(int _argc, char *_argv[])
 
     // 웹 캡쳐용 임시 CMM_HA 변수초기화
     // ha_value.peer_primary_address = "10.0.6.106";
+    // string ipip_cmd = "ifconfig eth1 | grep \"inet \" | awk \'{print $2}\'";
+    string ipip_cmd = "ifconfig eth0 | grep \"inet \" | awk \'{print $2}\'";
+    // cout << "IPIPCMD : " << ipip_cmd << endl;
+    string tmp_activeIP = get_popen_string(ipip_cmd.c_str());
+    // string tmp_activeIP = get_popen_string("ifconfig eth1 | grep \"inet \" | awk \'{print $2}\'");
+
+    ha_value.peer_primary_address = tmp_activeIP;
     // ha_value.peer_primary_address = "10.0.6.98";
-    // ha_value.primary_port = 8000;
-    // ha_value.peer_secondary_address = "10.0.6.107";
-    // ha_value.second_port = 8000;
-    // ha_value.network_timeout = 500;
-    // ha_value.heartbeat = 50;
-    // ha_value.heartbeat_retry = 3;
-    // ha_value.enabled = true;
-    // ha_value.origin = true;
+    ha_value.primary_port = 8000;
+    ha_value.peer_secondary_address = "10.0.6.107";
+    ha_value.second_port = 8000;
+    ha_value.network_timeout = 500;
+    ha_value.heartbeat = 50;
+    ha_value.heartbeat_retry = 3;
+    ha_value.enabled = true;
+    ha_value.origin = true;
+
+    // insert_reading_table("SAME 1", "CMM1", "power", "powercontrol", 500, "1998-01-01 15:10");
+    // insert_reading_table("SAME 1", "CMM1", "power", "powercontrol", 500, "2000-04-05 09:00");
+    // insert_reading_table("SAME 1", "CMM1", "power", "powercontrol", 600, "2000-04-05 09:00");
+
+
+    // log.db 동일센서의 같은 시각의 측정값 방지 테스트
+    
 
 //     // 로그엔트리 생성.. 웹연동 수정중..
 //     string tmp_logservice_odata = "/redfish/v1/Systems/CMM1/LogServices/webTestLog";
@@ -533,6 +549,7 @@ int main(int _argc, char *_argv[])
             | boost::asio::ssl::context::single_dh_use);});
     HAlisten_config.set_timeout(utility::seconds(SERVER_REQUEST_TIMEOUT));
     utility::string_t HAurl = U("http://0.0.0.0:8000");
+    // utility::string_t HAurl = U("http://10.0.6.98:8000");
     // ha용.. http용..
 
     HA_listener = unique_ptr<Handler>(new Handler(HAurl, HAlisten_config));
@@ -541,9 +558,15 @@ int main(int _argc, char *_argv[])
 
     // cout << "This is Original File!!!" << endl;
 
-    // std::thread t_ssdp(ssdp_handler);
-    // log(info) << "ssdp discover start";
-    // t_ssdp.join();
+    std::thread t_ssdp(ssdp_handler);
+    log(info) << "ssdp discover start";
+
+    std::thread t_fan(fan_measure_handler);
+    log(info) << "Fan Measure Start";
+
+
+    t_ssdp.join();
+    t_fan.join();
 
     while (true) 
         pause();
