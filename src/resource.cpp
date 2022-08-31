@@ -4701,7 +4701,7 @@ const std::string currentDateTime(void)
     char       buf[80];
     tstruct = *localtime(&now);
     // strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
-    strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+    strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct); // YYYY-MM-DD HH:mm:ss 형태의 스트링
 
     return buf;
 }

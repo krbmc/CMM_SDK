@@ -63,6 +63,17 @@ void Handler::handle_get(http_request _request)
             response.headers().add("Access-Control-Expose-Headers", "X-Auth-Token, Location");
 
             log(info) << "json_value : " << json_value.get().to_string();
+
+            if(uri == "/")
+            {
+                json::value j;
+                j["Message"] = json::value::string("Uri '/' is not supported");
+                response.set_status_code(status_codes::BadRequest);
+                response.set_body(j);
+                _request.reply(response);
+                // _request.reply(status_codes::OK, j);
+                return ;
+            }
             // Response Redfish Version
             if(uri_tokens.size() == 1 && uri_tokens[0] == "redfish")
             {
@@ -183,6 +194,14 @@ void Handler::handle_get(http_request _request)
             {
                 // /log/~ uri를 처리하는 함수
                 log_operation(_request);
+                return ;
+            }
+
+            // [HA]
+            if(uri_tokens[0] == "heartbeat")
+            {
+                response.set_status_code(status_codes::OK);
+                _request.reply(response);
                 return ;
             }
 
@@ -480,6 +499,10 @@ void Handler::handle_get(http_request _request)
                 return ;
             }
 
+            response.set_status_code(status_codes::BadRequest);
+            _request.reply(response);
+            return ;
+
         }
         catch(json::json_exception& e)
         {
@@ -497,6 +520,8 @@ void Handler::handle_get(http_request _request)
             // _request.reply(status_codes::BadRequest);
             return ;
         }
+        
+
     })
     .wait();
 
@@ -2084,6 +2109,7 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
     vector<string> packet_info = string_split(std::string(packet), '\n');
     string resultaddr;
     string result_id;
+    bool checkModuleTable = false;
     bool checkmyblade=false;
     for (auto str : packet_info){
         // log(info) << "확인하자 패킷 : " << str;
@@ -2098,13 +2124,61 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
             string nt = str;
             result_id = nt.substr(str.find("-")+1, str.find("\r")-str.find("-")-1);
 
-            if(module_id_table.find(result_id) == module_id_table.end())
-                checkmyblade=true;
+            // [EMERGENCY] 
+            // int cm_number = improved_stoi(result_id.substr(2));
+            if(result_id == "CM1")
+            {
+                checkModuleTable = true;
+                // if(module_id_table.find(result_id) == module_id_table.end())
+                // {
+                //     checkmyblade = true;
+                // }
+                // else
+                // {
+                //     cm_number++;
+                //     result_id = "CM";
+                //     result_id.append(to_string(cm_number));
+                //     checkmyblade = true;
+                // }
+            }
+
+            // if(module_id_table.find(result_id) == module_id_table.end())
+            //     checkmyblade=true;
         }
 
         if(str.find("LOCATION")!=string::npos){
             
             resultaddr=str;  
+        }
+    }
+
+    if(checkModuleTable)
+    {
+        int cm_number = improved_stoi(result_id.substr(2));
+        string addr_table = resultaddr.substr(resultaddr.find(":")+1, resultaddr.find("\r")-resultaddr.find(":")-1);
+        while(1)
+        {
+            // 모듈id 테이블에 없으면 바로 등록
+            if(module_id_table.find(result_id) == module_id_table.end())
+            {
+                checkmyblade = true;
+                break;
+            }
+            else
+            {
+                // 모듈id 테이블에 있음
+
+                // 근데 그때의 주소랑 비교하니 똑같다 -> 탈출
+                if(module_id_table[result_id] == addr_table)
+                    break;
+                else
+                {
+                    // 주소가 다르다 -> 숫자 올려서 계속 진행
+                    cm_number++;
+                    result_id = "CM";
+                    result_id.append(to_string(cm_number));
+                }
+            }
         }
     }
 
@@ -2119,7 +2193,7 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
         
         module_id_table.insert({result_id, result});
         save_module_id();
-        add_new_bmc(result_id, result, "root", "");
+        // add_new_bmc(result_id, result, "root", "");
         // add_new_bmc(result_id, "10.0.6.104", "443", false, "root", "");
         // 여기서 http://10.0.6.104:443을 쪼개서 함수인자를 받아서 사용한다면 result를 파싱해서 사용해야하고
         // 통으로 받아서 사용한다면 그대로result 쓰면됨 
@@ -2133,6 +2207,8 @@ int show_ssdp_packet(struct lssdp_ctx * lssdp, const char * packet, size_t packe
         log(info)<<"Find Storage Module or Computing Module Time : 2.58 sec";
         // log(info)<<"find Storage Module or Computing Module time : "<<to_string((double)(findcurrent_time - findlast_time)/1000)<<"sec"; //결과 출력
         findlast_time = get_current_time();
+
+        add_new_bmc(result_id, result, "root", "");
         
     }
 

@@ -51,6 +51,28 @@ int result_callback(void *NotUsed, int argc, char **argv, char **azColName)
     return 0;
 }
 
+int check_same_time_callback(void *NotUsed, int argc, char **argv, char **azColName)
+{
+    if(argv[0] == NULL)
+    {
+        *((int *)NotUsed) = 0;
+        // cout << "[CHECK SAME TIME CALLBACK] : NO DATA" << endl;
+    }
+    else
+    {
+        *((int *)NotUsed) = 1;
+        // cout << "[CHECK SAME TIME CALLBACK] : YES DATA" << endl;
+    }
+
+    // for(int i=0; i<argc; i++)
+    // {
+    //     // cout << "현재 i : " << i << endl;
+    //     cout << azColName[i] << " = " << argv[i] << endl;
+    // }
+
+    return 0;
+}
+
 
 /**
  * @brief 센서측정값 Reading Table에 insert하는 함수
@@ -90,6 +112,35 @@ void insert_reading_table(string _sensor_id, string _module, string _type, strin
     // char outout[100] = {0};
     // make_time_with_tm(_tm, outout);
     // printf("%s\n", outout);
+
+    // 추가 로직
+    // 동일 센서의 같은 시각으로 들어오는거 방지
+    // 1970의 로컬타임 아직 설정전의 시각으로 들어오는거 방지
+    // 현재 시각에서 한 20년정도 차이나는 타임을 갖는 데이터를 드랍하려했더니 현재 시각이 로컬타임으로 설정되어있을때가 좀 걸림
+    // 그래서 그냥 2000년 이전 데이터를 드랍하게끔 설정해 놓음
+    // string currentDate, currentYear, inputYear;
+    // get_current_date_info(&currentDate);
+    // currentYear = currentDate.substr(0, 4);
+
+    string inputYear = _time.substr(0,4);
+    // cout << "[INPUT YEAR CHECK] : " << inputYear << endl;
+
+    if(inputYear < "2000")
+        return ;
+
+    // 여기는 이제 같은 _sensor_id 값의 동일 시간 _time 의 데이터가 DB에 있는지 서치
+    int existSameData;
+    sprintf(query, "SELECT * FROM Reading WHERE Module=\"%s\" and SensorID=\"%s\" and Time=\"%s\";"
+    , _module.c_str(), _sensor_id.c_str(), _time.c_str());
+    sqlite3_exec(db, query, check_same_time_callback, &existSameData, &err_msg);
+
+    if(existSameData == 1)
+        return ;
+
+    
+
+    
+
 
     // Insert Query
     sprintf(query, "INSERT INTO Reading (SensorID, Module, Type, Detail, Value, Time) VALUES(\"%s\", \"%s\", \"%s\", \"%s\", %d, \"%s\");"
@@ -132,6 +183,23 @@ void insert_reading_table(string _sensor_id, string _module, string _type, strin
     // char outout[100] = {0};
     // make_time_with_tm(_tm, outout);
     // printf("%s\n", outout);
+
+    // 추가 로직
+    string inputYear = _time.substr(0,4);
+    // cout << "[INPUT YEAR CHECK] : " << inputYear << endl;
+
+    if(inputYear < "2000")
+        return ;
+
+    // 여기는 이제 같은 _sensor_id 값의 동일 시간 _time 의 데이터가 DB에 있는지 서치
+    int existSameData;
+    sprintf(query, "SELECT * FROM Reading WHERE Module=\"%s\" and SensorID=\"%s\" and Time=\"%s\";"
+    , _module.c_str(), _sensor_id.c_str(), _time.c_str());
+    sqlite3_exec(db, query, check_same_time_callback, &existSameData, &err_msg);
+
+    if(existSameData == 1)
+        return ;
+
 
     // Insert Query
     sprintf(query, "INSERT INTO Reading (SensorID, Module, Type, Detail, Value, Time) VALUES(\"%s\", \"%s\", \"%s\", \"%s\", %lf, \"%s\");"

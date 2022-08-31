@@ -1,11 +1,12 @@
 #include "task.hpp"
 // #include "handler.hpp"
 #include "chassis_controller.hpp"
+#include "fan.hpp"
 
 extern unordered_map<uint8_t, Task_Manager *> task_map;
 // extern unique_ptr<Handler> g_listener, HA_listener;
 extern unordered_map<string, Event*> event_map;
-
+extern ChassisFan *chassis_Fan[CHASSIS_MAX_FAN];
 
 /**
  * @brief Request GET
@@ -48,7 +49,8 @@ void do_task_cmm_get(http_request _request)
 
     // Make m_Request
     m_Request msg;
-    msg = work_before_request_process("GET", CMM_ADDRESS, uri, jv, _request.headers());
+    // [TASK]
+    // msg = work_before_request_process("GET", CMM_ADDRESS, uri, jv, _request.headers());
 
     http_response response;
     json::value response_json;
@@ -62,7 +64,8 @@ void do_task_cmm_get(http_request _request)
 
 
     // connect to Task_manager
-    t_manager->list_request.push_back(msg);
+    // [TASK]
+    // t_manager->list_request.push_back(msg);
 
 // Test용으로 현재 인증검사 하지 않겠음!!!!!!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -212,8 +215,8 @@ void do_task_cmm_get(http_request _request)
     //     c_manager = task_map.find(TASK_TYPE_COMPLETED)->second;
     // // complete 카테고리 c_manager에 연결
 
-
-    c_manager = work_after_request_process(t_manager, msg);
+    // [TASK]
+    // c_manager = work_after_request_process(t_manager, msg);
 
 
     /* After Move 테스트용 출력 */
@@ -446,13 +449,17 @@ void do_task_bmc_get(http_request _request)
     m_Request msg;
     string module_address = module_id_table[uri_tokens[3]];
     // string module_address = make_module_address(uri_tokens[3]);
-    msg = work_before_request_process("GET", module_address, uri, jv, _request.headers());
+    // [TASK]
+    // msg = work_before_request_process("GET", module_address, uri, jv, _request.headers());
     // msg = work_before_request_process("GET", module_id_table[uri_tokens[3]], uri, jv, _request.headers());
 
     // connect to Task_manager
-    t_manager->list_request.push_back(msg);
+    // [TASK]
+    // t_manager->list_request.push_back(msg);
     
-    http_client client(msg.host);
+    // [TASK]
+    // http_client client(msg.host);
+    http_client client(module_address);
     http_request req(methods::GET);
     // req.set_request_uri(msg.uri);
     req.set_request_uri(new_uri);
@@ -591,7 +598,8 @@ void do_task_bmc_get(http_request _request)
     
 
     // work_after_request_process(t_manager, c_manager, msg);
-    c_manager = work_after_request_process(t_manager, msg);
+    // [TASK]
+    // c_manager = work_after_request_process(t_manager, msg);
 
 
     // completed로 연결
@@ -1641,6 +1649,22 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
                 return ;
             }
         }
+
+        if(get_current_object_name(minus_one, "/") == "Drives")
+        {
+            if(!record_is_exist(uri)){
+                error_reply(_msg, get_error_json("No Drive"), status_codes::BadRequest, _response);
+                return;
+            }
+
+            if (patch_drive(_jv, uri)) {
+                resource_save_json(g_record[uri]);
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+            } else {
+                error_reply(_msg, get_error_json("Error Occur in Drive PATCH"), status_codes::BadRequest, _response);
+            }
+            return ;
+        }
     }
     else if(uri_part == ODATA_CHASSIS_ID)
     {
@@ -1700,21 +1724,73 @@ void treat_uri_cmm_patch(http_request _request, m_Request& _msg, json::value _jv
             }
         }
 
-        if(get_current_object_name(minus_one, "/") == "Drives")
+        // Chassis Fan Speed Control
+        // /redfish/v1/Chassis/CMM1/Thermal/Fans
+        if(uri == cmm_chassis + "/Thermal/Fans")
         {
-            if(!record_is_exist(uri)){
-                error_reply(_msg, get_error_json("No Drive"), status_codes::BadRequest, _response);
-                return;
+            // 전체 컨트롤
+            if(!record_is_exist(uri))
+            {
+                // 해당 Fan List 없음
+                error_reply(_msg, get_error_json("No Fan List"), status_codes::BadRequest, _response);
+                return ;
             }
 
-            if (patch_drive(_jv, uri)) {
-                resource_save_json(g_record[uri]);
-                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
-            } else {
-                error_reply(_msg, get_error_json("Error Occur in Drive PATCH"), status_codes::BadRequest, _response);
+            List *list = (List *)g_record[uri];
+            vector<Resource *>::iterator iter;
+            for(iter = list->members.begin(); iter != list->members.end(); iter++)
+            {
+                Fan *fan;
+                fan = (Fan *)*iter;
+
+                cout << "[FAN ODATA ID IN FAN LIST] : " << fan->odata.id << endl;
+                patch_fan_speed(_jv, fan->odata.id);
             }
+            
+            success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
             return ;
+            
         }
+        
+        // /redfish/v1/Chassis/CMM1/Thermal/Fans/CHASSIS_FAN_[num]
+        if(minus_one == cmm_chassis + "/Thermal/Fans")
+        {
+            // 개별 컨트롤
+            if(!record_is_exist(uri))
+            {
+                // 해당 Fan 없음
+                error_reply(_msg, get_error_json("No Fan"), status_codes::BadRequest, _response);
+                return ;
+            }
+
+            if(patch_fan_speed(_jv, uri))
+            {
+                success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+                return ;
+            }
+            else
+            {
+                error_reply(_msg, get_error_json("Error Occur in Fan Speed PATCH"), status_codes::BadRequest, _response);
+                return ;
+            }
+
+        }
+
+        // if(get_current_object_name(minus_one, "/") == "Drives")
+        // {
+        //     if(!record_is_exist(uri)){
+        //         error_reply(_msg, get_error_json("No Drive"), status_codes::BadRequest, _response);
+        //         return;
+        //     }
+
+        //     if (patch_drive(_jv, uri)) {
+        //         resource_save_json(g_record[uri]);
+        //         success_reply(_msg, record_get_json(uri), status_codes::OK, _response);
+        //     } else {
+        //         error_reply(_msg, get_error_json("Error Occur in Drive PATCH"), status_codes::BadRequest, _response);
+        //     }
+        //     return ;
+        // }
     }
     else if(uri_part == ODATA_EVENT_SERVICE_ID)
     {
@@ -4985,8 +5061,8 @@ void apply_ethernet_patch(Ethernet_Patch_Info _info, EthernetInterfaces *_eth, i
             // interface 수정
             change_interface_file(dev, "address", _info.val_v4_address);
 
-            if(_eth->v_ipv4[0].address != _info.val_v4_address)
-                change_web_app_file(_eth->v_ipv4[0].address, _info.val_v4_address);
+            // if(_eth->v_ipv4[0].address != _info.val_v4_address)
+            //     change_web_app_file(_eth->v_ipv4[0].address, _info.val_v4_address);
         }
         _eth->v_ipv4[0].address = _info.val_v4_address;
     }
@@ -5015,7 +5091,8 @@ void apply_ethernet_patch(Ethernet_Patch_Info _info, EthernetInterfaces *_eth, i
         _eth->v_ipv4[0].gateway = _info.val_v4_gateway;
     }
 
-    string restart_cmd = "/etc/init.d/S40network restart";
+    // string restart_cmd = "/etc/init.d/S40network restart";
+    string restart_cmd = "reboot";
     system(restart_cmd.c_str());
 
     // 네트워크 변경 적용은 restart해서 적용하는 방식으로..
@@ -5512,6 +5589,38 @@ bool patch_logservice(json::value _jv, string _record_uri)
     }
     return result;
 }
+
+bool patch_fan_speed(json::value _jv, string _record_uri)
+{
+    string fan_speed;
+    int pwm_data=0;
+    get_value_from_json_key(_jv, "FanSpeed", fan_speed);
+    cout << "[BODY BODY] : " << _jv << endl;
+    // pwm_data 가 Auto, 25%, 50%, 75%, 100% ..
+    if(fan_speed == "Auto")
+        pwm_data = 500;
+    else if(fan_speed == "0%")
+        pwm_data = 0;
+    else if(fan_speed == "25%")
+        pwm_data = 50;
+    else if(fan_speed == "50%")
+        pwm_data = 100;
+    else if(fan_speed == "75%")
+        pwm_data = 150;
+    else if(fan_speed == "100%")
+        pwm_data = 200;
+    else
+        return false;
+
+
+    string fan_id = get_current_object_name(_record_uri, "/");
+    int fan_num = improved_stoi(get_current_object_name(fan_id, "_"));
+    chassis_Fan[(fan_num - 1)]->Set_Fan_RPM(pwm_data);
+
+    return true;
+
+}
+
 
 void error_reply(m_Request& _msg, json::value _jv, status_code _status, http_response& _response)
 {
