@@ -3,6 +3,9 @@
 #include "boost/bind/bind.hpp"
 #include <boost/asio/post.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include "logservice.hpp"
+
+extern Value_About_HA ha_value;
 
 
 bool checked_fan_status[CHASSIS_MAX_FAN];
@@ -40,15 +43,17 @@ void ChassisFan::Run_Fan_RPM() {
       }
     }
     // if (this->ischange_pwm){
-      cout << "[" << std::hex << fanaddress << "]fan step 1" << endl;
+      // cout << "[" << std::hex << fanaddress << "]fan step 1" << endl;
     smbus_return = i2c_smbus_write_byte_data(file, reg_cr0, reg_cr0_data);
     i2c_smbus_write_byte_data(file, reg_cr0, reg_cr0_data);
-    cout << "[" << std::hex << fanaddress << "]fan step 2" << endl;
+    // cout << "[" << std::hex << fanaddress << "]fan step 2" << endl;
     i2c_smbus_write_byte_data(file, reg_cr1, reg_cr1_data);
-    cout << "[" << std::hex << fanaddress << "]fan step 3" << endl;
+    // cout << "[" << std::hex << fanaddress << "]fan step 3" << endl;
     i2c_smbus_write_byte_data(file, reg_pwm, pwm_data);
-    printf("pwm_data =%d\n ", pwm_data);
-    cout << "[" << std::hex << fanaddress << "]fan step 4" << endl;
+
+    cout << "[" << std::hex << fanaddress << "] [Run Fan RPM] [PWM] : ";
+    printf("%d\n", pwm_data);
+    // cout << "[" << std::hex << fanaddress << "]fan step 4" << endl;
 
     string fan_odata = "/redfish/v1/Chassis/CMM1/Thermal/Fans/CHASSIS_FAN_";
     fan_odata = fan_odata + to_string((this->idx + 1));
@@ -78,25 +83,34 @@ int test = 50;
 
 void *fan_measure_handler(void) {
 //   chassis_Fan[0]->Set_Fan_RPM(100);
-log(info) << "fan_measure_handler start!!!!" << endl;
+  log(info) << "fan_measure_handler start!!!!" << endl;
   // fan 생성자
   for (int i = 0; i < CHASSIS_MAX_FAN; i++) {
-    chassis_Fan[i] = new ChassisFan(fanslaveaddr[i], i, 50);
+    chassis_Fan[i] = new ChassisFan(fanslaveaddr[i], i, 0);
   }
 
 
   int count = 0;
-  for (;; count++)
-    if (count == 0) {
-      for (int j = 0; j < CHASSIS_MAX_FAN; j++) { // CHASSIS_MAX_FAN; j++) {
-        chassis_Fan[j]->Run_Fan_RPM();
+  while(1)
+  {
+      for(int j=0; j<CHASSIS_MAX_FAN; j++)
+          chassis_Fan[j]->Run_Fan_RPM();
+      
+      if(count >= 60)
+      {
+          // DB insert
+          for(int j=0; j<CHASSIS_MAX_FAN; j++)
+              // insert_reading_table("CHASSIS_FAN_" + to_string(j+1), ha_value.myId, "thermal", "fan", chassis_Fan[j]->pwm_data, DB_currentDateTime());
+              insert_reading_table("FAN_" + to_string(j+1), ha_value.myId, "thermal", "fan", chassis_Fan[j]->pwm_data, DB_currentDateTime());
+          count = 0;
       }
-    }
-  if (count > 60)
-    {
-    count = 0;
-    }
-  sleep(1);
+      else
+          count++;
+
+      sleep(1);
+  }
+  
+    
   //   chassis_Fan[0]->Set_Fan_RPM(0);
   //   chassis_Fan[0]->Run_Fan_RPM();
   //   sleep(20);

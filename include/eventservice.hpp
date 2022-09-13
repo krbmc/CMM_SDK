@@ -6,7 +6,7 @@
 
 
 // subscription value check
-bool check_protocol(string _protocol);
+bool check_protocol(string _protocol); 
 bool check_policy(string _policy);
 bool check_subscription_type(string _type);
 bool check_event_type(string _type);
