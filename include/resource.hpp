@@ -585,16 +585,34 @@ typedef struct _Thresholds
 
 typedef struct _Value_About_HA
 {
-    string peer_primary_address;
-    int primary_port;
-    string peer_secondary_address;
-    int second_port;
-    bool origin;
-    bool enabled;
-    int network_timeout;
-    int heartbeat;
-    int heartbeat_retry;
-    // int switch_timeout;
+    // string peer_primary_address;
+    // int primary_port;
+    // string peer_secondary_address;
+    // int second_port;
+    // bool origin;
+    // bool enabled;
+    // int network_timeout;
+    // int heartbeat;
+    // int heartbeat_retry;
+    // // int switch_timeout;
+
+    // CMMHA ini 읽기로 수정
+    string activeAddr;
+    int activePort;
+    string standbyAddr;
+    int standbyPort;
+    string ha1Addr;
+    int ha1Port;
+    string ha2Addr;
+    int ha2Port;
+    string currentActive;
+    string myId;
+    string targetHA;
+    int heartbeatInterval;
+    int heartbeatRetry;
+    string gateway;
+    string netmask;
+
 } Value_About_HA;
 
 typedef struct _Message

@@ -123,6 +123,17 @@ void add_new_bmc(string _bmc_id, string _address, string _username, string _pass
 // void add_system(string _bmc_id, string _host, string _auth_token)
 void add_system(string _uri, string _host)
 {
+    // module_check_handler에 의해 리소스 있으면 컬렉션에만 다시 추가해줌
+    if(record_is_exist(_uri))
+    {
+        Systems *remained_system = (Systems *)g_record[_uri];
+        Collection *col_system = (Collection *)g_record[ODATA_SYSTEM_ID];
+        col_system->add_member(remained_system);
+        log(trace) << "[In ADD BMC SYSTEM] : Resource is already exist -> Just add member";
+
+        return ;
+    }
+
     // Systems *system = new Systems(_bmc_id, "BMC System");
     string uri = _uri;
     vector<string> uri_tokens = string_split(uri, '/');
@@ -165,6 +176,17 @@ void add_system(string _uri, string _host)
 
 void add_manager(string _uri, string _host)
 {
+    // module_check_handler에 의해 리소스 있으면 컬렉션에만 다시 추가해줌
+    if(record_is_exist(_uri))
+    {
+        Manager *remained_manager = (Manager *)g_record[_uri];
+        Collection *col_manager = (Collection *)g_record[ODATA_MANAGER_ID];
+        col_manager->add_member(remained_manager);
+        log(trace) << "[In ADD BMC MANAGER] : Resource is already exist -> Just add member";
+
+        return ;
+    }
+
     string uri = _uri;
     vector<string> uri_tokens = string_split(uri, '/');
     string new_uri;
@@ -204,6 +226,17 @@ void add_manager(string _uri, string _host)
 
 void add_chassis(string _uri, string _host)
 {
+    // module_check_handler에 의해 리소스 있으면 컬렉션에만 다시 추가해줌
+    if(record_is_exist(_uri))
+    {
+        Chassis *remained_chassis = (Chassis *)g_record[_uri];
+        Collection *col_chassis = (Collection *)g_record[ODATA_CHASSIS_ID];
+        col_chassis->add_member(remained_chassis);
+        log(trace) << "[In ADD BMC CHASSSIS] : Resource is already exist -> Just add member";
+
+        return ;
+    }
+
     string uri = _uri;
     vector<string> uri_tokens = string_split(uri, '/');
     string new_uri;
@@ -1682,4 +1715,106 @@ int compare_first_position(int manager, int system, int chassis, int &first_post
     }
 
     return -1;
+}
+
+
+/**
+ * @brief CMM에 등록된 CM, SM 모듈의 서버에 대한 응답이 오지 않을 경우 등록해제 시키는 핸들러
+ * @details 웹에서 CMM에 CM이 등록되어서 CM이 있다고 읽히는데 해당 CM으로 요청을 보냈을 때 서버가 응답을 못 줄 경우 화면 구성 전체에 실패하는 것에서 시작
+ * module_check_handler에서는 주기적으로 관리하는 CM/SM에 테스트 요청을 보내고 그 때 요청이 오지 않으면(catch 블록 진입)
+ * 임시로 등록해제 시킨다..
+ * #1. module_id_table 순회 하면서 등록된 CM/SM에 요청을 보냄
+ * #2. 요청이 오지않으면 delete_list에 모듈id를 추가
+ * #3. delete_list에 있는 모듈들을 module_id_table에서 삭제 + System/Chassis/Manager Collection에서 삭제
+ * #4. module_id_table 저장,,, cf> 컬렉션 외에 나머지 리소스들은 삭제하지 않음
+ * @todo
+ * 1. 현재는 등록 해제 시 해당하는 리소스들을 전부 삭제하지 않고 컬렉션에서만 지워줌. 그래서 다시 ssdp로 모듈 연결이 되었을 때 아마 로직 상 CM으로만 구분하고
+ * module_id_table에 선착순으로 CM1, CM2 이렇게 붙음 그래서 CM1 과 CM2가 있을 때 CM1이 등록되어서 리소스로 CM1이 만들어졌는데 CM1이 등록해제되고 CM2가 등록될 경우
+ * module_id_table에 CM2가 CM1으로 연결되게됨 + 가지고 있는 리소스도 CM1꺼임
+ * -- 이건 CM이 연결될때 어떻게 주냐에 따라 달라질거같음.. 웹에있는 문제를 임시로 해결하기 위한 방안이었는데  웹을 외주를 맡긴다? 그럼 아예 삭제로 가도 될거같고
+ * 추후 정의되는대로 바뀔듯..
+ */
+void *module_check_handler(void)
+{
+    while(1)
+    {
+        sleep(20);
+        // 뭐였을까 
+        // module_id_table 돌면서 CM들에게(CMM은제외) 주기적으로 요청 보내고 그때 요청이 오지 않으면(catch 문 진입)
+        // delete_list만들어서 푸시한다음에 한꺼번에 module_id_table에서 지우고  table.json 갱신 저장 하려고 save_module_id하고
+        // 그리고 Chassis, System, Manager 컬렉션에서만 지움
+        // 그러고 난 다음에 add_bmc하는 부분에서 add_system, add_chassis, add_manager에다가 리소스 존재하면 return 하는 로직이 필요했고
+        // 
+
+        vector<string> delete_list;
+        map<string, string>::iterator iter;
+        for(iter = module_id_table.begin(); iter != module_id_table.end(); iter++)
+        {
+            if(iter->first == "CMM1")
+                continue;
+            
+            http_client client(iter->second);
+            http_request req(methods::GET);
+            req.set_request_uri("/redfish");
+
+            http_response res;
+
+            try
+            {
+                /* code */
+                pplx::task<http_response> responseTask = client.request(req);
+                res = responseTask.get();
+
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+                log(trace) << "[PUSH DELETE LIST] : " << iter->first;
+                delete_list.push_back(iter->first);
+            }
+            
+        }
+
+        Collection *col_chassis = (Collection *)g_record[ODATA_CHASSIS_ID];
+        Collection *col_system = (Collection *)g_record[ODATA_SYSTEM_ID];
+        Collection *col_manager = (Collection *)g_record[ODATA_MANAGER_ID];
+        for(int i=0; i<delete_list.size(); i++)
+        {
+            module_id_table.erase(delete_list[i]); // module_id_table에서 지우고
+
+            remove_module_id_from_collection(col_chassis, delete_list[i]);
+            remove_module_id_from_collection(col_system, delete_list[i]);
+            remove_module_id_from_collection(col_manager, delete_list[i]);
+            // 컬렉션에서 지우고
+            
+        }
+
+        save_module_id();
+        // 다하고 난 다음에 save
+
+    }
+}
+
+void remove_module_id_from_collection(Collection *collection, string module_id)
+{
+    bool exist = false;
+    vector<Resource *>::iterator iter;
+    for(iter = collection->members.begin(); iter != collection->members.end(); iter++)
+    {
+        string id = get_current_object_name((*iter)->odata.id, "/");
+
+        if(id == module_id)
+        {
+            exist = true;
+            break;
+        }
+    }
+
+    if(exist)
+    {
+        log(trace) << "[DELETE IN COLLECTION] : " << (*iter)->odata.id;
+        collection->members.erase(iter);
+        resource_save_json(collection);
+    }
+
 }

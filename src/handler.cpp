@@ -205,30 +205,58 @@ void Handler::handle_get(http_request _request)
                 return ;
             }
 
-            // 찐 CMMHA
+
+            // 바뀐 CMMHA
             if(uri_tokens[0] == "CMMHA")
             {
                 json::value j;
-                j["ActiveIP"] = json::value::string(ha_value.peer_primary_address);
-                j["ActivePort"] = json::value::string(to_string(ha_value.primary_port));
-                j["StandbyIP"] = json::value::string(ha_value.peer_secondary_address);
-                j["StandbyPort"] = json::value::string(to_string(ha_value.second_port));
-                // 이거 Port string으로 줘야 하나? 웹쪽에서?
+                
+                j["ActiveIP"] = json::value::string(ha_value.activeAddr);
+                j["ActivePort"] = json::value::string(to_string(ha_value.activePort));
+                j["StandbyIP"] = json::value::string(ha_value.standbyAddr);
+                j["StandbyPort"] = json::value::string(to_string(ha_value.standbyPort));
+            
 
-                j["NetworkTimeOut"] = json::value::number(ha_value.network_timeout);
-                j["HeartbeatInterval"] = json::value::number(ha_value.heartbeat);
-                j["SwitchTimeOut"] = json::value::number(ha_value.heartbeat_retry);
+                // j["NetworkTimeOut"] = json::value::number(ha_value.network_timeout);
+                j["HeartbeatInterval"] = json::value::number(ha_value.heartbeatInterval);
+                j["HeartbeatRetry"] = json::value::number(ha_value.heartbeatRetry);
+                // j["SwitchTimeOut"] = json::value::number(ha_value.heartbeat_retry);
 
                 j["IPList"] = json::value::array();
-                j["IPList"][0] = json::value::string(ha_value.peer_primary_address);
-                j["IPList"][1] = json::value::string(ha_value.peer_secondary_address);
+                j["IPList"][0] = json::value::string(ha_value.activeAddr);
+                j["IPList"][1] = json::value::string(ha_value.standbyAddr);
 
                 response.set_status_code(status_codes::OK);
                 response.set_body(j);
                 _request.reply(response);
                 return ;
-
+                
             }
+
+            // 찐 CMMHA
+            // if(uri_tokens[0] == "CMMHA")
+            // {
+            //     json::value j;
+            //     j["ActiveIP"] = json::value::string(ha_value.peer_primary_address);
+            //     j["ActivePort"] = json::value::string(to_string(ha_value.primary_port));
+            //     j["StandbyIP"] = json::value::string(ha_value.peer_secondary_address);
+            //     j["StandbyPort"] = json::value::string(to_string(ha_value.second_port));
+            //     // 이거 Port string으로 줘야 하나? 웹쪽에서?
+
+            //     j["NetworkTimeOut"] = json::value::number(ha_value.network_timeout);
+            //     j["HeartbeatInterval"] = json::value::number(ha_value.heartbeat);
+            //     j["SwitchTimeOut"] = json::value::number(ha_value.heartbeat_retry);
+
+            //     j["IPList"] = json::value::array();
+            //     j["IPList"][0] = json::value::string(ha_value.peer_primary_address);
+            //     j["IPList"][1] = json::value::string(ha_value.peer_secondary_address);
+
+            //     response.set_status_code(status_codes::OK);
+            //     response.set_body(j);
+            //     _request.reply(response);
+            //     return ;
+
+            // }
 
             // #오픈시스넷 /CMMHA 임시 처리부
             // if(uri_tokens[0] == "CMMHA")
@@ -1267,118 +1295,118 @@ void Handler::handle_post(http_request _request)
         }
 
         // /CMM_HA
-        if(uri_tokens.size() == 1 && uri_tokens[0] == "CMM_HA")
-        {
-            json::value ha_info;
-            ha_info = _request.extract_json().get();
-            if(ha_info.as_object().find("PeerPrimaryAddress") == ha_info.as_object().end() || ha_info.as_object().find("PrimaryPort") == ha_info.as_object().end()
-            || ha_info.as_object().find("PeerSecondaryAddress") == ha_info.as_object().end() || ha_info.as_object().find("SecondPort") == ha_info.as_object().end()
-            || ha_info.as_object().find("Origin") == ha_info.as_object().end() || ha_info.as_object().find("Enabled") == ha_info.as_object().end())
-            {
-                response.set_status_code(status_codes::BadRequest);
-                _request.reply(response);
-                // _request.reply(status_codes::BadRequest);
-                return ;
-            }
-            // Request Body에 구성 6가지 중 하나라도 누락되었을 경우 무시
+        // if(uri_tokens.size() == 1 && uri_tokens[0] == "CMM_HA")
+        // {
+        //     json::value ha_info;
+        //     ha_info = _request.extract_json().get();
+        //     if(ha_info.as_object().find("PeerPrimaryAddress") == ha_info.as_object().end() || ha_info.as_object().find("PrimaryPort") == ha_info.as_object().end()
+        //     || ha_info.as_object().find("PeerSecondaryAddress") == ha_info.as_object().end() || ha_info.as_object().find("SecondPort") == ha_info.as_object().end()
+        //     || ha_info.as_object().find("Origin") == ha_info.as_object().end() || ha_info.as_object().find("Enabled") == ha_info.as_object().end())
+        //     {
+        //         response.set_status_code(status_codes::BadRequest);
+        //         _request.reply(response);
+        //         // _request.reply(status_codes::BadRequest);
+        //         return ;
+        //     }
+        //     // Request Body에 구성 6가지 중 하나라도 누락되었을 경우 무시
 
-            try
-            {
-                /* code */
-                // ha_value.peer_primary_address = ha_info.at("PeerPrimaryAddress").as_string();
-                // ha_value.primary_port = ha_info.at("PrimaryPort").as_integer();
-                // ha_value.peer_secondary_address = ha_info.at("PeerSecondaryAddress").as_string();
-                // ha_value.second_port = ha_info.at("SecondPort").as_integer();
-                // ha_value.origin = ha_info.at("Origin").as_bool();
-                // ha_value.enabled = ha_info.at("Enabled").as_bool();
+        //     try
+        //     {
+        //         /* code */
+        //         // ha_value.peer_primary_address = ha_info.at("PeerPrimaryAddress").as_string();
+        //         // ha_value.primary_port = ha_info.at("PrimaryPort").as_integer();
+        //         // ha_value.peer_secondary_address = ha_info.at("PeerSecondaryAddress").as_string();
+        //         // ha_value.second_port = ha_info.at("SecondPort").as_integer();
+        //         // ha_value.origin = ha_info.at("Origin").as_bool();
+        //         // ha_value.enabled = ha_info.at("Enabled").as_bool();
 
-                get_value_from_json_key(ha_info, "PeerPrimaryAddress", ha_value.peer_primary_address);
-                get_value_from_json_key(ha_info, "PrimaryPort", ha_value.primary_port);
-                get_value_from_json_key(ha_info, "PeerSecondaryAddress", ha_value.peer_secondary_address);
-                get_value_from_json_key(ha_info, "SecondPort", ha_value.second_port);
-                get_value_from_json_key(ha_info, "NetworkTimeOut", ha_value.network_timeout);
-                get_value_from_json_key(ha_info, "HeartbeatInterval", ha_value.heartbeat);
-                get_value_from_json_key(ha_info, "HeartbeatRetry", ha_value.heartbeat_retry);
-                get_value_from_json_key(ha_info, "Enabled", ha_value.enabled);
-                get_value_from_json_key(ha_info, "Origin", ha_value.origin);
-            }
-            catch(const std::exception& e)
-            {
-                json::value rep;
-                rep[U("Error")] = json::value::string(U("Type Error"));
-                std::cerr << e.what() << '\n';
-                response.set_status_code(status_codes::BadRequest);
-                response.set_body(rep);
-                _request.reply(response);
-                // _request.reply(status_codes::BadRequest, rep);
-                return ;
-                // std::cerr << e.what() << '\n';
-            }
+        //         get_value_from_json_key(ha_info, "PeerPrimaryAddress", ha_value.peer_primary_address);
+        //         get_value_from_json_key(ha_info, "PrimaryPort", ha_value.primary_port);
+        //         get_value_from_json_key(ha_info, "PeerSecondaryAddress", ha_value.peer_secondary_address);
+        //         get_value_from_json_key(ha_info, "SecondPort", ha_value.second_port);
+        //         get_value_from_json_key(ha_info, "NetworkTimeOut", ha_value.network_timeout);
+        //         get_value_from_json_key(ha_info, "HeartbeatInterval", ha_value.heartbeat);
+        //         get_value_from_json_key(ha_info, "HeartbeatRetry", ha_value.heartbeat_retry);
+        //         get_value_from_json_key(ha_info, "Enabled", ha_value.enabled);
+        //         get_value_from_json_key(ha_info, "Origin", ha_value.origin);
+        //     }
+        //     catch(const std::exception& e)
+        //     {
+        //         json::value rep;
+        //         rep[U("Error")] = json::value::string(U("Type Error"));
+        //         std::cerr << e.what() << '\n';
+        //         response.set_status_code(status_codes::BadRequest);
+        //         response.set_body(rep);
+        //         _request.reply(response);
+        //         // _request.reply(status_codes::BadRequest, rep);
+        //         return ;
+        //         // std::cerr << e.what() << '\n';
+        //     }
 
-            // 처음 이 CMM_HA에서
-            // origin을 true로 받은녀석이 peerprimaryaddress에 해당하고 false받은녀석은 secondary에 해당
-            string op1, op2, ip;
-            if(ha_value.origin == true) // peerprimaryaddress
-                ip = ha_value.peer_secondary_address;
-            else
-                ip = ha_value.peer_primary_address;
+        //     // 처음 이 CMM_HA에서
+        //     // origin을 true로 받은녀석이 peerprimaryaddress에 해당하고 false받은녀석은 secondary에 해당
+        //     string op1, op2, ip;
+        //     if(ha_value.origin == true) // peerprimaryaddress
+        //         ip = ha_value.peer_secondary_address;
+        //     else
+        //         ip = ha_value.peer_primary_address;
                 
-            op1 = "ssh-keygen -f \"/root/.ssh/known_hosts\" -R \"" + ip + "\"";
-            op2 = "ssh-keyscan -t rsa " + ip + " >>~/.ssh/known_hosts";
+        //     op1 = "ssh-keygen -f \"/root/.ssh/known_hosts\" -R \"" + ip + "\"";
+        //     op2 = "ssh-keyscan -t rsa " + ip + " >>~/.ssh/known_hosts";
 
-            system(op1.c_str());
-            system(op2.c_str());
+        //     system(op1.c_str());
+        //     system(op2.c_str());
 
-            response.set_status_code(status_codes::OK);
-            _request.reply(response);
-            // _request.reply(status_codes::OK);
-            return ;
+        //     response.set_status_code(status_codes::OK);
+        //     _request.reply(response);
+        //     // _request.reply(status_codes::OK);
+        //     return ;
 
-        }
+        // }
 
 
         // /HAswtich
-        if(uri_tokens.size() == 1 && uri_tokens[0] == "HAswitch")
-        {
-            json::value switch_info;
-            switch_info = _request.extract_json().get();
-            if(switch_info.as_object().find("IsSwitch") == switch_info.as_object().end())
-            {
-                response.set_status_code(status_codes::BadRequest);
-                _request.reply(response);
-                // _request.reply(status_codes::BadRequest);
-                return ;
-            }
+        // if(uri_tokens.size() == 1 && uri_tokens[0] == "HAswitch")
+        // {
+        //     json::value switch_info;
+        //     switch_info = _request.extract_json().get();
+        //     if(switch_info.as_object().find("IsSwitch") == switch_info.as_object().end())
+        //     {
+        //         response.set_status_code(status_codes::BadRequest);
+        //         _request.reply(response);
+        //         // _request.reply(status_codes::BadRequest);
+        //         return ;
+        //     }
 
-            string is_switch = switch_info.at("IsSwitch").as_string();
-            if(is_switch == "Active"){
-                if(ha_value.origin == true)
-                    ha_value.enabled = true;
-                else
-                    ha_value.enabled = false;
-                // 그러고 스위치할때 필요한 작업들 하겄지 ㅇㅇ
-            }
-            else if(is_switch == "Standby"){
-                if(ha_value.origin == false)
-                    ha_value.enabled = true;
-                else
-                    ha_value.enabled = false;
-            }
-            else{
-                response.set_status_code(status_codes::BadRequest);
-                _request.reply(response);
-                // _request.reply(status_codes::BadRequest);
-                return ;
-            }
+        //     string is_switch = switch_info.at("IsSwitch").as_string();
+        //     if(is_switch == "Active"){
+        //         if(ha_value.origin == true)
+        //             ha_value.enabled = true;
+        //         else
+        //             ha_value.enabled = false;
+        //         // 그러고 스위치할때 필요한 작업들 하겄지 ㅇㅇ
+        //     }
+        //     else if(is_switch == "Standby"){
+        //         if(ha_value.origin == false)
+        //             ha_value.enabled = true;
+        //         else
+        //             ha_value.enabled = false;
+        //     }
+        //     else{
+        //         response.set_status_code(status_codes::BadRequest);
+        //         _request.reply(response);
+        //         // _request.reply(status_codes::BadRequest);
+        //         return ;
+        //     }
 
-            json::value rep;
-            rep[U("Result")] = json::value::boolean(U(true));
-            response.set_status_code(status_codes::OK);
-            response.set_body(rep);
-            _request.reply(response);
-            // _request.reply(status_codes::OK, rep);
-            return ;
-        }
+        //     json::value rep;
+        //     rep[U("Result")] = json::value::boolean(U(true));
+        //     response.set_status_code(status_codes::OK);
+        //     response.set_body(rep);
+        //     _request.reply(response);
+        //     // _request.reply(status_codes::OK, rep);
+        //     return ;
+        // }
 
         if(uri_tokens.size() == 1 && uri_tokens[0] == "Command")
         {
@@ -1814,52 +1842,73 @@ void Handler::handle_patch(http_request _request)
 
     try
     {
-
-        // 찐 CMMHA
+        // 바뀐 CMMHA
         if(uri_tokens[0] == "CMMHA")
         {
-            string ha_shoot = "http://10.0.6.107:644/CMMHA";
+            // 임시로 CMM만 이거 ha에도 반영하게끔 해줘야함 (그러면 CMMHA.ini파일도)
             json::value jv = _request.extract_json().get();
-            http_client client(ha_shoot);
-            http_request req(methods::PATCH);
-            req.set_body(jv);
+            // string inter, retry;
+            int inter, retry;
+            get_value_from_json_key(jv, "HeartbeatInterval", inter);
+            get_value_from_json_key(jv, "HeartbeatRetry", retry);
 
-            try
-            {
-                /* code */
-                pplx::task<http_response> responseTask = client.request(req);
-                response = responseTask.get();
-            }
-            catch(const std::exception& e)
-            {
-                std::cerr << e.what() << '\n';
-            }
-
-            _request.reply(response);
-            return ;
-        }
-
-        // #오픈시스넷 /CMMHA 임시 처리부(patch)
-        if(uri_tokens[0] == "CMMHA")
-        {
-            json::value j;
-            j["ActiveIP"] = json::value::string("192.168.0.68");
-            j["ActivePort"] = json::value::string("8000");
-            j["StandbyIP"] = json::value::string("10.0.6.106");
-            j["StandbyPort"] = json::value::string("8000");
-            j["NetworkTimeOut"] = json::value::number(50);
-            j["HeartbeatInterval"] = json::value::number(5);
-            j["SwitchTimeOut"] = json::value::number(10);
-            j["IPList"] = json::value::array();
-            j["IPList"][0] = json::value::string("192.168.0.68");
-            j["IPList"][1] = json::value::string("10.0.6.106");
+            ha_value.heartbeatInterval = inter;
+            ha_value.heartbeatRetry = retry;
+            // ha_value.heartbeatInterval = improved_stoi(inter);
+            // ha_value.heartbeatRetry = improved_stoi(retry);
 
             response.set_status_code(status_codes::OK);
-            response.set_body(j);
+            // response.set_body(j);
             _request.reply(response);
             // _request.reply(status_codes::OK, j);
             return ;
         }
+
+        // 찐 CMMHA
+        // if(uri_tokens[0] == "CMMHA")
+        // {
+        //     string ha_shoot = "http://10.0.6.107:644/CMMHA";
+        //     json::value jv = _request.extract_json().get();
+        //     http_client client(ha_shoot);
+        //     http_request req(methods::PATCH);
+        //     req.set_body(jv);
+
+        //     try
+        //     {
+        //         /* code */
+        //         pplx::task<http_response> responseTask = client.request(req);
+        //         response = responseTask.get();
+        //     }
+        //     catch(const std::exception& e)
+        //     {
+        //         std::cerr << e.what() << '\n';
+        //     }
+
+        //     _request.reply(response);
+        //     return ;
+        // }
+
+        // // #오픈시스넷 /CMMHA 임시 처리부(patch)
+        // if(uri_tokens[0] == "CMMHA")
+        // {
+        //     json::value j;
+        //     j["ActiveIP"] = json::value::string("192.168.0.68");
+        //     j["ActivePort"] = json::value::string("8000");
+        //     j["StandbyIP"] = json::value::string("10.0.6.106");
+        //     j["StandbyPort"] = json::value::string("8000");
+        //     j["NetworkTimeOut"] = json::value::number(50);
+        //     j["HeartbeatInterval"] = json::value::number(5);
+        //     j["SwitchTimeOut"] = json::value::number(10);
+        //     j["IPList"] = json::value::array();
+        //     j["IPList"][0] = json::value::string("192.168.0.68");
+        //     j["IPList"][1] = json::value::string("10.0.6.106");
+
+        //     response.set_status_code(status_codes::OK);
+        //     response.set_body(j);
+        //     _request.reply(response);
+        //     // _request.reply(status_codes::OK, j);
+        //     return ;
+        // }
 
 
 

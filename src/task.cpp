@@ -5615,6 +5615,10 @@ bool patch_fan_speed(json::value _jv, string _record_uri)
 
     string fan_id = get_current_object_name(_record_uri, "/");
     int fan_num = improved_stoi(get_current_object_name(fan_id, "_"));
+
+    if(fan_num > 8)
+        return false;
+    
     chassis_Fan[(fan_num - 1)]->Set_Fan_RPM(pwm_data);
 
     return true;

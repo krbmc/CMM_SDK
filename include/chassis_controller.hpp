@@ -62,4 +62,7 @@ bool read_odata_id(json::value _jv, string &_uri);
 json::value insert_module_id(json::value response_json, string module_id);
 int compare_first_position(int manager, int system, int chassis, int &first_postion);
 
+void *module_check_handler(void);
+void remove_module_id_from_collection(Collection *collection, string module_id);
+
 #endif

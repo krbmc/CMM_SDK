@@ -24,6 +24,7 @@ void make_test_db();
 int check_db_callback(void *NotUsed, int argc, char **argv, char **azColName);
 int result_callback(void *NotUsed, int argc, char **argv, char **azColName);
 int check_same_time_callback(void *NotUsed, int argc, char **argv, char **azColName);
+const std::string DB_currentDateTime(void);
 
 
 void insert_reading_table(string _sensor_id, string _module, string _type, string _detail, int _value, string _time);

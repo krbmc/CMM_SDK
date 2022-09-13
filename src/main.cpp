@@ -9,6 +9,10 @@
 #include "ntp.hpp"
 #include "certificate.hpp"
 #include "fan.hpp"
+
+#include "iniparser.hpp"
+#define ConfigurationFileDir "/redfish/CMMHA.ini"
+
 // #include <glib-2.0/glib.h>
 // #include <gssdp-1.2/libgssdp/gssdp.h>
 
@@ -351,21 +355,53 @@ int main(int _argc, char *_argv[])
     // 웹 캡쳐용 임시 CMM_HA 변수초기화
     // ha_value.peer_primary_address = "10.0.6.106";
     // string ipip_cmd = "ifconfig eth1 | grep \"inet \" | awk \'{print $2}\'";
-    string ipip_cmd = "ifconfig eth0 | grep \"inet \" | awk \'{print $2}\'";
+    // string ipip_cmd = "ifconfig eth0 | grep \"inet \" | awk \'{print $2}\'";
     // cout << "IPIPCMD : " << ipip_cmd << endl;
-    string tmp_activeIP = get_popen_string(ipip_cmd.c_str());
+    // string tmp_activeIP = get_popen_string(ipip_cmd.c_str());
     // string tmp_activeIP = get_popen_string("ifconfig eth1 | grep \"inet \" | awk \'{print $2}\'");
 
-    ha_value.peer_primary_address = tmp_activeIP;
-    // ha_value.peer_primary_address = "10.0.6.98";
-    ha_value.primary_port = 8000;
-    ha_value.peer_secondary_address = "10.0.6.107";
-    ha_value.second_port = 8000;
-    ha_value.network_timeout = 500;
-    ha_value.heartbeat = 50;
-    ha_value.heartbeat_retry = 3;
-    ha_value.enabled = true;
-    ha_value.origin = true;
+    // ha_value.peer_primary_address = tmp_activeIP;
+    // // ha_value.peer_primary_address = "10.0.6.98";
+    // ha_value.primary_port = 8000;
+    // ha_value.peer_secondary_address = "10.0.6.107";
+    // ha_value.second_port = 8000;
+    // ha_value.network_timeout = 500;
+    // ha_value.heartbeat = 50;
+    // ha_value.heartbeat_retry = 3;
+    // ha_value.enabled = true;
+    // ha_value.origin = true;
+
+    // CMM HA ini 읽기로 수정
+    INI::File ft;
+    // if (!ft.Load(ConfigurationFileDir)) {
+    while (!ft.Load(ConfigurationFileDir)) {
+        std::cout << "ha setting file not find path :" << ConfigurationFileDir
+                << endl;
+        sleep(1);
+    }
+    ha_value.activeAddr = ft.GetSection("Active")->GetValue("ip", -1).AsString();
+    ha_value.activePort = ft.GetSection("Active")->GetValue("port", -1).AsInt();
+    ha_value.standbyAddr = ft.GetSection("Standby")->GetValue("ip", -1).AsString();
+    ha_value.standbyPort = ft.GetSection("Standby")->GetValue("port", -1).AsInt();
+    ha_value.ha1Addr = ft.GetSection("HA1")->GetValue("ip", -1).AsString();
+    ha_value.ha1Port = ft.GetSection("HA1")->GetValue("port", -1).AsInt();
+    ha_value.ha2Addr = ft.GetSection("HA2")->GetValue("ip", -1).AsString();
+    ha_value.ha2Port = ft.GetSection("HA2")->GetValue("port", -1).AsInt();
+    ha_value.myId = ft.GetSection("COMMON")->GetValue("targetCmm", -1).AsString();
+    ha_value.currentActive =
+        ft.GetSection("COMMON")->GetValue("currentActive", -1).AsString();
+    ha_value.targetHA =
+        ft.GetSection("COMMON")->GetValue("myId", -1).AsString();
+    ha_value.heartbeatInterval =
+        ft.GetSection("COMMON")->GetValue("heartbeatInterval", -1).AsInt();
+    ha_value.heartbeatRetry =
+        ft.GetSection("COMMON")->GetValue("heartbeatRetry", -1).AsInt();
+    ha_value.gateway = ft.GetSection("COMMON")->GetValue("gateway", -1).AsString();
+    ha_value.netmask = ft.GetSection("COMMON")->GetValue("netmask", -1).AsString();
+    cout << "gateway :" << ha_value.gateway << endl;
+    cout << "netmask :" << ha_value.netmask << endl;
+    cout << "value.currentActive =" << ha_value.currentActive << endl;
+    
 
     // insert_reading_table("SAME 1", "CMM1", "power", "powercontrol", 500, "1998-01-01 15:10");
     // insert_reading_table("SAME 1", "CMM1", "power", "powercontrol", 500, "2000-04-05 09:00");
@@ -548,7 +584,14 @@ int main(int _argc, char *_argv[])
             | boost::asio::ssl::context::no_tlsv1_1                                              // NOT use TLS1.1
             | boost::asio::ssl::context::single_dh_use);});
     HAlisten_config.set_timeout(utility::seconds(SERVER_REQUEST_TIMEOUT));
-    utility::string_t HAurl = U("http://0.0.0.0:8000");
+    string picked_entry = "http://";
+    if(ha_value.currentActive == ha_value.myId)
+        picked_entry.append(ha_value.activeAddr).append(":").append(to_string(ha_value.activePort));
+    else
+        picked_entry.append(ha_value.standbyAddr).append(":").append(to_string(ha_value.standbyPort));
+    utility::string_t HAurl = picked_entry;
+    log(info) << "Server picked entry point: " << picked_entry;
+    // utility::string_t HAurl = U("http://0.0.0.0:8000");
     // utility::string_t HAurl = U("http://10.0.6.98:8000");
     // ha용.. http용..
 
@@ -564,9 +607,13 @@ int main(int _argc, char *_argv[])
     std::thread t_fan(fan_measure_handler);
     log(info) << "Fan Measure Start";
 
+    std::thread t_module(module_check_handler);
+    log(info) << "Module Check Start";
+
 
     t_ssdp.join();
     t_fan.join();
+    t_module.join();
 
     while (true) 
         pause();
